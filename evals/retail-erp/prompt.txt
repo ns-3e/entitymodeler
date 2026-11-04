@@ -1,0 +1,1 @@
+Model id: {model}. Read models/{model}/inputs/brief.md and erp.sql, then do what the brief asks using the entity-modeler tools. You may apply changes directly (apply_changes, or apply: true on the other tools); this is a trusted automation run. Finish with a short report of what you did, what's left open, and any tool that got in your way.

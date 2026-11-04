@@ -1,0 +1,897 @@
+{
+  "format": "entitymodeler",
+  "format_version": 1,
+  "source": "https://entitymodel.com",
+  "name": "human_resources",
+  "title": "Human Resources (HR)",
+  "organization": "EntityModel.com examples",
+  "description": "An HR model: employees with a reporting line, departments, jobs and positions, employment history, salaries, leave requests and performance reviews.",
+  "version": "1.0",
+  "author": "EntityModel.com",
+  "status": "approved",
+  "created_at": "2026-11-03T00:00:00.000Z",
+  "updated_at": "2026-11-03T00:00:00.000Z",
+  "entities": [
+    {
+      "name": "employee",
+      "display_name": "Employee",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "A person employed by the company. Managers are employees too.",
+      "attributes": [
+        {
+          "name": "employee_id",
+          "label": "Employee ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "1042"
+        },
+        {
+          "name": "employee_number",
+          "label": "Employee Number",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "description": "Number on the badge and payslip.",
+          "example": "E-01042"
+        },
+        {
+          "name": "full_name",
+          "label": "Full Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "example": "Maria Gonzalez"
+        },
+        {
+          "name": "work_email",
+          "label": "Work Email",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "pii": true,
+          "example": "maria.gonzalez@acme.example"
+        },
+        {
+          "name": "date_of_birth",
+          "label": "Date Of Birth",
+          "type": "DATE",
+          "pii": true,
+          "example": "1988-05-21"
+        },
+        {
+          "name": "hire_date",
+          "label": "Hire Date",
+          "type": "DATE",
+          "required": true,
+          "example": "2021-02-01"
+        },
+        {
+          "name": "termination_date",
+          "label": "Termination Date",
+          "type": "DATE",
+          "description": "Empty while employed."
+        },
+        {
+          "name": "department_id",
+          "label": "Department ID",
+          "type": "INT",
+          "required": true,
+          "example": "30"
+        },
+        {
+          "name": "position_id",
+          "label": "Position ID",
+          "type": "INT",
+          "required": true,
+          "example": "301"
+        },
+        {
+          "name": "manager_id",
+          "label": "Manager ID",
+          "type": "INT",
+          "description": "Direct manager; empty for the CEO.",
+          "example": "1001"
+        },
+        {
+          "name": "employment_type_code",
+          "label": "Employment Type Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "employment_type",
+            "output_attribute": "type_code"
+          },
+          "required": true,
+          "example": "FT"
+        },
+        {
+          "name": "work_location_id",
+          "label": "Work Location ID",
+          "type": "INT",
+          "required": true,
+          "example": "2"
+        }
+      ],
+      "struct_types": [],
+      "area": "People"
+    },
+    {
+      "name": "department",
+      "display_name": "Department",
+      "entity_type": "standard",
+      "color_code": "#7A5C8E",
+      "description": "An organizational unit, such as Finance or Engineering.",
+      "attributes": [
+        {
+          "name": "department_id",
+          "label": "Department ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "30"
+        },
+        {
+          "name": "department_name",
+          "label": "Department Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Engineering"
+        },
+        {
+          "name": "cost_center",
+          "label": "Cost Center",
+          "type": "STRING",
+          "required": true,
+          "example": "CC-3000"
+        },
+        {
+          "name": "head_employee_id",
+          "label": "Head Employee ID",
+          "type": "INT",
+          "description": "The department head.",
+          "example": "1001"
+        }
+      ],
+      "struct_types": [],
+      "area": "Organization"
+    },
+    {
+      "name": "job",
+      "display_name": "Job",
+      "entity_type": "standard",
+      "color_code": "#1F6366",
+      "description": "A job definition with a pay grade, such as Software Engineer II.",
+      "attributes": [
+        {
+          "name": "job_id",
+          "label": "Job ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "12"
+        },
+        {
+          "name": "job_title",
+          "label": "Job Title",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Software Engineer II"
+        },
+        {
+          "name": "job_family",
+          "label": "Job Family",
+          "type": "STRING",
+          "example": "Engineering"
+        },
+        {
+          "name": "pay_grade",
+          "label": "Pay Grade",
+          "type": "STRING",
+          "required": true,
+          "example": "G7"
+        },
+        {
+          "name": "min_salary",
+          "label": "Min Salary",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "description": "Salary band minimum.",
+          "example": "95000.00"
+        },
+        {
+          "name": "max_salary",
+          "label": "Max Salary",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "description": "Salary band maximum.",
+          "example": "135000.00"
+        }
+      ],
+      "struct_types": [],
+      "area": "Organization"
+    },
+    {
+      "name": "position",
+      "display_name": "Position",
+      "entity_type": "standard",
+      "color_code": "#9A4A10",
+      "description": "A budgeted seat in a department for a job. A position can be vacant.",
+      "attributes": [
+        {
+          "name": "position_id",
+          "label": "Position ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "301"
+        },
+        {
+          "name": "position_code",
+          "label": "Position Code",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "unique": true,
+          "example": "ENG-SE2-07"
+        },
+        {
+          "name": "department_id",
+          "label": "Department ID",
+          "type": "INT",
+          "required": true,
+          "example": "30"
+        },
+        {
+          "name": "job_id",
+          "label": "Job ID",
+          "type": "INT",
+          "required": true,
+          "example": "12"
+        },
+        {
+          "name": "is_vacant",
+          "label": "Is Vacant",
+          "type": "BOOLEAN",
+          "required": true,
+          "example": "false"
+        }
+      ],
+      "struct_types": [],
+      "area": "Organization"
+    },
+    {
+      "name": "work_location",
+      "display_name": "Work Location",
+      "entity_type": "standard",
+      "color_code": "#4A4D52",
+      "description": "An office or site where employees work.",
+      "attributes": [
+        {
+          "name": "work_location_id",
+          "label": "Work Location ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "2"
+        },
+        {
+          "name": "location_name",
+          "label": "Location Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Austin office"
+        },
+        {
+          "name": "city",
+          "label": "City",
+          "type": "STRING",
+          "required": true,
+          "example": "Austin"
+        },
+        {
+          "name": "country_code",
+          "label": "Country Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "country",
+            "output_attribute": "country_code"
+          },
+          "required": true,
+          "example": "US"
+        }
+      ],
+      "struct_types": [],
+      "area": "Organization"
+    },
+    {
+      "name": "employment_history",
+      "display_name": "Employment History",
+      "entity_type": "standard",
+      "color_code": "#2F5D73",
+      "description": "Each position an employee has held, for promotions and transfers.",
+      "attributes": [
+        {
+          "name": "history_id",
+          "label": "History ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "55012"
+        },
+        {
+          "name": "employee_id",
+          "label": "Employee ID",
+          "type": "INT",
+          "required": true,
+          "example": "1042"
+        },
+        {
+          "name": "position_id",
+          "label": "Position ID",
+          "type": "INT",
+          "required": true,
+          "example": "301"
+        },
+        {
+          "name": "start_date",
+          "label": "Start Date",
+          "type": "DATE",
+          "is_label": true,
+          "required": true,
+          "example": "2023-07-01"
+        },
+        {
+          "name": "end_date",
+          "label": "End Date",
+          "type": "DATE",
+          "description": "Empty for the current position."
+        },
+        {
+          "name": "change_reason",
+          "label": "Change Reason",
+          "type": "STRING",
+          "example": "Promotion"
+        }
+      ],
+      "struct_types": [],
+      "area": "People"
+    },
+    {
+      "name": "salary",
+      "display_name": "Salary",
+      "entity_type": "standard",
+      "color_code": "#5C7F9E",
+      "description": "Base salary over time. Exactly one row per employee has no end date.",
+      "attributes": [
+        {
+          "name": "salary_id",
+          "label": "Salary ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "88021"
+        },
+        {
+          "name": "employee_id",
+          "label": "Employee ID",
+          "type": "INT",
+          "required": true,
+          "example": "1042"
+        },
+        {
+          "name": "annual_amount",
+          "label": "Annual Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "example": "118000.00"
+        },
+        {
+          "name": "currency_code",
+          "label": "Currency Code",
+          "type": "STRING",
+          "required": true,
+          "description": "ISO 4217 code.",
+          "example": "USD"
+        },
+        {
+          "name": "effective_from",
+          "label": "Effective From",
+          "type": "DATE",
+          "required": true,
+          "example": "2026-01-01"
+        },
+        {
+          "name": "effective_to",
+          "label": "Effective To",
+          "type": "DATE"
+        }
+      ],
+      "struct_types": [],
+      "area": "Compensation"
+    },
+    {
+      "name": "leave_request",
+      "display_name": "Leave Request",
+      "entity_type": "standard",
+      "color_code": "#A12F18",
+      "description": "A request for time off, approved by the employee's manager.",
+      "attributes": [
+        {
+          "name": "leave_request_id",
+          "label": "Leave Request ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "40077"
+        },
+        {
+          "name": "employee_id",
+          "label": "Employee ID",
+          "type": "INT",
+          "required": true,
+          "example": "1042"
+        },
+        {
+          "name": "leave_type_code",
+          "label": "Leave Type Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "leave_type",
+            "output_attribute": "type_code"
+          },
+          "required": true,
+          "example": "VAC"
+        },
+        {
+          "name": "start_date",
+          "label": "Start Date",
+          "type": "DATE",
+          "is_label": true,
+          "required": true,
+          "example": "2026-12-22"
+        },
+        {
+          "name": "end_date",
+          "label": "End Date",
+          "type": "DATE",
+          "required": true,
+          "example": "2026-12-31"
+        },
+        {
+          "name": "status",
+          "label": "Status",
+          "type": "STRING",
+          "required": true,
+          "description": "Requested, approved, rejected or cancelled.",
+          "example": "APPROVED"
+        },
+        {
+          "name": "approver_id",
+          "label": "Approver ID",
+          "type": "INT",
+          "description": "The manager who decided.",
+          "example": "1001"
+        }
+      ],
+      "struct_types": [],
+      "area": "Time off"
+    },
+    {
+      "name": "performance_review",
+      "display_name": "Performance Review",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "A periodic review of an employee by a reviewer.",
+      "attributes": [
+        {
+          "name": "review_id",
+          "label": "Review ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "7010"
+        },
+        {
+          "name": "employee_id",
+          "label": "Employee ID",
+          "type": "INT",
+          "required": true,
+          "example": "1042"
+        },
+        {
+          "name": "reviewer_id",
+          "label": "Reviewer ID",
+          "type": "INT",
+          "required": true,
+          "example": "1001"
+        },
+        {
+          "name": "review_period",
+          "label": "Review Period",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "2026-H1"
+        },
+        {
+          "name": "rating",
+          "label": "Rating",
+          "type": "INT",
+          "description": "1 (below) to 5 (exceptional).",
+          "example": "4"
+        },
+        {
+          "name": "comments",
+          "label": "Comments",
+          "type": "STRING",
+          "pii": true
+        }
+      ],
+      "struct_types": [],
+      "area": "People"
+    },
+    {
+      "name": "employment_type",
+      "display_name": "Employment Type",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Kinds of employment contract.",
+      "attributes": [
+        {
+          "name": "type_code",
+          "label": "Type Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "FT"
+        },
+        {
+          "name": "type_name",
+          "label": "Type Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Full-time"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "type_code": "FT",
+          "type_name": "Full-time"
+        },
+        {
+          "type_code": "PT",
+          "type_name": "Part-time"
+        },
+        {
+          "type_code": "CON",
+          "type_name": "Contractor"
+        },
+        {
+          "type_code": "INT",
+          "type_name": "Intern"
+        }
+      ],
+      "reference_values_source": "Example values"
+    },
+    {
+      "name": "leave_type",
+      "display_name": "Leave Type",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Kinds of time off.",
+      "attributes": [
+        {
+          "name": "type_code",
+          "label": "Type Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "VAC"
+        },
+        {
+          "name": "type_name",
+          "label": "Type Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Vacation"
+        },
+        {
+          "name": "is_paid",
+          "label": "Is Paid",
+          "type": "BOOLEAN",
+          "required": true,
+          "example": "true"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "type_code": "VAC",
+          "type_name": "Vacation",
+          "is_paid": "true"
+        },
+        {
+          "type_code": "SICK",
+          "type_name": "Sick leave",
+          "is_paid": "true"
+        },
+        {
+          "type_code": "PARENT",
+          "type_name": "Parental leave",
+          "is_paid": "true"
+        },
+        {
+          "type_code": "UNPAID",
+          "type_name": "Unpaid leave",
+          "is_paid": "false"
+        }
+      ],
+      "reference_values_source": "Example values"
+    },
+    {
+      "name": "country",
+      "display_name": "Country",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Countries, identified by their ISO 3166-1 alpha-2 code.",
+      "attributes": [
+        {
+          "name": "country_code",
+          "label": "Country Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "description": "ISO 3166-1 alpha-2 code.",
+          "example": "US"
+        },
+        {
+          "name": "country_name",
+          "label": "Country Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "description": "English short name.",
+          "example": "United States"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "country_code": "US",
+          "country_name": "United States"
+        },
+        {
+          "country_code": "CA",
+          "country_name": "Canada"
+        },
+        {
+          "country_code": "GB",
+          "country_name": "United Kingdom"
+        },
+        {
+          "country_code": "DE",
+          "country_name": "Germany"
+        },
+        {
+          "country_code": "FR",
+          "country_name": "France"
+        },
+        {
+          "country_code": "AU",
+          "country_name": "Australia"
+        }
+      ],
+      "reference_values_source": "ISO 3166-1 (excerpt)"
+    }
+  ],
+  "relationships": [
+    {
+      "name": "reports_to",
+      "source": "employee",
+      "target": "employee",
+      "cardinality": "N:1",
+      "forward_label": "Reports To",
+      "reverse_label": "Manages",
+      "bidirectional": true,
+      "description": "The reporting line: each employee has at most one direct manager.",
+      "attributes": [],
+      "foreign_key": "manager_id"
+    },
+    {
+      "name": "member_of",
+      "source": "employee",
+      "target": "department",
+      "cardinality": "N:1",
+      "forward_label": "Member Of",
+      "reverse_label": "Has Member",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "department_id"
+    },
+    {
+      "name": "holds",
+      "source": "employee",
+      "target": "position",
+      "cardinality": "N:1",
+      "forward_label": "Holds",
+      "reverse_label": "Held By",
+      "bidirectional": true,
+      "description": "An employee's current position.",
+      "attributes": [],
+      "foreign_key": "position_id"
+    },
+    {
+      "name": "works_at",
+      "source": "employee",
+      "target": "work_location",
+      "cardinality": "N:1",
+      "forward_label": "Works At",
+      "reverse_label": "Site Of",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "work_location_id"
+    },
+    {
+      "name": "headed_by",
+      "source": "department",
+      "target": "employee",
+      "cardinality": "N:1",
+      "forward_label": "Headed By",
+      "reverse_label": "Heads",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "head_employee_id"
+    },
+    {
+      "name": "position_in",
+      "source": "position",
+      "target": "department",
+      "cardinality": "N:1",
+      "forward_label": "In",
+      "reverse_label": "Has Position",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "department_id"
+    },
+    {
+      "name": "position_of_job",
+      "source": "position",
+      "target": "job",
+      "cardinality": "N:1",
+      "forward_label": "Of Job",
+      "reverse_label": "Has Position",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "job_id"
+    },
+    {
+      "name": "history_of",
+      "source": "employment_history",
+      "target": "employee",
+      "cardinality": "N:1",
+      "forward_label": "History Of",
+      "reverse_label": "Has History",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "employee_id"
+    },
+    {
+      "name": "history_position",
+      "source": "employment_history",
+      "target": "position",
+      "cardinality": "N:1",
+      "forward_label": "In Position",
+      "reverse_label": "Held In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "position_id"
+    },
+    {
+      "name": "paid_to",
+      "source": "salary",
+      "target": "employee",
+      "cardinality": "N:1",
+      "forward_label": "Paid To",
+      "reverse_label": "Earns",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "employee_id"
+    },
+    {
+      "name": "requested_by",
+      "source": "leave_request",
+      "target": "employee",
+      "cardinality": "N:1",
+      "forward_label": "Requested By",
+      "reverse_label": "Requests",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "employee_id"
+    },
+    {
+      "name": "approved_by",
+      "source": "leave_request",
+      "target": "employee",
+      "cardinality": "N:1",
+      "forward_label": "Approved By",
+      "reverse_label": "Approves",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "approver_id"
+    },
+    {
+      "name": "review_of",
+      "source": "performance_review",
+      "target": "employee",
+      "cardinality": "N:1",
+      "forward_label": "Review Of",
+      "reverse_label": "Reviewed In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "employee_id"
+    },
+    {
+      "name": "reviewed_by",
+      "source": "performance_review",
+      "target": "employee",
+      "cardinality": "N:1",
+      "forward_label": "Reviewed By",
+      "reverse_label": "Reviews",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "reviewer_id"
+    }
+  ],
+  "hierarchies": [
+    {
+      "name": "reporting_line",
+      "display_name": "Reporting Line",
+      "root": "employee",
+      "status": "approved",
+      "max_depth": 10,
+      "allow_multi_parent": false,
+      "levels": [
+        {
+          "level": 2,
+          "branches": [
+            {
+              "name": "Direct reports",
+              "entity": "employee",
+              "relationship": "reports_to",
+              "direction": "forward",
+              "parent_branch": "Root"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "areas": [],
+  "notes": []
+}

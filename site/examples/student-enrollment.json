@@ -1,0 +1,711 @@
+{
+  "format": "entitymodeler",
+  "format_version": 1,
+  "source": "https://entitymodel.com",
+  "name": "student_enrollment",
+  "title": "Student Enrollment (University)",
+  "organization": "EntityModel.com examples",
+  "description": "A university: students, programs, courses with prerequisites, course sections taught by instructors in terms, enrollments with grades.",
+  "version": "1.0",
+  "author": "EntityModel.com",
+  "status": "approved",
+  "created_at": "2026-11-03T00:00:00.000Z",
+  "updated_at": "2026-11-03T00:00:00.000Z",
+  "entities": [
+    {
+      "name": "student",
+      "display_name": "Student",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "A person admitted to the university.",
+      "attributes": [
+        {
+          "name": "student_id",
+          "label": "Student ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "2026014"
+        },
+        {
+          "name": "student_number",
+          "label": "Student Number",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "pii": true,
+          "example": "S2026014"
+        },
+        {
+          "name": "full_name",
+          "label": "Full Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "example": "Noah Kim"
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "pii": true,
+          "example": "noah.kim@uni.example"
+        },
+        {
+          "name": "date_of_birth",
+          "label": "Date Of Birth",
+          "type": "DATE",
+          "pii": true,
+          "example": "2007-08-03"
+        },
+        {
+          "name": "program_id",
+          "label": "Program ID",
+          "type": "INT",
+          "required": true,
+          "description": "Declared program.",
+          "example": "11"
+        },
+        {
+          "name": "enrolled_on",
+          "label": "Enrolled On",
+          "type": "DATE",
+          "required": true,
+          "example": "2026-09-01"
+        }
+      ],
+      "struct_types": [],
+      "area": "Students"
+    },
+    {
+      "name": "department",
+      "display_name": "Department",
+      "entity_type": "standard",
+      "color_code": "#7A5C8E",
+      "description": "An academic department.",
+      "attributes": [
+        {
+          "name": "department_id",
+          "label": "Department ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "5"
+        },
+        {
+          "name": "department_name",
+          "label": "Department Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Computer Science"
+        },
+        {
+          "name": "building",
+          "label": "Building",
+          "type": "STRING",
+          "example": "Gates Hall"
+        }
+      ],
+      "struct_types": [],
+      "area": "Academics"
+    },
+    {
+      "name": "program",
+      "display_name": "Program",
+      "entity_type": "standard",
+      "color_code": "#1F6366",
+      "description": "A degree program, such as BSc Computer Science.",
+      "attributes": [
+        {
+          "name": "program_id",
+          "label": "Program ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "11"
+        },
+        {
+          "name": "program_name",
+          "label": "Program Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "BSc Computer Science"
+        },
+        {
+          "name": "degree_level_code",
+          "label": "Degree Level Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "degree_level",
+            "output_attribute": "level_code"
+          },
+          "required": true,
+          "example": "BACH"
+        },
+        {
+          "name": "department_id",
+          "label": "Department ID",
+          "type": "INT",
+          "required": true,
+          "example": "5"
+        },
+        {
+          "name": "required_credits",
+          "label": "Required Credits",
+          "type": "INT",
+          "required": true,
+          "example": "120"
+        }
+      ],
+      "struct_types": [],
+      "area": "Academics"
+    },
+    {
+      "name": "course",
+      "display_name": "Course",
+      "entity_type": "standard",
+      "color_code": "#9A4A10",
+      "description": "A course in the catalog. Each term it is offered as one or more sections.",
+      "attributes": [
+        {
+          "name": "course_id",
+          "label": "Course ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "210"
+        },
+        {
+          "name": "course_code",
+          "label": "Course Code",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "example": "CS201"
+        },
+        {
+          "name": "course_title",
+          "label": "Course Title",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Data Structures"
+        },
+        {
+          "name": "credits",
+          "label": "Credits",
+          "type": "INT",
+          "required": true,
+          "example": "4"
+        },
+        {
+          "name": "department_id",
+          "label": "Department ID",
+          "type": "INT",
+          "required": true,
+          "example": "5"
+        }
+      ],
+      "struct_types": [],
+      "area": "Academics"
+    },
+    {
+      "name": "course_prerequisite",
+      "display_name": "Prerequisite",
+      "entity_type": "standard",
+      "color_code": "#4A4D52",
+      "description": "A course that must be passed before another.",
+      "attributes": [
+        {
+          "name": "course_id",
+          "label": "Course ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "description": "The course with the requirement.",
+          "example": "210"
+        },
+        {
+          "name": "prerequisite_course_id",
+          "label": "Prerequisite Course ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "description": "The course required first.",
+          "example": "101"
+        },
+        {
+          "name": "minimum_grade",
+          "label": "Minimum Grade",
+          "type": "STRING",
+          "is_label": true,
+          "example": "C"
+        }
+      ],
+      "struct_types": [],
+      "area": "Academics"
+    },
+    {
+      "name": "instructor",
+      "display_name": "Instructor",
+      "entity_type": "standard",
+      "color_code": "#2F5D73",
+      "description": "A member of faculty who teaches sections.",
+      "attributes": [
+        {
+          "name": "instructor_id",
+          "label": "Instructor ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "77"
+        },
+        {
+          "name": "full_name",
+          "label": "Full Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "example": "Prof. Elena Rossi"
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "pii": true,
+          "example": "e.rossi@uni.example"
+        },
+        {
+          "name": "department_id",
+          "label": "Department ID",
+          "type": "INT",
+          "required": true,
+          "example": "5"
+        },
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "STRING",
+          "example": "Associate Professor"
+        }
+      ],
+      "struct_types": [],
+      "area": "Academics"
+    },
+    {
+      "name": "term",
+      "display_name": "Term",
+      "entity_type": "standard",
+      "color_code": "#5C7F9E",
+      "description": "An academic term.",
+      "attributes": [
+        {
+          "name": "term_id",
+          "label": "Term ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "202602"
+        },
+        {
+          "name": "term_name",
+          "label": "Term Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Fall 2026"
+        },
+        {
+          "name": "start_date",
+          "label": "Start Date",
+          "type": "DATE",
+          "required": true,
+          "example": "2026-09-01"
+        },
+        {
+          "name": "end_date",
+          "label": "End Date",
+          "type": "DATE",
+          "required": true,
+          "example": "2026-12-18"
+        }
+      ],
+      "struct_types": [],
+      "area": "Scheduling"
+    },
+    {
+      "name": "course_section",
+      "display_name": "Section",
+      "entity_type": "standard",
+      "color_code": "#A12F18",
+      "description": "One offering of a course in a term, taught by an instructor.",
+      "attributes": [
+        {
+          "name": "section_id",
+          "label": "Section ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "9001"
+        },
+        {
+          "name": "course_id",
+          "label": "Course ID",
+          "type": "INT",
+          "required": true,
+          "example": "210"
+        },
+        {
+          "name": "term_id",
+          "label": "Term ID",
+          "type": "INT",
+          "required": true,
+          "example": "202602"
+        },
+        {
+          "name": "instructor_id",
+          "label": "Instructor ID",
+          "type": "INT",
+          "required": true,
+          "example": "77"
+        },
+        {
+          "name": "section_code",
+          "label": "Section Code",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "CS201-A"
+        },
+        {
+          "name": "room",
+          "label": "Room",
+          "type": "STRING",
+          "example": "Gates 104"
+        },
+        {
+          "name": "capacity",
+          "label": "Capacity",
+          "type": "INT",
+          "required": true,
+          "example": "60"
+        }
+      ],
+      "struct_types": [],
+      "area": "Scheduling"
+    },
+    {
+      "name": "enrollment",
+      "display_name": "Enrollment",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "A student registered in a section, with the final grade.",
+      "attributes": [
+        {
+          "name": "enrollment_id",
+          "label": "Enrollment ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "4500123"
+        },
+        {
+          "name": "student_id",
+          "label": "Student ID",
+          "type": "INT",
+          "required": true,
+          "example": "2026014"
+        },
+        {
+          "name": "section_id",
+          "label": "Section ID",
+          "type": "INT",
+          "required": true,
+          "example": "9001"
+        },
+        {
+          "name": "enrolled_at",
+          "label": "Enrolled At",
+          "type": "TIMESTAMP",
+          "is_label": true,
+          "required": true,
+          "example": "2026-08-20T10:00:00Z"
+        },
+        {
+          "name": "grade_code",
+          "label": "Grade Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "grade",
+            "output_attribute": "grade_code"
+          },
+          "description": "Empty until graded.",
+          "example": "A-"
+        },
+        {
+          "name": "status",
+          "label": "Status",
+          "type": "STRING",
+          "required": true,
+          "description": "Enrolled, dropped or completed.",
+          "example": "ENROLLED"
+        }
+      ],
+      "struct_types": [],
+      "area": "Students"
+    },
+    {
+      "name": "grade",
+      "display_name": "Grade",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Letter grades and their grade points.",
+      "attributes": [
+        {
+          "name": "grade_code",
+          "label": "Grade Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "A-"
+        },
+        {
+          "name": "grade_points",
+          "label": "Grade Points",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "is_label": true,
+          "required": true,
+          "example": "3.70"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "grade_code": "A",
+          "grade_points": "4.00"
+        },
+        {
+          "grade_code": "A-",
+          "grade_points": "3.70"
+        },
+        {
+          "grade_code": "B+",
+          "grade_points": "3.30"
+        },
+        {
+          "grade_code": "B",
+          "grade_points": "3.00"
+        },
+        {
+          "grade_code": "B-",
+          "grade_points": "2.70"
+        },
+        {
+          "grade_code": "C",
+          "grade_points": "2.00"
+        },
+        {
+          "grade_code": "D",
+          "grade_points": "1.00"
+        },
+        {
+          "grade_code": "F",
+          "grade_points": "0.00"
+        }
+      ],
+      "reference_values_source": "Example values"
+    },
+    {
+      "name": "degree_level",
+      "display_name": "Degree Level",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Levels of degree.",
+      "attributes": [
+        {
+          "name": "level_code",
+          "label": "Level Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "BACH"
+        },
+        {
+          "name": "level_name",
+          "label": "Level Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Bachelor's"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "level_code": "ASSOC",
+          "level_name": "Associate"
+        },
+        {
+          "level_code": "BACH",
+          "level_name": "Bachelor's"
+        },
+        {
+          "level_code": "MAST",
+          "level_name": "Master's"
+        },
+        {
+          "level_code": "DOCT",
+          "level_name": "Doctorate"
+        }
+      ],
+      "reference_values_source": "Example values"
+    }
+  ],
+  "relationships": [
+    {
+      "name": "studies",
+      "source": "student",
+      "target": "program",
+      "cardinality": "N:1",
+      "forward_label": "Studies",
+      "reverse_label": "Has Student",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "program_id"
+    },
+    {
+      "name": "offered_by",
+      "source": "program",
+      "target": "department",
+      "cardinality": "N:1",
+      "forward_label": "Offered By",
+      "reverse_label": "Offers",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "department_id"
+    },
+    {
+      "name": "course_of",
+      "source": "course",
+      "target": "department",
+      "cardinality": "N:1",
+      "forward_label": "Taught By",
+      "reverse_label": "Teaches",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "department_id"
+    },
+    {
+      "name": "requirement_of",
+      "source": "course_prerequisite",
+      "target": "course",
+      "cardinality": "N:1",
+      "forward_label": "Requirement Of",
+      "reverse_label": "Requires",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "course_id"
+    },
+    {
+      "name": "required_course",
+      "source": "course_prerequisite",
+      "target": "course",
+      "cardinality": "N:1",
+      "forward_label": "Requires Course",
+      "reverse_label": "Required For",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "prerequisite_course_id"
+    },
+    {
+      "name": "instructor_in",
+      "source": "instructor",
+      "target": "department",
+      "cardinality": "N:1",
+      "forward_label": "Member Of",
+      "reverse_label": "Has Faculty",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "department_id"
+    },
+    {
+      "name": "section_of",
+      "source": "course_section",
+      "target": "course",
+      "cardinality": "N:1",
+      "forward_label": "Section Of",
+      "reverse_label": "Offered As",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "course_id"
+    },
+    {
+      "name": "offered_in",
+      "source": "course_section",
+      "target": "term",
+      "cardinality": "N:1",
+      "forward_label": "Offered In",
+      "reverse_label": "Schedules",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "term_id"
+    },
+    {
+      "name": "taught_by",
+      "source": "course_section",
+      "target": "instructor",
+      "cardinality": "N:1",
+      "forward_label": "Taught By",
+      "reverse_label": "Teaches",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "instructor_id"
+    },
+    {
+      "name": "enrolls",
+      "source": "enrollment",
+      "target": "student",
+      "cardinality": "N:1",
+      "forward_label": "Enrolls",
+      "reverse_label": "Enrolled In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "student_id"
+    },
+    {
+      "name": "in_section",
+      "source": "enrollment",
+      "target": "course_section",
+      "cardinality": "N:1",
+      "forward_label": "In",
+      "reverse_label": "Has Enrollment",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "section_id"
+    }
+  ],
+  "hierarchies": [],
+  "areas": [],
+  "notes": []
+}

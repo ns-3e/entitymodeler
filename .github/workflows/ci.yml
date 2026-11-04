@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: CLI bundle is up to date
+        run: |
+          npm run build:cli
+          git diff --exit-code bin/em.mjs || (echo "::error::bin/em.mjs is stale — run npm run build:cli and commit it" && exit 1)
+      - name: Demo model validates
+        run: node bin/em.mjs validate customer-demo
+      - name: Large-model benchmark (report only)
+        continue-on-error: true
+        run: npm run bench -- --quick
+
+  # Opens every dialog, view and panel in headless Chrome and fails on layout bugs: elements sticking out of
+  # their container, text spilling out of its box, fields too narrow to use, collapsed text boxes.
+  ui-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # The Chrome scripts use Node's built-in WebSocket (22+).
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Start the dev server
+        run: |
+          npx vite --port 5180 --strictPort > vite.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:5180/ > /dev/null && exit 0; sleep 1; done
+          cat vite.log; exit 1
+      - name: Layout audit
+        env:
+          CHROME: /usr/bin/google-chrome
+        run: npm run ui-audit

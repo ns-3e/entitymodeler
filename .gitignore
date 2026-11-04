@@ -1,0 +1,29 @@
+# Dependencies and build output
+node_modules
+dist
+cowork-skills/*.zip
+
+# Data models: personal models stay local. Only the demo model is committed.
+# To share another model, add a line like: !models/<model-id>/
+models/*
+!models/customer-demo/
+# Generated bundles, diagrams and docs
+models/*/exports/
+models/*/proposals/
+
+# Personal / machine-local settings
+.claude/settings.local.json
+.claude/*.local.*
+.vscode/
+.idea/
+*.local
+.env
+.env.*
+
+# Logs and OS files
+*.log
+npm-debug.log*
+.DS_Store
+
+# Retired code and material, kept locally only
+_archive/

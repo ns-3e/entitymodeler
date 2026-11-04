@@ -1,0 +1,532 @@
+{
+  "format": "entitymodeler",
+  "format_version": 1,
+  "source": "https://entitymodel.com",
+  "name": "supplier_demo",
+  "title": "Supplier Model (Demo)",
+  "organization": "Demo",
+  "description": "Suppliers and the sites they operate, with reference lists for supplier type, payment terms and geography (country and state/province).",
+  "version": "0.3",
+  "author": "EntityModel.com",
+  "status": "draft",
+  "created_at": "2026-10-19T17:41:32.498Z",
+  "updated_at": "2026-11-02T22:00:52.642Z",
+  "entities": [
+    {
+      "name": "supplier",
+      "display_name": "Supplier",
+      "entity_type": "standard",
+      "description": "A supplier (vendor): the legal company you buy from.",
+      "color_code": "#6FDB80",
+      "attributes": [
+        {
+          "name": "supplier_id",
+          "label": "Supplier Id",
+          "type": "STRING",
+          "description": "",
+          "is_primary_key": true,
+          "is_label": false,
+          "example": "V100045"
+        },
+        {
+          "name": "name",
+          "label": "Name",
+          "type": "STRING",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": true
+        },
+        {
+          "name": "duns",
+          "label": "DUNS",
+          "type": "STRING",
+          "description": "D&B DUNS number (9 digits)",
+          "is_primary_key": false,
+          "is_label": false,
+          "example": "804735132"
+        },
+        {
+          "name": "ein",
+          "label": "EIN",
+          "type": "STRING",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": false,
+          "example": "94-3172463"
+        },
+        {
+          "name": "hq_city",
+          "label": "City",
+          "type": "STRING",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": false
+        },
+        {
+          "name": "state",
+          "label": "HQ State",
+          "type": "REFERENCE_ENTITY",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": false,
+          "reference": {
+            "entity": "state",
+            "output_attribute": "state_name"
+          }
+        },
+        {
+          "name": "tier_classification",
+          "label": "Tier Classification",
+          "type": "STRING",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": false
+        },
+        {
+          "name": "riskscore",
+          "label": "Risk Score",
+          "type": "DOUBLE",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": false,
+          "example": "0.27"
+        },
+        {
+          "name": "ann_spend",
+          "label": "Annual Spend",
+          "type": "DOUBLE",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": false
+        },
+        {
+          "name": "payment_terms",
+          "label": "Payment Terms",
+          "type": "STRING",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": false
+        },
+        {
+          "name": "ontime_delivery_pct",
+          "label": "Ontime Delivery PCT",
+          "type": "DOUBLE",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": false
+        },
+        {
+          "name": "quality_ppm",
+          "label": "Quality PPM",
+          "type": "BIGINT",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": false
+        },
+        {
+          "name": "SupplierType",
+          "label": "SupplierType",
+          "type": "REFERENCE_ENTITY",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": false,
+          "reference": {
+            "entity": "supplier_type",
+            "output_attribute": "supplier_type_name"
+          }
+        },
+        {
+          "name": "source_last_update_date",
+          "label": "Source Last Update ",
+          "type": "DATE",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": false
+        },
+        {
+          "name": "parent_supplier_id",
+          "label": "Parent Supplier Id",
+          "type": "STRING",
+          "description": "Immediate parent company supplier_id (ownership)"
+        }
+      ],
+      "struct_types": [],
+      "dependent_reference": null,
+      "ui": {
+        "x": 40,
+        "y": 40
+      }
+    },
+    {
+      "name": "supplier_type",
+      "display_name": "Supplier Type",
+      "entity_type": "reference",
+      "description": "Controlled list of supplier classifications (manufacturer, distributor, service provider…).",
+      "color_code": "#0F766E",
+      "attributes": [
+        {
+          "name": "supplier_type_code",
+          "label": "Supplier Type Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "description": "Business key, e.g. MFG"
+        },
+        {
+          "name": "supplier_type_name",
+          "label": "Supplier Type Name",
+          "type": "STRING",
+          "is_label": true
+        },
+        {
+          "name": "taxonomy_code",
+          "label": "Taxonomy Code",
+          "type": "STRING",
+          "description": "Vendor class code"
+        }
+      ],
+      "struct_types": [],
+      "dependent_reference": null,
+      "ui": {
+        "x": 460,
+        "y": 66
+      },
+      "reference_values": [
+        {
+          "supplier_type_code": "MFG",
+          "supplier_type_name": "Manufacturer",
+          "taxonomy_code": "V-100"
+        },
+        {
+          "supplier_type_code": "DIST",
+          "supplier_type_name": "Distributor, Wholesale",
+          "taxonomy_code": "V-200"
+        },
+        {
+          "supplier_type_code": "SVC",
+          "supplier_type_name": "Service Provider",
+          "taxonomy_code": "V-300"
+        },
+        {
+          "supplier_type_code": "LOG",
+          "supplier_type_name": "Logistics",
+          "taxonomy_code": "V-400"
+        }
+      ]
+    },
+    {
+      "name": "supplier_sites",
+      "display_name": "Supplier Sites",
+      "entity_type": "standard",
+      "description": "A physical supplier facility or plant, where a supplier operates.",
+      "color_code": "#F62E01",
+      "attributes": [
+        {
+          "name": "site_id",
+          "label": "Site ID",
+          "type": "STRING",
+          "description": "",
+          "is_primary_key": true,
+          "is_label": false
+        },
+        {
+          "name": "supplier_id",
+          "label": "Supplier Id",
+          "type": "STRING",
+          "description": "Owning supplier (relationship key)"
+        },
+        {
+          "name": "name",
+          "label": "Name",
+          "type": "STRING",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": true
+        },
+        {
+          "name": "location_city",
+          "label": "Location City",
+          "type": "STRING",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": false
+        },
+        {
+          "name": "location_state",
+          "label": "Location State",
+          "type": "REFERENCE_ENTITY",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": false,
+          "reference": {
+            "entity": "state",
+            "output_attribute": "state_name"
+          }
+        },
+        {
+          "name": "role",
+          "label": "Role",
+          "type": "STRING",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": false
+        },
+        {
+          "name": "capacity_pct",
+          "label": "Capacity PCT",
+          "type": "INT",
+          "description": "",
+          "is_primary_key": false,
+          "is_label": false
+        }
+      ],
+      "struct_types": [],
+      "dependent_reference": null,
+      "ui": {
+        "x": 460,
+        "y": 302
+      }
+    },
+    {
+      "name": "country",
+      "display_name": "Country",
+      "entity_type": "reference",
+      "description": "ISO 3166 country list.",
+      "color_code": "#0E7490",
+      "attributes": [
+        {
+          "name": "country_code",
+          "label": "Country Code",
+          "type": "STRING",
+          "is_primary_key": true
+        },
+        {
+          "name": "country_name",
+          "label": "Country Name",
+          "type": "STRING",
+          "is_label": true
+        },
+        {
+          "name": "iso3",
+          "label": "Iso3",
+          "type": "STRING"
+        }
+      ],
+      "struct_types": [],
+      "dependent_reference": null,
+      "ui": {
+        "x": 460,
+        "y": 614
+      },
+      "reference_values": [
+        {
+          "country_code": "US",
+          "country_name": "United States",
+          "iso3": "USA"
+        },
+        {
+          "country_code": "CA",
+          "country_name": "Canada",
+          "iso3": "CAN"
+        },
+        {
+          "country_code": "MX",
+          "country_name": "Mexico",
+          "iso3": "MEX"
+        },
+        {
+          "country_code": "GB",
+          "country_name": "United Kingdom",
+          "iso3": "GBR"
+        }
+      ],
+      "reference_values_source": "ISO 3166-1 alpha-2"
+    },
+    {
+      "name": "state",
+      "display_name": "State / Province",
+      "entity_type": "reference",
+      "description": "ISO 3166-2 subdivisions, valid only within their country.",
+      "color_code": "#047857",
+      "attributes": [
+        {
+          "name": "state_code",
+          "label": "State Code",
+          "type": "STRING",
+          "is_primary_key": true
+        },
+        {
+          "name": "state_name",
+          "label": "State Name",
+          "type": "STRING",
+          "is_label": true
+        }
+      ],
+      "struct_types": [],
+      "dependent_reference": {
+        "parent": "country",
+        "linked_column": "country_code"
+      },
+      "ui": {
+        "x": 880,
+        "y": 350
+      },
+      "reference_values": [
+        {
+          "state_code": "CA",
+          "state_name": "California",
+          "country_code": "US"
+        },
+        {
+          "state_code": "TX",
+          "state_name": "Texas",
+          "country_code": "US"
+        },
+        {
+          "state_code": "NY",
+          "state_name": "New York",
+          "country_code": "US"
+        },
+        {
+          "state_code": "ON",
+          "state_name": "Ontario",
+          "country_code": "CA"
+        },
+        {
+          "state_code": "QC",
+          "state_name": "Quebec",
+          "country_code": "CA"
+        },
+        {
+          "state_code": "JAL",
+          "state_name": "Jalisco",
+          "country_code": "MX"
+        }
+      ]
+    },
+    {
+      "name": "payment_terms",
+      "display_name": "Payment Terms",
+      "entity_type": "reference",
+      "description": "Standard payment terms (NET30, NET60, 2/10 NET30).",
+      "color_code": "#15803D",
+      "attributes": [
+        {
+          "name": "payment_terms_code",
+          "label": "Payment Terms Code",
+          "type": "STRING",
+          "is_primary_key": true
+        },
+        {
+          "name": "payment_terms_name",
+          "label": "Payment Terms Name",
+          "type": "STRING",
+          "is_label": true
+        },
+        {
+          "name": "net_days",
+          "label": "Net Days",
+          "type": "INT"
+        }
+      ],
+      "struct_types": [],
+      "ui": {
+        "x": 40,
+        "y": 902
+      },
+      "reference_values": [
+        {
+          "payment_terms_code": "NET30",
+          "payment_terms_name": "Net 30",
+          "net_days": "30"
+        },
+        {
+          "payment_terms_code": "NET60",
+          "payment_terms_name": "Net 60",
+          "net_days": "60"
+        },
+        {
+          "payment_terms_code": "2/10N30",
+          "payment_terms_name": "2% 10, Net 30",
+          "net_days": "30"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "name": "site_of_supplier",
+      "source": "supplier_sites",
+      "target": "supplier",
+      "cardinality": "N:1",
+      "forward_label": "Operated By",
+      "reverse_label": "Operates",
+      "bidirectional": true,
+      "description": "Each site is operated by exactly one supplier.",
+      "foreign_key": "supplier_id",
+      "attributes": []
+    },
+    {
+      "name": "subsidiary_of",
+      "source": "supplier",
+      "target": "supplier",
+      "cardinality": "N:1",
+      "forward_label": "Subsidiary Of",
+      "reverse_label": "Parent Of",
+      "bidirectional": true,
+      "description": "Corporate ownership between suppliers.",
+      "foreign_key": "parent_supplier_id",
+      "attributes": [
+        {
+          "name": "ownership_pct",
+          "label": "Ownership %",
+          "type": "DOUBLE"
+        }
+      ]
+    }
+  ],
+  "hierarchies": [
+    {
+      "name": "supplier_ownership",
+      "display_name": "Supplier Ownership",
+      "description": "Corporate parent → subsidiaries → their sites.",
+      "root": "supplier",
+      "status": "draft",
+      "max_depth": 6,
+      "levels": [
+        {
+          "level": 2,
+          "branches": [
+            {
+              "name": "Subsidiaries",
+              "entity": "supplier",
+              "relationship": "subsidiary_of",
+              "direction": "forward",
+              "parent_branch": "Root"
+            },
+            {
+              "name": "Sites",
+              "entity": "supplier_sites",
+              "relationship": "site_of_supplier",
+              "direction": "forward",
+              "parent_branch": "Root"
+            }
+          ]
+        },
+        {
+          "level": 3,
+          "branches": [
+            {
+              "name": "Subsidiary Sites",
+              "entity": "supplier_sites",
+              "relationship": "site_of_supplier",
+              "direction": "forward",
+              "parent_branch": "Subsidiaries"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "areas": [],
+  "notes": []
+}

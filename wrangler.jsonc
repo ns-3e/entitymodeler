@@ -1,0 +1,21 @@
+// Cloudflare Worker that serves the static build (entitymodel.com). There is no Worker code: the
+// site is dist/ as static assets, with public/_headers applied. Unknown paths (including /api/*)
+// return index.html, which is how the app detects it has no dev-server API and uses browser storage.
+{
+  "name": "entitymodeler",
+  "compatibility_date": "2026-11-02",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+  // www.entitymodel.com is redirected to the apex by a zone Redirect Rule before it reaches the Worker.
+  "routes": [
+    { "pattern": "entitymodel.com", "custom_domain": true },
+    { "pattern": "www.entitymodel.com", "custom_domain": true }
+  ],
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": {
+    "enabled": true
+  }
+}

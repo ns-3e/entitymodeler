@@ -1,0 +1,991 @@
+{
+  "format": "entitymodeler",
+  "format_version": 1,
+  "source": "https://entitymodel.com",
+  "name": "crm",
+  "title": "CRM (Customer Relationship Management)",
+  "organization": "EntityModel.com examples",
+  "description": "A sales CRM: accounts with a parent-company hierarchy, contacts, leads, opportunities through a pipeline, products on opportunities, activities and sales users.",
+  "version": "1.0",
+  "author": "EntityModel.com",
+  "status": "approved",
+  "created_at": "2026-11-03T00:00:00.000Z",
+  "updated_at": "2026-11-03T00:00:00.000Z",
+  "entities": [
+    {
+      "name": "sales_user",
+      "display_name": "User",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "A member of the sales team who owns records.",
+      "attributes": [
+        {
+          "name": "user_id",
+          "label": "User ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "42"
+        },
+        {
+          "name": "full_name",
+          "label": "Full Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "example": "Jordan Lee"
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "pii": true,
+          "example": "jordan@acme.example"
+        },
+        {
+          "name": "role",
+          "label": "Role",
+          "type": "STRING",
+          "required": true,
+          "example": "Account Executive"
+        }
+      ],
+      "struct_types": [],
+      "area": "Team"
+    },
+    {
+      "name": "account",
+      "display_name": "Account",
+      "entity_type": "standard",
+      "color_code": "#7A5C8E",
+      "description": "A company the business sells to, or a prospect company. Subsidiaries point at their parent account.",
+      "attributes": [
+        {
+          "name": "account_id",
+          "label": "Account ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "20031"
+        },
+        {
+          "name": "account_name",
+          "label": "Account Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Globex Corporation"
+        },
+        {
+          "name": "industry_code",
+          "label": "Industry Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "industry",
+            "output_attribute": "industry_code"
+          },
+          "example": "MANUF"
+        },
+        {
+          "name": "website",
+          "label": "Website",
+          "type": "STRING",
+          "example": "https://globex.example"
+        },
+        {
+          "name": "annual_revenue",
+          "label": "Annual Revenue",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "description": "Estimated annual revenue in USD.",
+          "example": "25000000.00"
+        },
+        {
+          "name": "employee_count",
+          "label": "Employee Count",
+          "type": "INT",
+          "example": "1200"
+        },
+        {
+          "name": "country_code",
+          "label": "Country Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "country",
+            "output_attribute": "country_code"
+          },
+          "example": "US"
+        },
+        {
+          "name": "parent_account_id",
+          "label": "Parent Account ID",
+          "type": "BIGINT",
+          "description": "The parent company, for subsidiaries.",
+          "example": "20001"
+        },
+        {
+          "name": "owner_user_id",
+          "label": "Owner User ID",
+          "type": "INT",
+          "required": true,
+          "description": "Account owner.",
+          "example": "42"
+        }
+      ],
+      "struct_types": [],
+      "area": "Customers"
+    },
+    {
+      "name": "contact",
+      "display_name": "Contact",
+      "entity_type": "standard",
+      "color_code": "#1F6366",
+      "description": "A person at an account.",
+      "attributes": [
+        {
+          "name": "contact_id",
+          "label": "Contact ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "77120"
+        },
+        {
+          "name": "account_id",
+          "label": "Account ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "20031"
+        },
+        {
+          "name": "full_name",
+          "label": "Full Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "example": "Priya Raman"
+        },
+        {
+          "name": "job_title",
+          "label": "Job Title",
+          "type": "STRING",
+          "example": "Head of Procurement"
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "STRING",
+          "pii": true,
+          "example": "priya@globex.example"
+        },
+        {
+          "name": "phone",
+          "label": "Phone",
+          "type": "STRING",
+          "pii": true,
+          "example": "+1 555 0142"
+        },
+        {
+          "name": "do_not_contact",
+          "label": "Do Not Contact",
+          "type": "BOOLEAN",
+          "required": true,
+          "description": "The contact opted out of sales outreach.",
+          "example": "false"
+        }
+      ],
+      "struct_types": [],
+      "area": "Customers"
+    },
+    {
+      "name": "lead",
+      "display_name": "Lead",
+      "entity_type": "standard",
+      "color_code": "#9A4A10",
+      "description": "An unqualified prospect, before it becomes an account, contact and opportunity.",
+      "attributes": [
+        {
+          "name": "lead_id",
+          "label": "Lead ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "99001"
+        },
+        {
+          "name": "full_name",
+          "label": "Full Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "example": "Sam Ortiz"
+        },
+        {
+          "name": "company_name",
+          "label": "Company Name",
+          "type": "STRING",
+          "example": "Initech"
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "STRING",
+          "pii": true,
+          "example": "sam@initech.example"
+        },
+        {
+          "name": "lead_source_code",
+          "label": "Lead Source Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "lead_source",
+            "output_attribute": "source_code"
+          },
+          "required": true,
+          "example": "WEBINAR"
+        },
+        {
+          "name": "status",
+          "label": "Status",
+          "type": "STRING",
+          "required": true,
+          "description": "New, working, qualified or disqualified.",
+          "example": "WORKING"
+        },
+        {
+          "name": "owner_user_id",
+          "label": "Owner User ID",
+          "type": "INT",
+          "required": true,
+          "example": "42"
+        },
+        {
+          "name": "converted_opportunity_id",
+          "label": "Converted Opportunity ID",
+          "type": "BIGINT",
+          "description": "Set when the lead is converted."
+        },
+        {
+          "name": "created_at",
+          "label": "Created At",
+          "type": "TIMESTAMP",
+          "required": true,
+          "example": "2026-09-12T15:00:00Z"
+        }
+      ],
+      "struct_types": [],
+      "area": "Pipeline"
+    },
+    {
+      "name": "opportunity",
+      "display_name": "Opportunity",
+      "entity_type": "standard",
+      "color_code": "#4A4D52",
+      "description": "A potential deal with an account, tracked through the pipeline stages.",
+      "attributes": [
+        {
+          "name": "opportunity_id",
+          "label": "Opportunity ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "31008"
+        },
+        {
+          "name": "opportunity_name",
+          "label": "Opportunity Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Globex - Platform renewal 2027"
+        },
+        {
+          "name": "account_id",
+          "label": "Account ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "20031"
+        },
+        {
+          "name": "primary_contact_id",
+          "label": "Primary Contact ID",
+          "type": "BIGINT",
+          "example": "77120"
+        },
+        {
+          "name": "stage_code",
+          "label": "Stage Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "opportunity_stage",
+            "output_attribute": "stage_code"
+          },
+          "required": true,
+          "example": "PROPOSAL"
+        },
+        {
+          "name": "amount",
+          "label": "Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "description": "Expected deal value in USD.",
+          "example": "180000.00"
+        },
+        {
+          "name": "close_date",
+          "label": "Close Date",
+          "type": "DATE",
+          "required": true,
+          "description": "Expected or actual close date.",
+          "example": "2026-12-15"
+        },
+        {
+          "name": "owner_user_id",
+          "label": "Owner User ID",
+          "type": "INT",
+          "required": true,
+          "example": "42"
+        }
+      ],
+      "struct_types": [],
+      "area": "Pipeline"
+    },
+    {
+      "name": "product",
+      "display_name": "Product",
+      "entity_type": "standard",
+      "color_code": "#2F5D73",
+      "description": "Something the business sells.",
+      "attributes": [
+        {
+          "name": "product_id",
+          "label": "Product ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "7"
+        },
+        {
+          "name": "product_name",
+          "label": "Product Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Platform - Enterprise"
+        },
+        {
+          "name": "list_price",
+          "label": "List Price",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "description": "Annual list price in USD.",
+          "example": "60000.00"
+        }
+      ],
+      "struct_types": [],
+      "area": "Pipeline"
+    },
+    {
+      "name": "opportunity_product",
+      "display_name": "Opportunity Line",
+      "entity_type": "standard",
+      "color_code": "#5C7F9E",
+      "description": "A product quoted on an opportunity.",
+      "attributes": [
+        {
+          "name": "opportunity_product_id",
+          "label": "Opportunity Product ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "50310"
+        },
+        {
+          "name": "opportunity_id",
+          "label": "Opportunity ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "31008"
+        },
+        {
+          "name": "product_id",
+          "label": "Product ID",
+          "type": "INT",
+          "required": true,
+          "example": "7"
+        },
+        {
+          "name": "quantity",
+          "label": "Quantity",
+          "type": "INT",
+          "required": true,
+          "example": "3"
+        },
+        {
+          "name": "sale_price",
+          "label": "Sale Price",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "is_label": true,
+          "required": true,
+          "description": "Discounted unit price.",
+          "example": "54000.00"
+        }
+      ],
+      "struct_types": [],
+      "area": "Pipeline"
+    },
+    {
+      "name": "activity",
+      "display_name": "Activity",
+      "entity_type": "standard",
+      "color_code": "#A12F18",
+      "description": "A logged call, email, meeting or task, linked to an account and optionally a contact or opportunity.",
+      "attributes": [
+        {
+          "name": "activity_id",
+          "label": "Activity ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "880120"
+        },
+        {
+          "name": "activity_type_code",
+          "label": "Activity Type Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "activity_type",
+            "output_attribute": "type_code"
+          },
+          "required": true,
+          "example": "MEETING"
+        },
+        {
+          "name": "subject",
+          "label": "Subject",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Pricing review"
+        },
+        {
+          "name": "account_id",
+          "label": "Account ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "20031"
+        },
+        {
+          "name": "contact_id",
+          "label": "Contact ID",
+          "type": "BIGINT",
+          "example": "77120"
+        },
+        {
+          "name": "opportunity_id",
+          "label": "Opportunity ID",
+          "type": "BIGINT",
+          "example": "31008"
+        },
+        {
+          "name": "owner_user_id",
+          "label": "Owner User ID",
+          "type": "INT",
+          "required": true,
+          "example": "42"
+        },
+        {
+          "name": "due_at",
+          "label": "Due At",
+          "type": "TIMESTAMP",
+          "example": "2026-11-05T16:00:00Z"
+        },
+        {
+          "name": "completed",
+          "label": "Completed",
+          "type": "BOOLEAN",
+          "required": true,
+          "example": "false"
+        }
+      ],
+      "struct_types": [],
+      "area": "Team"
+    },
+    {
+      "name": "opportunity_stage",
+      "display_name": "Opportunity Stage",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Pipeline stages, in order, with the default win probability.",
+      "attributes": [
+        {
+          "name": "stage_code",
+          "label": "Stage Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "PROPOSAL"
+        },
+        {
+          "name": "stage_name",
+          "label": "Stage Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Proposal"
+        },
+        {
+          "name": "probability",
+          "label": "Probability",
+          "type": "INT",
+          "required": true,
+          "description": "Default win probability in percent.",
+          "example": "50"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "stage_code": "PROSPECT",
+          "stage_name": "Prospecting",
+          "probability": "10"
+        },
+        {
+          "stage_code": "QUALIFY",
+          "stage_name": "Qualification",
+          "probability": "20"
+        },
+        {
+          "stage_code": "PROPOSAL",
+          "stage_name": "Proposal",
+          "probability": "50"
+        },
+        {
+          "stage_code": "NEGOTIATE",
+          "stage_name": "Negotiation",
+          "probability": "75"
+        },
+        {
+          "stage_code": "WON",
+          "stage_name": "Closed won",
+          "probability": "100"
+        },
+        {
+          "stage_code": "LOST",
+          "stage_name": "Closed lost",
+          "probability": "0"
+        }
+      ],
+      "reference_values_source": "Example values"
+    },
+    {
+      "name": "lead_source",
+      "display_name": "Lead Source",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Where a lead came from.",
+      "attributes": [
+        {
+          "name": "source_code",
+          "label": "Source Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "WEBINAR"
+        },
+        {
+          "name": "source_name",
+          "label": "Source Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Webinar"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "source_code": "WEB",
+          "source_name": "Website form"
+        },
+        {
+          "source_code": "WEBINAR",
+          "source_name": "Webinar"
+        },
+        {
+          "source_code": "EVENT",
+          "source_name": "Trade show or event"
+        },
+        {
+          "source_code": "REFERRAL",
+          "source_name": "Referral"
+        },
+        {
+          "source_code": "OUTBOUND",
+          "source_name": "Outbound prospecting"
+        }
+      ],
+      "reference_values_source": "Example values"
+    },
+    {
+      "name": "activity_type",
+      "display_name": "Activity Type",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Kinds of sales activity.",
+      "attributes": [
+        {
+          "name": "type_code",
+          "label": "Type Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "CALL"
+        },
+        {
+          "name": "type_name",
+          "label": "Type Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Call"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "type_code": "CALL",
+          "type_name": "Call"
+        },
+        {
+          "type_code": "EMAIL",
+          "type_name": "Email"
+        },
+        {
+          "type_code": "MEETING",
+          "type_name": "Meeting"
+        },
+        {
+          "type_code": "TASK",
+          "type_name": "Task"
+        }
+      ],
+      "reference_values_source": "Example values"
+    },
+    {
+      "name": "industry",
+      "display_name": "Industry",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Industry classification for accounts.",
+      "attributes": [
+        {
+          "name": "industry_code",
+          "label": "Industry Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "MANUF"
+        },
+        {
+          "name": "industry_name",
+          "label": "Industry Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Manufacturing"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "industry_code": "MANUF",
+          "industry_name": "Manufacturing"
+        },
+        {
+          "industry_code": "FIN",
+          "industry_name": "Financial services"
+        },
+        {
+          "industry_code": "HEALTH",
+          "industry_name": "Healthcare"
+        },
+        {
+          "industry_code": "RETAIL",
+          "industry_name": "Retail"
+        },
+        {
+          "industry_code": "TECH",
+          "industry_name": "Technology"
+        },
+        {
+          "industry_code": "PUBLIC",
+          "industry_name": "Public sector"
+        }
+      ],
+      "reference_values_source": "Example values"
+    },
+    {
+      "name": "country",
+      "display_name": "Country",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Countries, identified by their ISO 3166-1 alpha-2 code.",
+      "attributes": [
+        {
+          "name": "country_code",
+          "label": "Country Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "description": "ISO 3166-1 alpha-2 code.",
+          "example": "US"
+        },
+        {
+          "name": "country_name",
+          "label": "Country Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "description": "English short name.",
+          "example": "United States"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "country_code": "US",
+          "country_name": "United States"
+        },
+        {
+          "country_code": "CA",
+          "country_name": "Canada"
+        },
+        {
+          "country_code": "GB",
+          "country_name": "United Kingdom"
+        },
+        {
+          "country_code": "DE",
+          "country_name": "Germany"
+        },
+        {
+          "country_code": "FR",
+          "country_name": "France"
+        },
+        {
+          "country_code": "AU",
+          "country_name": "Australia"
+        }
+      ],
+      "reference_values_source": "ISO 3166-1 (excerpt)"
+    }
+  ],
+  "relationships": [
+    {
+      "name": "subsidiary_of",
+      "source": "account",
+      "target": "account",
+      "cardinality": "N:1",
+      "forward_label": "Subsidiary Of",
+      "reverse_label": "Parent Of",
+      "bidirectional": true,
+      "description": "Corporate families: a subsidiary points at its parent account.",
+      "attributes": [],
+      "foreign_key": "parent_account_id"
+    },
+    {
+      "name": "account_owned_by",
+      "source": "account",
+      "target": "sales_user",
+      "cardinality": "N:1",
+      "forward_label": "Owned By",
+      "reverse_label": "Owns Account",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "owner_user_id"
+    },
+    {
+      "name": "works_at",
+      "source": "contact",
+      "target": "account",
+      "cardinality": "N:1",
+      "forward_label": "Works At",
+      "reverse_label": "Employs",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "account_id"
+    },
+    {
+      "name": "lead_owned_by",
+      "source": "lead",
+      "target": "sales_user",
+      "cardinality": "N:1",
+      "forward_label": "Owned By",
+      "reverse_label": "Owns Lead",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "owner_user_id"
+    },
+    {
+      "name": "converted_to",
+      "source": "lead",
+      "target": "opportunity",
+      "cardinality": "N:1",
+      "forward_label": "Converted To",
+      "reverse_label": "Converted From",
+      "bidirectional": true,
+      "description": "Set when a qualified lead is converted.",
+      "attributes": [],
+      "foreign_key": "converted_opportunity_id"
+    },
+    {
+      "name": "opportunity_for",
+      "source": "opportunity",
+      "target": "account",
+      "cardinality": "N:1",
+      "forward_label": "For",
+      "reverse_label": "Has Opportunity",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "account_id"
+    },
+    {
+      "name": "primary_contact",
+      "source": "opportunity",
+      "target": "contact",
+      "cardinality": "N:1",
+      "forward_label": "Primary Contact",
+      "reverse_label": "Primary Contact On",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "primary_contact_id"
+    },
+    {
+      "name": "opportunity_owned_by",
+      "source": "opportunity",
+      "target": "sales_user",
+      "cardinality": "N:1",
+      "forward_label": "Owned By",
+      "reverse_label": "Owns Opportunity",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "owner_user_id"
+    },
+    {
+      "name": "line_on",
+      "source": "opportunity_product",
+      "target": "opportunity",
+      "cardinality": "N:1",
+      "forward_label": "Line On",
+      "reverse_label": "Has Line",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "opportunity_id"
+    },
+    {
+      "name": "quotes",
+      "source": "opportunity_product",
+      "target": "product",
+      "cardinality": "N:1",
+      "forward_label": "Quotes",
+      "reverse_label": "Quoted On",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "product_id"
+    },
+    {
+      "name": "logged_on_account",
+      "source": "activity",
+      "target": "account",
+      "cardinality": "N:1",
+      "forward_label": "Logged On",
+      "reverse_label": "Has Activity",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "account_id"
+    },
+    {
+      "name": "with_contact",
+      "source": "activity",
+      "target": "contact",
+      "cardinality": "N:1",
+      "forward_label": "With",
+      "reverse_label": "Involved In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "contact_id"
+    },
+    {
+      "name": "about_opportunity",
+      "source": "activity",
+      "target": "opportunity",
+      "cardinality": "N:1",
+      "forward_label": "About",
+      "reverse_label": "Has Activity",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "opportunity_id"
+    },
+    {
+      "name": "assigned_to",
+      "source": "activity",
+      "target": "sales_user",
+      "cardinality": "N:1",
+      "forward_label": "Assigned To",
+      "reverse_label": "Assigned",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "owner_user_id"
+    }
+  ],
+  "hierarchies": [
+    {
+      "name": "corporate_family",
+      "display_name": "Corporate Family",
+      "root": "account",
+      "status": "approved",
+      "max_depth": 6,
+      "allow_multi_parent": false,
+      "levels": [
+        {
+          "level": 2,
+          "branches": [
+            {
+              "name": "Subsidiaries",
+              "entity": "account",
+              "relationship": "subsidiary_of",
+              "direction": "forward",
+              "parent_branch": "Root"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "areas": [],
+  "notes": []
+}

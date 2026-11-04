@@ -1,0 +1,570 @@
+{
+  "format": "entitymodeler",
+  "format_version": 1,
+  "source": "https://entitymodel.com",
+  "name": "star_schema",
+  "title": "Retail Sales Star Schema",
+  "organization": "EntityModel.com examples",
+  "description": "A dimensional model (star schema) for retail sales analytics: a sales fact table at order-line grain with date, product, store, customer and promotion dimensions.",
+  "version": "1.0",
+  "author": "EntityModel.com",
+  "status": "approved",
+  "created_at": "2026-11-03T00:00:00.000Z",
+  "updated_at": "2026-11-03T00:00:00.000Z",
+  "entities": [
+    {
+      "name": "fact_sales",
+      "display_name": "Sales (fact)",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "One row per order line: the grain of the star. Measures are additive across every dimension.",
+      "attributes": [
+        {
+          "name": "sales_key",
+          "label": "Sales Key",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "description": "Surrogate key of the fact row.",
+          "example": "900000123"
+        },
+        {
+          "name": "date_key",
+          "label": "Date Key",
+          "type": "INT",
+          "required": true,
+          "description": "Order date, as YYYYMMDD.",
+          "example": "20261103"
+        },
+        {
+          "name": "product_key",
+          "label": "Product Key",
+          "type": "INT",
+          "required": true,
+          "example": "1201"
+        },
+        {
+          "name": "store_key",
+          "label": "Store Key",
+          "type": "INT",
+          "required": true,
+          "example": "45"
+        },
+        {
+          "name": "customer_key",
+          "label": "Customer Key",
+          "type": "INT",
+          "required": true,
+          "description": "The customer version current at the time of sale.",
+          "example": "77310"
+        },
+        {
+          "name": "promotion_key",
+          "label": "Promotion Key",
+          "type": "INT",
+          "required": true,
+          "description": "0 = no promotion.",
+          "example": "0"
+        },
+        {
+          "name": "order_number",
+          "label": "Order Number",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "description": "Degenerate dimension: the source order, with no table of its own.",
+          "example": "SO-2026-000123"
+        },
+        {
+          "name": "line_number",
+          "label": "Line Number",
+          "type": "INT",
+          "required": true,
+          "example": "1"
+        },
+        {
+          "name": "quantity",
+          "label": "Quantity",
+          "type": "INT",
+          "required": true,
+          "example": "2"
+        },
+        {
+          "name": "unit_price",
+          "label": "Unit Price",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "example": "24.99"
+        },
+        {
+          "name": "discount_amount",
+          "label": "Discount Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "example": "0.00"
+        },
+        {
+          "name": "sales_amount",
+          "label": "Sales Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "description": "quantity × unit_price − discount.",
+          "example": "49.98"
+        },
+        {
+          "name": "cost_amount",
+          "label": "Cost Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "example": "21.40"
+        },
+        {
+          "name": "margin_amount",
+          "label": "Margin Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "description": "sales_amount − cost_amount.",
+          "example": "28.58"
+        }
+      ],
+      "struct_types": [],
+      "area": "Facts"
+    },
+    {
+      "name": "dim_date",
+      "display_name": "Date",
+      "entity_type": "standard",
+      "color_code": "#7A5C8E",
+      "description": "One row per calendar day, with every calendar and fiscal attribute reports filter on.",
+      "attributes": [
+        {
+          "name": "date_key",
+          "label": "Date Key",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "description": "YYYYMMDD.",
+          "example": "20261103"
+        },
+        {
+          "name": "full_date",
+          "label": "Full Date",
+          "type": "DATE",
+          "is_label": true,
+          "required": true,
+          "unique": true,
+          "example": "2026-11-03"
+        },
+        {
+          "name": "day_of_week",
+          "label": "Day Of Week",
+          "type": "STRING",
+          "required": true,
+          "example": "Tuesday"
+        },
+        {
+          "name": "month_name",
+          "label": "Month Name",
+          "type": "STRING",
+          "required": true,
+          "example": "November"
+        },
+        {
+          "name": "calendar_month",
+          "label": "Calendar Month",
+          "type": "INT",
+          "required": true,
+          "example": "11"
+        },
+        {
+          "name": "calendar_quarter",
+          "label": "Calendar Quarter",
+          "type": "INT",
+          "required": true,
+          "example": "4"
+        },
+        {
+          "name": "calendar_year",
+          "label": "Calendar Year",
+          "type": "INT",
+          "required": true,
+          "example": "2026"
+        },
+        {
+          "name": "fiscal_period",
+          "label": "Fiscal Period",
+          "type": "STRING",
+          "required": true,
+          "example": "FY27-P04"
+        },
+        {
+          "name": "is_weekend",
+          "label": "Is Weekend",
+          "type": "BOOLEAN",
+          "required": true,
+          "example": "false"
+        },
+        {
+          "name": "is_holiday",
+          "label": "Is Holiday",
+          "type": "BOOLEAN",
+          "required": true,
+          "example": "false"
+        }
+      ],
+      "struct_types": [],
+      "area": "Dimensions"
+    },
+    {
+      "name": "dim_product",
+      "display_name": "Product",
+      "entity_type": "standard",
+      "color_code": "#1F6366",
+      "description": "Products, flattened with their category hierarchy so reports need no joins beyond the star.",
+      "attributes": [
+        {
+          "name": "product_key",
+          "label": "Product Key",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "description": "Surrogate key.",
+          "example": "1201"
+        },
+        {
+          "name": "sku",
+          "label": "SKU",
+          "type": "STRING",
+          "required": true,
+          "description": "Natural key from the source system.",
+          "example": "TEE-ORG-M-BLU"
+        },
+        {
+          "name": "product_name",
+          "label": "Product Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Organic Tee"
+        },
+        {
+          "name": "brand",
+          "label": "Brand",
+          "type": "STRING",
+          "example": "Northwind"
+        },
+        {
+          "name": "category",
+          "label": "Category",
+          "type": "STRING",
+          "required": true,
+          "example": "Apparel"
+        },
+        {
+          "name": "subcategory",
+          "label": "Subcategory",
+          "type": "STRING",
+          "required": true,
+          "example": "T-shirts"
+        },
+        {
+          "name": "size",
+          "label": "Size",
+          "type": "STRING",
+          "example": "M"
+        },
+        {
+          "name": "color",
+          "label": "Color",
+          "type": "STRING",
+          "example": "Blue"
+        },
+        {
+          "name": "list_price",
+          "label": "List Price",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "example": "24.99"
+        }
+      ],
+      "struct_types": [],
+      "area": "Dimensions"
+    },
+    {
+      "name": "dim_store",
+      "display_name": "Store",
+      "entity_type": "standard",
+      "color_code": "#9A4A10",
+      "description": "Stores and the online channel, with their geography.",
+      "attributes": [
+        {
+          "name": "store_key",
+          "label": "Store Key",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "45"
+        },
+        {
+          "name": "store_code",
+          "label": "Store Code",
+          "type": "STRING",
+          "required": true,
+          "example": "PDX-03"
+        },
+        {
+          "name": "store_name",
+          "label": "Store Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Portland Pearl"
+        },
+        {
+          "name": "channel",
+          "label": "Channel",
+          "type": "STRING",
+          "required": true,
+          "description": "Store or online.",
+          "example": "Store"
+        },
+        {
+          "name": "city",
+          "label": "City",
+          "type": "STRING",
+          "example": "Portland"
+        },
+        {
+          "name": "region",
+          "label": "Region",
+          "type": "STRING",
+          "required": true,
+          "example": "West"
+        },
+        {
+          "name": "country",
+          "label": "Country",
+          "type": "STRING",
+          "required": true,
+          "example": "United States"
+        },
+        {
+          "name": "opened_on",
+          "label": "Opened On",
+          "type": "DATE",
+          "example": "2019-05-01"
+        }
+      ],
+      "struct_types": [],
+      "area": "Dimensions"
+    },
+    {
+      "name": "dim_customer",
+      "display_name": "Customer",
+      "entity_type": "standard",
+      "color_code": "#4A4D52",
+      "description": "Customers as a type 2 slowly changing dimension: a change to segment or city adds a new row, so history reports use the values at the time of sale.",
+      "attributes": [
+        {
+          "name": "customer_key",
+          "label": "Customer Key",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "description": "Surrogate key of this version.",
+          "example": "77310"
+        },
+        {
+          "name": "customer_id",
+          "label": "Customer ID",
+          "type": "STRING",
+          "required": true,
+          "description": "Natural key; the same across versions.",
+          "example": "CUS-104233"
+        },
+        {
+          "name": "customer_name",
+          "label": "Customer Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "example": "Ana Silva"
+        },
+        {
+          "name": "segment",
+          "label": "Segment",
+          "type": "STRING",
+          "required": true,
+          "example": "Loyalty Gold"
+        },
+        {
+          "name": "city",
+          "label": "City",
+          "type": "STRING",
+          "example": "Portland"
+        },
+        {
+          "name": "country",
+          "label": "Country",
+          "type": "STRING",
+          "example": "United States"
+        },
+        {
+          "name": "valid_from",
+          "label": "Valid From",
+          "type": "DATE",
+          "required": true,
+          "example": "2026-02-01"
+        },
+        {
+          "name": "valid_to",
+          "label": "Valid To",
+          "type": "DATE",
+          "required": true,
+          "description": "9999-12-31 for the current version.",
+          "example": "9999-12-31"
+        },
+        {
+          "name": "is_current",
+          "label": "Is Current",
+          "type": "BOOLEAN",
+          "required": true,
+          "example": "true"
+        }
+      ],
+      "struct_types": [],
+      "area": "Dimensions"
+    },
+    {
+      "name": "dim_promotion",
+      "display_name": "Promotion",
+      "entity_type": "standard",
+      "color_code": "#2F5D73",
+      "description": "Promotions applied to a sale, with a \"No promotion\" row (key 0) so the fact never has empty keys.",
+      "attributes": [
+        {
+          "name": "promotion_key",
+          "label": "Promotion Key",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "12"
+        },
+        {
+          "name": "promotion_code",
+          "label": "Promotion Code",
+          "type": "STRING",
+          "required": true,
+          "example": "FALL25"
+        },
+        {
+          "name": "promotion_name",
+          "label": "Promotion Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Fall 25% off"
+        },
+        {
+          "name": "discount_type",
+          "label": "Discount Type",
+          "type": "STRING",
+          "required": true,
+          "description": "Percent, amount or none.",
+          "example": "Percent"
+        },
+        {
+          "name": "start_date",
+          "label": "Start Date",
+          "type": "DATE",
+          "example": "2026-10-01"
+        },
+        {
+          "name": "end_date",
+          "label": "End Date",
+          "type": "DATE",
+          "example": "2026-10-31"
+        }
+      ],
+      "struct_types": [],
+      "area": "Dimensions"
+    }
+  ],
+  "relationships": [
+    {
+      "name": "sold_on",
+      "source": "fact_sales",
+      "target": "dim_date",
+      "cardinality": "N:1",
+      "forward_label": "Sold On",
+      "reverse_label": "Day Of",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "date_key"
+    },
+    {
+      "name": "sale_of",
+      "source": "fact_sales",
+      "target": "dim_product",
+      "cardinality": "N:1",
+      "forward_label": "Of Product",
+      "reverse_label": "Sold In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "product_key"
+    },
+    {
+      "name": "sold_at",
+      "source": "fact_sales",
+      "target": "dim_store",
+      "cardinality": "N:1",
+      "forward_label": "Sold At",
+      "reverse_label": "Sells",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "store_key"
+    },
+    {
+      "name": "sold_to",
+      "source": "fact_sales",
+      "target": "dim_customer",
+      "cardinality": "N:1",
+      "forward_label": "Sold To",
+      "reverse_label": "Bought",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "customer_key"
+    },
+    {
+      "name": "under_promotion",
+      "source": "fact_sales",
+      "target": "dim_promotion",
+      "cardinality": "N:1",
+      "forward_label": "Under",
+      "reverse_label": "Applied To",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "promotion_key"
+    }
+  ],
+  "hierarchies": [],
+  "areas": [],
+  "notes": []
+}

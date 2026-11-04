@@ -1,0 +1,806 @@
+{
+  "format": "entitymodeler",
+  "format_version": 1,
+  "source": "https://entitymodel.com",
+  "name": "library_management",
+  "title": "Library Management System",
+  "organization": "EntityModel.com examples",
+  "description": "A library: books and authors (many-to-many), physical copies at branches, members, loans, holds and fines.",
+  "version": "1.0",
+  "author": "EntityModel.com",
+  "status": "approved",
+  "created_at": "2026-11-03T00:00:00.000Z",
+  "updated_at": "2026-11-03T00:00:00.000Z",
+  "entities": [
+    {
+      "name": "book",
+      "display_name": "Book",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "A title in the catalog. Physical copies are separate.",
+      "attributes": [
+        {
+          "name": "book_id",
+          "label": "Book ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "4410"
+        },
+        {
+          "name": "isbn",
+          "label": "ISBN",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "description": "ISBN-13.",
+          "example": "9780262033848"
+        },
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Introduction to Algorithms"
+        },
+        {
+          "name": "publisher_id",
+          "label": "Publisher ID",
+          "type": "INT",
+          "example": "17"
+        },
+        {
+          "name": "publication_year",
+          "label": "Publication Year",
+          "type": "INT",
+          "example": "2009"
+        },
+        {
+          "name": "language_code",
+          "label": "Language Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "language",
+            "output_attribute": "language_code"
+          },
+          "required": true,
+          "example": "en"
+        },
+        {
+          "name": "genre_code",
+          "label": "Genre Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "genre",
+            "output_attribute": "genre_code"
+          },
+          "example": "CS"
+        }
+      ],
+      "struct_types": [],
+      "area": "Catalog"
+    },
+    {
+      "name": "author",
+      "display_name": "Author",
+      "entity_type": "standard",
+      "color_code": "#7A5C8E",
+      "description": "A person who wrote or edited books.",
+      "attributes": [
+        {
+          "name": "author_id",
+          "label": "Author ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "210"
+        },
+        {
+          "name": "author_name",
+          "label": "Author Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Thomas H. Cormen"
+        },
+        {
+          "name": "birth_year",
+          "label": "Birth Year",
+          "type": "INT",
+          "example": "1956"
+        }
+      ],
+      "struct_types": [],
+      "area": "Catalog"
+    },
+    {
+      "name": "publisher",
+      "display_name": "Publisher",
+      "entity_type": "standard",
+      "color_code": "#1F6366",
+      "description": "A publishing house.",
+      "attributes": [
+        {
+          "name": "publisher_id",
+          "label": "Publisher ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "17"
+        },
+        {
+          "name": "publisher_name",
+          "label": "Publisher Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "MIT Press"
+        }
+      ],
+      "struct_types": [],
+      "area": "Catalog"
+    },
+    {
+      "name": "library_branch",
+      "display_name": "Branch",
+      "entity_type": "standard",
+      "color_code": "#9A4A10",
+      "description": "A library location that holds copies.",
+      "attributes": [
+        {
+          "name": "branch_id",
+          "label": "Branch ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "3"
+        },
+        {
+          "name": "branch_name",
+          "label": "Branch Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Central Library"
+        },
+        {
+          "name": "address",
+          "label": "Address",
+          "type": "STRING",
+          "required": true,
+          "example": "801 SW 10th Ave"
+        },
+        {
+          "name": "phone",
+          "label": "Phone",
+          "type": "STRING",
+          "example": "+1 555 0170"
+        }
+      ],
+      "struct_types": [],
+      "area": "Lending"
+    },
+    {
+      "name": "book_copy",
+      "display_name": "Copy",
+      "entity_type": "standard",
+      "color_code": "#4A4D52",
+      "description": "A physical copy of a book, with its own barcode, kept at one branch.",
+      "attributes": [
+        {
+          "name": "copy_id",
+          "label": "Copy ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "1004410"
+        },
+        {
+          "name": "barcode",
+          "label": "Barcode",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "unique": true,
+          "example": "31234001004410"
+        },
+        {
+          "name": "book_id",
+          "label": "Book ID",
+          "type": "INT",
+          "required": true,
+          "example": "4410"
+        },
+        {
+          "name": "branch_id",
+          "label": "Branch ID",
+          "type": "INT",
+          "required": true,
+          "example": "3"
+        },
+        {
+          "name": "condition",
+          "label": "Condition",
+          "type": "STRING",
+          "example": "Good"
+        },
+        {
+          "name": "is_available",
+          "label": "Is Available",
+          "type": "BOOLEAN",
+          "required": true,
+          "description": "Not on loan or held.",
+          "example": "true"
+        }
+      ],
+      "struct_types": [],
+      "area": "Lending"
+    },
+    {
+      "name": "member",
+      "display_name": "Member",
+      "entity_type": "standard",
+      "color_code": "#2F5D73",
+      "description": "A person with a library card.",
+      "attributes": [
+        {
+          "name": "member_id",
+          "label": "Member ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "56002"
+        },
+        {
+          "name": "card_number",
+          "label": "Card Number",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "pii": true,
+          "example": "2900156002"
+        },
+        {
+          "name": "full_name",
+          "label": "Full Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "example": "Lee Chen"
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "STRING",
+          "pii": true,
+          "example": "lee.chen@example.com"
+        },
+        {
+          "name": "membership_type_code",
+          "label": "Membership Type Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "membership_type",
+            "output_attribute": "type_code"
+          },
+          "required": true,
+          "example": "ADULT"
+        },
+        {
+          "name": "joined_on",
+          "label": "Joined On",
+          "type": "DATE",
+          "required": true,
+          "example": "2024-06-11"
+        },
+        {
+          "name": "expires_on",
+          "label": "Expires On",
+          "type": "DATE",
+          "required": true,
+          "example": "2027-06-11"
+        }
+      ],
+      "struct_types": [],
+      "area": "Lending"
+    },
+    {
+      "name": "loan",
+      "display_name": "Loan",
+      "entity_type": "standard",
+      "color_code": "#5C7F9E",
+      "description": "A copy checked out to a member.",
+      "attributes": [
+        {
+          "name": "loan_id",
+          "label": "Loan ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "902211"
+        },
+        {
+          "name": "copy_id",
+          "label": "Copy ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "1004410"
+        },
+        {
+          "name": "member_id",
+          "label": "Member ID",
+          "type": "INT",
+          "required": true,
+          "example": "56002"
+        },
+        {
+          "name": "loaned_on",
+          "label": "Loaned On",
+          "type": "DATE",
+          "is_label": true,
+          "required": true,
+          "example": "2026-10-20"
+        },
+        {
+          "name": "due_on",
+          "label": "Due On",
+          "type": "DATE",
+          "required": true,
+          "example": "2026-11-10"
+        },
+        {
+          "name": "returned_on",
+          "label": "Returned On",
+          "type": "DATE",
+          "description": "Empty while on loan."
+        },
+        {
+          "name": "renewal_count",
+          "label": "Renewal Count",
+          "type": "INT",
+          "required": true,
+          "example": "0"
+        }
+      ],
+      "struct_types": [],
+      "area": "Lending"
+    },
+    {
+      "name": "hold",
+      "display_name": "Hold",
+      "entity_type": "standard",
+      "color_code": "#A12F18",
+      "description": "A member's request to borrow a book when a copy becomes available.",
+      "attributes": [
+        {
+          "name": "hold_id",
+          "label": "Hold ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "33019"
+        },
+        {
+          "name": "book_id",
+          "label": "Book ID",
+          "type": "INT",
+          "required": true,
+          "example": "4410"
+        },
+        {
+          "name": "member_id",
+          "label": "Member ID",
+          "type": "INT",
+          "required": true,
+          "example": "56002"
+        },
+        {
+          "name": "pickup_branch_id",
+          "label": "Pickup Branch ID",
+          "type": "INT",
+          "required": true,
+          "example": "3"
+        },
+        {
+          "name": "placed_at",
+          "label": "Placed At",
+          "type": "TIMESTAMP",
+          "is_label": true,
+          "required": true,
+          "example": "2026-10-28T12:00:00Z"
+        },
+        {
+          "name": "status",
+          "label": "Status",
+          "type": "STRING",
+          "required": true,
+          "description": "Waiting, ready, fulfilled or cancelled.",
+          "example": "WAITING"
+        }
+      ],
+      "struct_types": [],
+      "area": "Lending"
+    },
+    {
+      "name": "fine",
+      "display_name": "Fine",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "A charge for a late or lost item.",
+      "attributes": [
+        {
+          "name": "fine_id",
+          "label": "Fine ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "7701"
+        },
+        {
+          "name": "loan_id",
+          "label": "Loan ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "902211"
+        },
+        {
+          "name": "amount",
+          "label": "Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "is_label": true,
+          "required": true,
+          "example": "2.50"
+        },
+        {
+          "name": "reason",
+          "label": "Reason",
+          "type": "STRING",
+          "required": true,
+          "example": "Overdue"
+        },
+        {
+          "name": "paid_on",
+          "label": "Paid On",
+          "type": "DATE"
+        }
+      ],
+      "struct_types": [],
+      "area": "Lending"
+    },
+    {
+      "name": "book_author",
+      "display_name": "Book Author",
+      "entity_type": "standard",
+      "color_code": "#7A5C8E",
+      "description": "Links books to their authors, in credit order.",
+      "attributes": [
+        {
+          "name": "book_id",
+          "label": "Book ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "4410"
+        },
+        {
+          "name": "author_id",
+          "label": "Author ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "210"
+        },
+        {
+          "name": "author_order",
+          "label": "Author Order",
+          "type": "INT",
+          "is_label": true,
+          "required": true,
+          "description": "Position in the author list.",
+          "example": "1"
+        }
+      ],
+      "struct_types": [],
+      "area": "Catalog"
+    },
+    {
+      "name": "genre",
+      "display_name": "Genre",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Subject classification for books.",
+      "attributes": [
+        {
+          "name": "genre_code",
+          "label": "Genre Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "CS"
+        },
+        {
+          "name": "genre_name",
+          "label": "Genre Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Computer science"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "genre_code": "FIC",
+          "genre_name": "Fiction"
+        },
+        {
+          "genre_code": "MYS",
+          "genre_name": "Mystery"
+        },
+        {
+          "genre_code": "SCI",
+          "genre_name": "Science"
+        },
+        {
+          "genre_code": "CS",
+          "genre_name": "Computer science"
+        },
+        {
+          "genre_code": "HIST",
+          "genre_name": "History"
+        },
+        {
+          "genre_code": "CHILD",
+          "genre_name": "Children"
+        }
+      ],
+      "reference_values_source": "Example values"
+    },
+    {
+      "name": "language",
+      "display_name": "Language",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Languages, by ISO 639-1 code.",
+      "attributes": [
+        {
+          "name": "language_code",
+          "label": "Language Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "en"
+        },
+        {
+          "name": "language_name",
+          "label": "Language Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "English"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "language_code": "en",
+          "language_name": "English"
+        },
+        {
+          "language_code": "es",
+          "language_name": "Spanish"
+        },
+        {
+          "language_code": "fr",
+          "language_name": "French"
+        },
+        {
+          "language_code": "de",
+          "language_name": "German"
+        },
+        {
+          "language_code": "zh",
+          "language_name": "Chinese"
+        }
+      ],
+      "reference_values_source": "ISO 639-1 (excerpt)"
+    },
+    {
+      "name": "membership_type",
+      "display_name": "Membership Type",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Kinds of library card, with their loan limits.",
+      "attributes": [
+        {
+          "name": "type_code",
+          "label": "Type Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "ADULT"
+        },
+        {
+          "name": "type_name",
+          "label": "Type Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Adult"
+        },
+        {
+          "name": "max_loans",
+          "label": "Max Loans",
+          "type": "INT",
+          "required": true,
+          "example": "20"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "type_code": "ADULT",
+          "type_name": "Adult",
+          "max_loans": "20"
+        },
+        {
+          "type_code": "CHILD",
+          "type_name": "Child",
+          "max_loans": "10"
+        },
+        {
+          "type_code": "STUDENT",
+          "type_name": "Student",
+          "max_loans": "25"
+        },
+        {
+          "type_code": "SENIOR",
+          "type_name": "Senior",
+          "max_loans": "20"
+        }
+      ],
+      "reference_values_source": "Example values"
+    }
+  ],
+  "relationships": [
+    {
+      "name": "published_by",
+      "source": "book",
+      "target": "publisher",
+      "cardinality": "N:1",
+      "forward_label": "Published By",
+      "reverse_label": "Publishes",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "publisher_id"
+    },
+    {
+      "name": "credits_book",
+      "source": "book_author",
+      "target": "book",
+      "cardinality": "N:1",
+      "forward_label": "Credits",
+      "reverse_label": "Credited In",
+      "bidirectional": true,
+      "description": "Books and authors are many-to-many; book_author resolves it and keeps the credit order.",
+      "attributes": [],
+      "foreign_key": "book_id"
+    },
+    {
+      "name": "credits_author",
+      "source": "book_author",
+      "target": "author",
+      "cardinality": "N:1",
+      "forward_label": "Credits",
+      "reverse_label": "Credited In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "author_id"
+    },
+    {
+      "name": "copy_of",
+      "source": "book_copy",
+      "target": "book",
+      "cardinality": "N:1",
+      "forward_label": "Copy Of",
+      "reverse_label": "Has Copy",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "book_id"
+    },
+    {
+      "name": "kept_at",
+      "source": "book_copy",
+      "target": "library_branch",
+      "cardinality": "N:1",
+      "forward_label": "Kept At",
+      "reverse_label": "Holds",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "branch_id"
+    },
+    {
+      "name": "loan_of",
+      "source": "loan",
+      "target": "book_copy",
+      "cardinality": "N:1",
+      "forward_label": "Of",
+      "reverse_label": "Loaned In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "copy_id"
+    },
+    {
+      "name": "borrowed_by",
+      "source": "loan",
+      "target": "member",
+      "cardinality": "N:1",
+      "forward_label": "Borrowed By",
+      "reverse_label": "Borrows",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "member_id"
+    },
+    {
+      "name": "hold_on",
+      "source": "hold",
+      "target": "book",
+      "cardinality": "N:1",
+      "forward_label": "On",
+      "reverse_label": "Has Hold",
+      "bidirectional": true,
+      "description": "Holds are on the title, not a specific copy.",
+      "attributes": [],
+      "foreign_key": "book_id"
+    },
+    {
+      "name": "placed_by",
+      "source": "hold",
+      "target": "member",
+      "cardinality": "N:1",
+      "forward_label": "Placed By",
+      "reverse_label": "Places",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "member_id"
+    },
+    {
+      "name": "pickup_at",
+      "source": "hold",
+      "target": "library_branch",
+      "cardinality": "N:1",
+      "forward_label": "Pick Up At",
+      "reverse_label": "Pickup Point For",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "pickup_branch_id"
+    },
+    {
+      "name": "charged_for",
+      "source": "fine",
+      "target": "loan",
+      "cardinality": "N:1",
+      "forward_label": "Charged For",
+      "reverse_label": "Incurs",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "loan_id"
+    }
+  ],
+  "hierarchies": [],
+  "areas": [],
+  "notes": []
+}

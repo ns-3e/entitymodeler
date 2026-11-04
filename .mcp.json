@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "entity-modeler": {
+      "command": "node",
+      "args": ["bin/em.mjs", "mcp"]
+    }
+  }
+}

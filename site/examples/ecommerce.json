@@ -1,0 +1,970 @@
+{
+  "format": "entitymodeler",
+  "format_version": 1,
+  "source": "https://entitymodel.com",
+  "name": "ecommerce",
+  "title": "E-commerce Store",
+  "organization": "EntityModel.com examples",
+  "description": "An online store: customers, addresses, a product catalog with categories, shopping carts, orders, order lines, payments and shipments.",
+  "version": "1.0",
+  "author": "EntityModel.com",
+  "status": "approved",
+  "created_at": "2026-11-03T00:00:00.000Z",
+  "updated_at": "2026-11-03T00:00:00.000Z",
+  "entities": [
+    {
+      "name": "customer",
+      "display_name": "Customer",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "A person with an account on the store.",
+      "attributes": [
+        {
+          "name": "customer_id",
+          "label": "Customer ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "description": "Surrogate key.",
+          "example": "100245"
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "pii": true,
+          "description": "Login and contact email.",
+          "example": "ana@example.com"
+        },
+        {
+          "name": "full_name",
+          "label": "Full Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "example": "Ana Silva"
+        },
+        {
+          "name": "phone",
+          "label": "Phone",
+          "type": "STRING",
+          "pii": true,
+          "example": "+1 555 0100"
+        },
+        {
+          "name": "created_at",
+          "label": "Created At",
+          "type": "TIMESTAMP",
+          "required": true,
+          "description": "When the account was created.",
+          "example": "2026-03-14T10:22:00Z"
+        },
+        {
+          "name": "marketing_opt_in",
+          "label": "Marketing Opt In",
+          "type": "BOOLEAN",
+          "required": true,
+          "description": "Consent to marketing email.",
+          "example": "true"
+        }
+      ],
+      "struct_types": [],
+      "area": "Customers"
+    },
+    {
+      "name": "address",
+      "display_name": "Address",
+      "entity_type": "standard",
+      "color_code": "#7A5C8E",
+      "description": "A shipping or billing address saved by a customer.",
+      "attributes": [
+        {
+          "name": "address_id",
+          "label": "Address ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "5531"
+        },
+        {
+          "name": "customer_id",
+          "label": "Customer ID",
+          "type": "BIGINT",
+          "required": true,
+          "description": "The customer who saved the address.",
+          "example": "100245"
+        },
+        {
+          "name": "address_line",
+          "label": "Address Line",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "description": "Street and number.",
+          "example": "12 Harbour St"
+        },
+        {
+          "name": "city",
+          "label": "City",
+          "type": "STRING",
+          "required": true,
+          "example": "Portland"
+        },
+        {
+          "name": "postal_code",
+          "label": "Postal Code",
+          "type": "STRING",
+          "required": true,
+          "pii": true,
+          "example": "97201"
+        },
+        {
+          "name": "country_code",
+          "label": "Country Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "country",
+            "output_attribute": "country_code"
+          },
+          "required": true,
+          "example": "US"
+        },
+        {
+          "name": "is_default",
+          "label": "Is Default",
+          "type": "BOOLEAN",
+          "required": true,
+          "description": "The customer's default shipping address.",
+          "example": "true"
+        }
+      ],
+      "struct_types": [],
+      "area": "Customers"
+    },
+    {
+      "name": "category",
+      "display_name": "Category",
+      "entity_type": "standard",
+      "color_code": "#1F6366",
+      "description": "A node in the product category tree, such as Shoes > Running.",
+      "attributes": [
+        {
+          "name": "category_id",
+          "label": "Category ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "12"
+        },
+        {
+          "name": "category_name",
+          "label": "Category Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Running"
+        },
+        {
+          "name": "parent_category_id",
+          "label": "Parent Category ID",
+          "type": "INT",
+          "description": "The parent category; empty for top-level categories.",
+          "example": "3"
+        }
+      ],
+      "struct_types": [],
+      "area": "Catalog"
+    },
+    {
+      "name": "product",
+      "display_name": "Product",
+      "entity_type": "standard",
+      "color_code": "#9A4A10",
+      "description": "An item for sale. Prices are per unit in the store currency.",
+      "attributes": [
+        {
+          "name": "product_id",
+          "label": "Product ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "88012"
+        },
+        {
+          "name": "sku",
+          "label": "SKU",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "description": "Stock keeping unit.",
+          "example": "RUN-TRL-42-BLK"
+        },
+        {
+          "name": "product_name",
+          "label": "Product Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Trail Runner 42"
+        },
+        {
+          "name": "description",
+          "label": "Description",
+          "type": "STRING",
+          "description": "Long description shown on the product page."
+        },
+        {
+          "name": "category_id",
+          "label": "Category ID",
+          "type": "INT",
+          "required": true,
+          "example": "12"
+        },
+        {
+          "name": "unit_price",
+          "label": "Unit Price",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "description": "Current list price.",
+          "example": "129.00"
+        },
+        {
+          "name": "currency_code",
+          "label": "Currency Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "currency",
+            "output_attribute": "currency_code"
+          },
+          "required": true,
+          "example": "USD"
+        },
+        {
+          "name": "stock_quantity",
+          "label": "Stock Quantity",
+          "type": "INT",
+          "required": true,
+          "description": "Units available to sell.",
+          "example": "37"
+        },
+        {
+          "name": "is_active",
+          "label": "Is Active",
+          "type": "BOOLEAN",
+          "required": true,
+          "description": "Shown in the store.",
+          "example": "true"
+        }
+      ],
+      "struct_types": [],
+      "area": "Catalog"
+    },
+    {
+      "name": "cart",
+      "display_name": "Cart",
+      "entity_type": "standard",
+      "color_code": "#4A4D52",
+      "description": "A shopping cart, before checkout.",
+      "attributes": [
+        {
+          "name": "cart_id",
+          "label": "Cart ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "730021"
+        },
+        {
+          "name": "customer_id",
+          "label": "Customer ID",
+          "type": "BIGINT",
+          "description": "Empty for guest carts.",
+          "example": "100245"
+        },
+        {
+          "name": "created_at",
+          "label": "Created At",
+          "type": "TIMESTAMP",
+          "is_label": true,
+          "required": true,
+          "example": "2026-10-02T18:40:00Z"
+        }
+      ],
+      "struct_types": [],
+      "area": "Orders"
+    },
+    {
+      "name": "cart_item",
+      "display_name": "Cart Item",
+      "entity_type": "standard",
+      "color_code": "#2F5D73",
+      "description": "A product and quantity in a cart.",
+      "attributes": [
+        {
+          "name": "cart_item_id",
+          "label": "Cart Item ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "991203"
+        },
+        {
+          "name": "cart_id",
+          "label": "Cart ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "730021"
+        },
+        {
+          "name": "product_id",
+          "label": "Product ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "88012"
+        },
+        {
+          "name": "quantity",
+          "label": "Quantity",
+          "type": "INT",
+          "is_label": true,
+          "required": true,
+          "example": "1"
+        }
+      ],
+      "struct_types": [],
+      "area": "Orders"
+    },
+    {
+      "name": "customer_order",
+      "display_name": "Order",
+      "entity_type": "standard",
+      "color_code": "#5C7F9E",
+      "description": "A placed order. Totals are stored as charged, so later price changes do not alter history.",
+      "attributes": [
+        {
+          "name": "order_id",
+          "label": "Order ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "5000123"
+        },
+        {
+          "name": "order_number",
+          "label": "Order Number",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "unique": true,
+          "description": "Number shown to the customer.",
+          "example": "SO-2026-000123"
+        },
+        {
+          "name": "customer_id",
+          "label": "Customer ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "100245"
+        },
+        {
+          "name": "shipping_address_id",
+          "label": "Shipping Address ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "5531"
+        },
+        {
+          "name": "order_status_code",
+          "label": "Order Status Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "order_status",
+            "output_attribute": "status_code"
+          },
+          "required": true,
+          "example": "PAID"
+        },
+        {
+          "name": "ordered_at",
+          "label": "Ordered At",
+          "type": "TIMESTAMP",
+          "required": true,
+          "example": "2026-10-02T18:52:11Z"
+        },
+        {
+          "name": "currency_code",
+          "label": "Currency Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "currency",
+            "output_attribute": "currency_code"
+          },
+          "required": true,
+          "example": "USD"
+        },
+        {
+          "name": "subtotal_amount",
+          "label": "Subtotal Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "description": "Sum of the order lines.",
+          "example": "129.00"
+        },
+        {
+          "name": "shipping_amount",
+          "label": "Shipping Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "example": "7.50"
+        },
+        {
+          "name": "tax_amount",
+          "label": "Tax Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "example": "10.32"
+        },
+        {
+          "name": "total_amount",
+          "label": "Total Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "description": "Amount charged.",
+          "example": "146.82"
+        }
+      ],
+      "struct_types": [],
+      "area": "Orders"
+    },
+    {
+      "name": "order_line",
+      "display_name": "Order Line",
+      "entity_type": "standard",
+      "color_code": "#A12F18",
+      "description": "One product on an order, with the price charged.",
+      "attributes": [
+        {
+          "name": "order_line_id",
+          "label": "Order Line ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "7700451"
+        },
+        {
+          "name": "order_id",
+          "label": "Order ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "5000123"
+        },
+        {
+          "name": "product_id",
+          "label": "Product ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "88012"
+        },
+        {
+          "name": "quantity",
+          "label": "Quantity",
+          "type": "INT",
+          "required": true,
+          "example": "1"
+        },
+        {
+          "name": "unit_price",
+          "label": "Unit Price",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "is_label": true,
+          "required": true,
+          "description": "Price at the time of the order.",
+          "example": "129.00"
+        }
+      ],
+      "struct_types": [],
+      "area": "Orders"
+    },
+    {
+      "name": "payment",
+      "display_name": "Payment",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "A payment attempt against an order. Card details are held by the payment provider, not here.",
+      "attributes": [
+        {
+          "name": "payment_id",
+          "label": "Payment ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "610045"
+        },
+        {
+          "name": "order_id",
+          "label": "Order ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "5000123"
+        },
+        {
+          "name": "payment_method_code",
+          "label": "Payment Method Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "payment_method",
+            "output_attribute": "method_code"
+          },
+          "required": true,
+          "example": "CARD"
+        },
+        {
+          "name": "provider_reference",
+          "label": "Provider Reference",
+          "type": "STRING",
+          "is_label": true,
+          "description": "The payment provider's transaction ID.",
+          "example": "pi_3Pq2..."
+        },
+        {
+          "name": "amount",
+          "label": "Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "example": "146.82"
+        },
+        {
+          "name": "paid_at",
+          "label": "Paid At",
+          "type": "TIMESTAMP",
+          "description": "Empty until the payment succeeds.",
+          "example": "2026-10-02T18:52:15Z"
+        }
+      ],
+      "struct_types": [],
+      "area": "Orders"
+    },
+    {
+      "name": "shipment",
+      "display_name": "Shipment",
+      "entity_type": "standard",
+      "color_code": "#7A5C8E",
+      "description": "A parcel sent for an order. Large orders can ship in several parcels.",
+      "attributes": [
+        {
+          "name": "shipment_id",
+          "label": "Shipment ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "320017"
+        },
+        {
+          "name": "order_id",
+          "label": "Order ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "5000123"
+        },
+        {
+          "name": "carrier",
+          "label": "Carrier",
+          "type": "STRING",
+          "required": true,
+          "example": "UPS"
+        },
+        {
+          "name": "tracking_number",
+          "label": "Tracking Number",
+          "type": "STRING",
+          "is_label": true,
+          "example": "1Z999AA10123456784"
+        },
+        {
+          "name": "shipped_at",
+          "label": "Shipped At",
+          "type": "TIMESTAMP",
+          "example": "2026-10-03T09:10:00Z"
+        },
+        {
+          "name": "delivered_at",
+          "label": "Delivered At",
+          "type": "TIMESTAMP",
+          "example": "2026-10-05T14:31:00Z"
+        }
+      ],
+      "struct_types": [],
+      "area": "Orders"
+    },
+    {
+      "name": "order_status",
+      "display_name": "Order Status",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "The stages an order moves through.",
+      "attributes": [
+        {
+          "name": "status_code",
+          "label": "Status Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "PAID"
+        },
+        {
+          "name": "status_name",
+          "label": "Status Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Paid"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "status_code": "PENDING",
+          "status_name": "Pending payment"
+        },
+        {
+          "status_code": "PAID",
+          "status_name": "Paid"
+        },
+        {
+          "status_code": "SHIPPED",
+          "status_name": "Shipped"
+        },
+        {
+          "status_code": "DELIVERED",
+          "status_name": "Delivered"
+        },
+        {
+          "status_code": "CANCELLED",
+          "status_name": "Cancelled"
+        },
+        {
+          "status_code": "REFUNDED",
+          "status_name": "Refunded"
+        }
+      ],
+      "reference_values_source": "Example values"
+    },
+    {
+      "name": "payment_method",
+      "display_name": "Payment Method",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Ways a customer can pay.",
+      "attributes": [
+        {
+          "name": "method_code",
+          "label": "Method Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "CARD"
+        },
+        {
+          "name": "method_name",
+          "label": "Method Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Credit or debit card"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "method_code": "CARD",
+          "method_name": "Credit or debit card"
+        },
+        {
+          "method_code": "PAYPAL",
+          "method_name": "PayPal"
+        },
+        {
+          "method_code": "APPLE_PAY",
+          "method_name": "Apple Pay"
+        },
+        {
+          "method_code": "GIFT_CARD",
+          "method_name": "Gift card"
+        }
+      ],
+      "reference_values_source": "Example values"
+    },
+    {
+      "name": "country",
+      "display_name": "Country",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Countries, identified by their ISO 3166-1 alpha-2 code.",
+      "attributes": [
+        {
+          "name": "country_code",
+          "label": "Country Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "description": "ISO 3166-1 alpha-2 code.",
+          "example": "US"
+        },
+        {
+          "name": "country_name",
+          "label": "Country Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "description": "English short name.",
+          "example": "United States"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "country_code": "US",
+          "country_name": "United States"
+        },
+        {
+          "country_code": "CA",
+          "country_name": "Canada"
+        },
+        {
+          "country_code": "GB",
+          "country_name": "United Kingdom"
+        },
+        {
+          "country_code": "DE",
+          "country_name": "Germany"
+        },
+        {
+          "country_code": "FR",
+          "country_name": "France"
+        },
+        {
+          "country_code": "AU",
+          "country_name": "Australia"
+        }
+      ],
+      "reference_values_source": "ISO 3166-1 (excerpt)"
+    },
+    {
+      "name": "currency",
+      "display_name": "Currency",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Currencies, identified by their ISO 4217 code.",
+      "attributes": [
+        {
+          "name": "currency_code",
+          "label": "Currency Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "description": "ISO 4217 code.",
+          "example": "USD"
+        },
+        {
+          "name": "currency_name",
+          "label": "Currency Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "US Dollar"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "currency_code": "USD",
+          "currency_name": "US Dollar"
+        },
+        {
+          "currency_code": "CAD",
+          "currency_name": "Canadian Dollar"
+        },
+        {
+          "currency_code": "GBP",
+          "currency_name": "Pound Sterling"
+        },
+        {
+          "currency_code": "EUR",
+          "currency_name": "Euro"
+        },
+        {
+          "currency_code": "AUD",
+          "currency_name": "Australian Dollar"
+        }
+      ],
+      "reference_values_source": "ISO 4217 (excerpt)"
+    }
+  ],
+  "relationships": [
+    {
+      "name": "saved_by",
+      "source": "address",
+      "target": "customer",
+      "cardinality": "N:1",
+      "forward_label": "Saved By",
+      "reverse_label": "Saves",
+      "bidirectional": true,
+      "description": "A customer can save several addresses.",
+      "attributes": [],
+      "foreign_key": "customer_id"
+    },
+    {
+      "name": "subcategory_of",
+      "source": "category",
+      "target": "category",
+      "cardinality": "N:1",
+      "forward_label": "Subcategory Of",
+      "reverse_label": "Has Subcategory",
+      "bidirectional": true,
+      "description": "Categories form a tree.",
+      "attributes": [],
+      "foreign_key": "parent_category_id"
+    },
+    {
+      "name": "listed_in",
+      "source": "product",
+      "target": "category",
+      "cardinality": "N:1",
+      "forward_label": "Listed In",
+      "reverse_label": "Lists",
+      "bidirectional": true,
+      "description": "Each product has one primary category.",
+      "attributes": [],
+      "foreign_key": "category_id"
+    },
+    {
+      "name": "belongs_to_customer",
+      "source": "cart",
+      "target": "customer",
+      "cardinality": "N:1",
+      "forward_label": "Belongs To",
+      "reverse_label": "Has Cart",
+      "bidirectional": true,
+      "description": "Guest carts have no customer.",
+      "attributes": [],
+      "foreign_key": "customer_id"
+    },
+    {
+      "name": "item_in",
+      "source": "cart_item",
+      "target": "cart",
+      "cardinality": "N:1",
+      "forward_label": "Item In",
+      "reverse_label": "Contains",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "cart_id"
+    },
+    {
+      "name": "item_product",
+      "source": "cart_item",
+      "target": "product",
+      "cardinality": "N:1",
+      "forward_label": "Is For",
+      "reverse_label": "In Cart Item",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "product_id"
+    },
+    {
+      "name": "placed_by",
+      "source": "customer_order",
+      "target": "customer",
+      "cardinality": "N:1",
+      "forward_label": "Placed By",
+      "reverse_label": "Places",
+      "bidirectional": true,
+      "description": "Every order belongs to one customer.",
+      "attributes": [],
+      "foreign_key": "customer_id"
+    },
+    {
+      "name": "ships_to",
+      "source": "customer_order",
+      "target": "address",
+      "cardinality": "N:1",
+      "forward_label": "Ships To",
+      "reverse_label": "Receives",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "shipping_address_id"
+    },
+    {
+      "name": "line_of",
+      "source": "order_line",
+      "target": "customer_order",
+      "cardinality": "N:1",
+      "forward_label": "Line Of",
+      "reverse_label": "Has Line",
+      "bidirectional": true,
+      "description": "An order has one or more lines.",
+      "attributes": [],
+      "foreign_key": "order_id"
+    },
+    {
+      "name": "line_product",
+      "source": "order_line",
+      "target": "product",
+      "cardinality": "N:1",
+      "forward_label": "Orders",
+      "reverse_label": "Ordered On",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "product_id"
+    },
+    {
+      "name": "pays_for",
+      "source": "payment",
+      "target": "customer_order",
+      "cardinality": "N:1",
+      "forward_label": "Pays For",
+      "reverse_label": "Paid By",
+      "bidirectional": true,
+      "description": "Failed attempts are kept, so an order can have several payments.",
+      "attributes": [],
+      "foreign_key": "order_id"
+    },
+    {
+      "name": "ships",
+      "source": "shipment",
+      "target": "customer_order",
+      "cardinality": "N:1",
+      "forward_label": "Ships",
+      "reverse_label": "Shipped In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "order_id"
+    }
+  ],
+  "hierarchies": [],
+  "areas": [],
+  "notes": []
+}

@@ -1,0 +1,1104 @@
+{
+  "format": "entitymodeler",
+  "format_version": 1,
+  "source": "https://entitymodel.com",
+  "name": "customer_demo",
+  "title": "Customer",
+  "organization": "Northwind Outfitters",
+  "description": "A customer model for Northwind Outfitters, a fictional outdoor-gear retailer: customers and their accounts and contacts, orders with lines and products, and the reference lists they use. All names and values are made up.",
+  "version": "0.1",
+  "author": "EntityModel.com",
+  "status": "draft",
+  "created_at": "2026-11-03T16:43:35.829Z",
+  "updated_at": "2026-11-03T16:44:41.954Z",
+  "entities": [
+    {
+      "name": "customer_segment",
+      "display_name": "Customer Segment",
+      "entity_type": "reference",
+      "color_code": "#7A5C8E",
+      "area": "Customers",
+      "description": "How the business groups customers for pricing, service levels and reporting.",
+      "attributes": [
+        {
+          "name": "segment_code",
+          "label": "Segment Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "SMB"
+        },
+        {
+          "name": "segment_name",
+          "label": "Segment Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true
+        },
+        {
+          "name": "description",
+          "label": "Description",
+          "type": "STRING"
+        }
+      ],
+      "reference_values": [
+        {
+          "segment_code": "CONSUMER",
+          "segment_name": "Consumer",
+          "description": "Individuals buying for themselves."
+        },
+        {
+          "segment_code": "SMB",
+          "segment_name": "Small & Medium Business",
+          "description": "Businesses with fewer than 250 employees."
+        },
+        {
+          "segment_code": "ENT",
+          "segment_name": "Enterprise",
+          "description": "Large organizations with negotiated terms."
+        }
+      ],
+      "reference_values_source": "Demo values",
+      "struct_types": [],
+      "ui": {
+        "x": 0,
+        "y": 40
+      }
+    },
+    {
+      "name": "loyalty_tier",
+      "display_name": "Loyalty Tier",
+      "entity_type": "reference",
+      "color_code": "#C9784E",
+      "area": "Customers",
+      "description": "Rewards program tiers, earned by points over a rolling 12 months.",
+      "attributes": [
+        {
+          "name": "tier_code",
+          "label": "Tier Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "GOLD"
+        },
+        {
+          "name": "tier_name",
+          "label": "Tier Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true
+        },
+        {
+          "name": "min_points",
+          "label": "Minimum Points",
+          "type": "INT",
+          "description": "Points needed in the last 12 months to reach the tier."
+        }
+      ],
+      "reference_values": [
+        {
+          "tier_code": "BRONZE",
+          "tier_name": "Bronze",
+          "min_points": "0"
+        },
+        {
+          "tier_code": "SILVER",
+          "tier_name": "Silver",
+          "min_points": "1000"
+        },
+        {
+          "tier_code": "GOLD",
+          "tier_name": "Gold",
+          "min_points": "5000"
+        },
+        {
+          "tier_code": "PLATINUM",
+          "tier_name": "Platinum",
+          "min_points": "15000"
+        }
+      ],
+      "reference_values_source": "Demo values",
+      "struct_types": [],
+      "ui": {
+        "x": 0,
+        "y": 260
+      }
+    },
+    {
+      "name": "country",
+      "display_name": "Country",
+      "entity_type": "reference",
+      "color_code": "#1F6366",
+      "area": "Geography",
+      "description": "Countries the business sells to, by ISO 3166-1 code.",
+      "attributes": [
+        {
+          "name": "country_code",
+          "label": "Country Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "US",
+          "description": "ISO 3166-1 alpha-2 code."
+        },
+        {
+          "name": "country_name",
+          "label": "Country Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true
+        },
+        {
+          "name": "iso3",
+          "label": "ISO3 Code",
+          "type": "STRING",
+          "example": "USA"
+        }
+      ],
+      "reference_values": [
+        {
+          "country_code": "US",
+          "country_name": "United States",
+          "iso3": "USA"
+        },
+        {
+          "country_code": "CA",
+          "country_name": "Canada",
+          "iso3": "CAN"
+        },
+        {
+          "country_code": "GB",
+          "country_name": "United Kingdom",
+          "iso3": "GBR"
+        },
+        {
+          "country_code": "DE",
+          "country_name": "Germany",
+          "iso3": "DEU"
+        }
+      ],
+      "reference_values_source": "ISO 3166-1 (subset)",
+      "struct_types": [],
+      "ui": {
+        "x": 440,
+        "y": 660
+      }
+    },
+    {
+      "name": "state_province",
+      "display_name": "State / Province",
+      "entity_type": "reference",
+      "color_code": "#1F6366",
+      "area": "Geography",
+      "description": "First-level subdivisions, valid only within their country.",
+      "dependent_reference": {
+        "parent": "country",
+        "linked_column": "country_code"
+      },
+      "attributes": [
+        {
+          "name": "state_code",
+          "label": "State Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "CA",
+          "description": "ISO 3166-2 subdivision code, without the country prefix."
+        },
+        {
+          "name": "state_name",
+          "label": "State Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true
+        }
+      ],
+      "reference_values": [
+        {
+          "country_code": "US",
+          "state_code": "CA",
+          "state_name": "California"
+        },
+        {
+          "country_code": "US",
+          "state_code": "NY",
+          "state_name": "New York"
+        },
+        {
+          "country_code": "US",
+          "state_code": "WA",
+          "state_name": "Washington"
+        },
+        {
+          "country_code": "CA",
+          "state_code": "ON",
+          "state_name": "Ontario"
+        },
+        {
+          "country_code": "CA",
+          "state_code": "BC",
+          "state_name": "British Columbia"
+        },
+        {
+          "country_code": "DE",
+          "state_code": "BY",
+          "state_name": "Bavaria"
+        }
+      ],
+      "reference_values_source": "ISO 3166-2 (subset)",
+      "struct_types": [],
+      "ui": {
+        "x": 880,
+        "y": 660
+      }
+    },
+    {
+      "name": "currency",
+      "display_name": "Currency",
+      "entity_type": "reference",
+      "color_code": "#3E6A8F",
+      "area": "Orders",
+      "description": "Currencies accounts are billed in, by ISO 4217 code.",
+      "attributes": [
+        {
+          "name": "currency_code",
+          "label": "Currency Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "USD"
+        },
+        {
+          "name": "currency_name",
+          "label": "Currency Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true
+        },
+        {
+          "name": "symbol",
+          "label": "Symbol",
+          "type": "STRING",
+          "example": "$"
+        }
+      ],
+      "reference_values": [
+        {
+          "currency_code": "USD",
+          "currency_name": "US Dollar",
+          "symbol": "$"
+        },
+        {
+          "currency_code": "CAD",
+          "currency_name": "Canadian Dollar",
+          "symbol": "$"
+        },
+        {
+          "currency_code": "GBP",
+          "currency_name": "Pound Sterling",
+          "symbol": "£"
+        },
+        {
+          "currency_code": "EUR",
+          "currency_name": "Euro",
+          "symbol": "€"
+        }
+      ],
+      "reference_values_source": "ISO 4217 (subset)",
+      "struct_types": [],
+      "ui": {
+        "x": 1840,
+        "y": 280
+      }
+    },
+    {
+      "name": "order_status",
+      "display_name": "Order Status",
+      "entity_type": "reference",
+      "color_code": "#3E6A8F",
+      "area": "Orders",
+      "description": "Where an order is in its lifecycle, from checkout to delivery or return.",
+      "attributes": [
+        {
+          "name": "status_code",
+          "label": "Status Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "SHIPPED"
+        },
+        {
+          "name": "status_name",
+          "label": "Status Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true
+        },
+        {
+          "name": "is_final",
+          "label": "Is Final",
+          "type": "BOOLEAN",
+          "description": "True when the order can no longer change."
+        }
+      ],
+      "reference_values": [
+        {
+          "status_code": "PENDING",
+          "status_name": "Pending payment",
+          "is_final": "false"
+        },
+        {
+          "status_code": "PAID",
+          "status_name": "Paid",
+          "is_final": "false"
+        },
+        {
+          "status_code": "SHIPPED",
+          "status_name": "Shipped",
+          "is_final": "false"
+        },
+        {
+          "status_code": "DELIVERED",
+          "status_name": "Delivered",
+          "is_final": "true"
+        },
+        {
+          "status_code": "CANCELLED",
+          "status_name": "Cancelled",
+          "is_final": "true"
+        },
+        {
+          "status_code": "RETURNED",
+          "status_name": "Returned",
+          "is_final": "true"
+        }
+      ],
+      "reference_values_source": "Demo values",
+      "struct_types": [],
+      "ui": {
+        "x": 1840,
+        "y": 40
+      }
+    },
+    {
+      "name": "product_category",
+      "display_name": "Product Category",
+      "entity_type": "reference",
+      "color_code": "#5E7A5A",
+      "area": "Orders",
+      "description": "The merchandising categories products are sold under.",
+      "attributes": [
+        {
+          "name": "category_code",
+          "label": "Category Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "TENT"
+        },
+        {
+          "name": "category_name",
+          "label": "Category Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true
+        }
+      ],
+      "reference_values": [
+        {
+          "category_code": "TENT",
+          "category_name": "Tents & Shelters"
+        },
+        {
+          "category_code": "PACK",
+          "category_name": "Packs & Bags"
+        },
+        {
+          "category_code": "APRL",
+          "category_name": "Apparel"
+        },
+        {
+          "category_code": "FTWR",
+          "category_name": "Footwear"
+        },
+        {
+          "category_code": "COOK",
+          "category_name": "Camp Kitchen"
+        }
+      ],
+      "reference_values_source": "Demo values",
+      "struct_types": [],
+      "ui": {
+        "x": 1840,
+        "y": 780
+      }
+    },
+    {
+      "name": "customer",
+      "display_name": "Customer",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "area": "Customers",
+      "description": "A person or business that buys from Northwind Outfitters. One customer can hold several accounts and, for businesses, belong to a corporate family.",
+      "struct_types": [
+        {
+          "name": "address",
+          "description": "A postal address.",
+          "fields": [
+            {
+              "name": "line1",
+              "label": "Line 1",
+              "type": "STRING"
+            },
+            {
+              "name": "line2",
+              "label": "Line 2",
+              "type": "STRING"
+            },
+            {
+              "name": "city",
+              "label": "City",
+              "type": "STRING"
+            },
+            {
+              "name": "state",
+              "label": "State / Province",
+              "type": "REFERENCE_ENTITY",
+              "reference": {
+                "entity": "state_province",
+                "output_attribute": "state_code"
+              }
+            },
+            {
+              "name": "postal_code",
+              "label": "Postal Code",
+              "type": "STRING"
+            },
+            {
+              "name": "country",
+              "label": "Country",
+              "type": "REFERENCE_ENTITY",
+              "reference": {
+                "entity": "country",
+                "output_attribute": "country_code"
+              }
+            }
+          ]
+        }
+      ],
+      "attributes": [
+        {
+          "name": "customer_id",
+          "label": "Customer ID",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "CUS-104233",
+          "description": "Stable identifier assigned at sign-up."
+        },
+        {
+          "name": "customer_name",
+          "label": "Customer Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "example": "Avery Chen",
+          "description": "Full name for individuals, legal name for businesses."
+        },
+        {
+          "name": "segment",
+          "label": "Segment",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "customer_segment",
+            "output_attribute": "segment_name"
+          },
+          "required": true
+        },
+        {
+          "name": "loyalty_tier",
+          "label": "Loyalty Tier",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "loyalty_tier",
+            "output_attribute": "tier_name"
+          }
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "STRING",
+          "pii": true,
+          "unique": true,
+          "example": "avery.chen@example.com"
+        },
+        {
+          "name": "phone",
+          "label": "Phone",
+          "type": "STRING",
+          "pii": true,
+          "example": "+1 206 555 0142"
+        },
+        {
+          "name": "billing_address",
+          "label": "Billing Address",
+          "type": "STRUCT",
+          "struct_type": "address",
+          "pii": true
+        },
+        {
+          "name": "lifetime_value",
+          "label": "Lifetime Value",
+          "type": "DECIMAL",
+          "precision": 18,
+          "scale": 2,
+          "example": "4820.50",
+          "description": "Net revenue from the customer to date, in USD."
+        },
+        {
+          "name": "marketing_opt_in",
+          "label": "Marketing Opt-In",
+          "type": "BOOLEAN",
+          "description": "Consent to marketing email, as last recorded."
+        },
+        {
+          "name": "parent_customer_id",
+          "label": "Parent Customer ID",
+          "type": "STRING",
+          "example": "CUS-100017",
+          "description": "The customer's parent company, for businesses in a corporate family."
+        },
+        {
+          "name": "created_at",
+          "label": "Created At",
+          "type": "TIMESTAMP",
+          "required": true,
+          "example": "2024-03-18T09:41:00Z"
+        }
+      ],
+      "ui": {
+        "x": 440,
+        "y": 40
+      }
+    },
+    {
+      "name": "account",
+      "display_name": "Account",
+      "entity_type": "standard",
+      "color_code": "#7A5C8E",
+      "area": "Customers",
+      "description": "A billing account a customer buys through. Businesses often hold one account per department or region.",
+      "attributes": [
+        {
+          "name": "account_id",
+          "label": "Account ID",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "ACC-58210"
+        },
+        {
+          "name": "account_name",
+          "label": "Account Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Avery Chen – Personal"
+        },
+        {
+          "name": "customer_id",
+          "label": "Customer ID",
+          "type": "STRING",
+          "required": true,
+          "example": "CUS-104233"
+        },
+        {
+          "name": "currency",
+          "label": "Currency",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "currency",
+            "output_attribute": "currency_code"
+          },
+          "required": true
+        },
+        {
+          "name": "credit_limit",
+          "label": "Credit Limit",
+          "type": "DECIMAL",
+          "precision": 18,
+          "scale": 2,
+          "example": "5000.00",
+          "description": "Zero for prepaid consumer accounts."
+        },
+        {
+          "name": "opened_on",
+          "label": "Opened On",
+          "type": "DATE",
+          "required": true,
+          "example": "2024-03-18"
+        },
+        {
+          "name": "is_active",
+          "label": "Is Active",
+          "type": "BOOLEAN",
+          "required": true
+        }
+      ],
+      "struct_types": [],
+      "ui": {
+        "x": 880,
+        "y": 40
+      }
+    },
+    {
+      "name": "contact",
+      "display_name": "Contact",
+      "entity_type": "standard",
+      "color_code": "#A2667A",
+      "area": "Customers",
+      "description": "A person who buys or approves purchases on behalf of a business customer.",
+      "attributes": [
+        {
+          "name": "contact_id",
+          "label": "Contact ID",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "CON-30981"
+        },
+        {
+          "name": "full_name",
+          "label": "Full Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "example": "Jordan Park"
+        },
+        {
+          "name": "customer_id",
+          "label": "Customer ID",
+          "type": "STRING",
+          "required": true,
+          "example": "CUS-100017"
+        },
+        {
+          "name": "job_title",
+          "label": "Job Title",
+          "type": "STRING",
+          "example": "Procurement Manager"
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "STRING",
+          "pii": true,
+          "example": "jordan.park@example.com"
+        },
+        {
+          "name": "phone",
+          "label": "Phone",
+          "type": "STRING",
+          "pii": true,
+          "example": "+1 416 555 0199"
+        }
+      ],
+      "struct_types": [],
+      "ui": {
+        "x": 880,
+        "y": 330
+      }
+    },
+    {
+      "name": "customer_order",
+      "display_name": "Order",
+      "entity_type": "standard",
+      "color_code": "#C9784E",
+      "area": "Orders",
+      "description": "A purchase placed on an account, online or in store.",
+      "struct_types": [
+        {
+          "name": "address",
+          "description": "A postal address.",
+          "fields": [
+            {
+              "name": "line1",
+              "label": "Line 1",
+              "type": "STRING"
+            },
+            {
+              "name": "line2",
+              "label": "Line 2",
+              "type": "STRING"
+            },
+            {
+              "name": "city",
+              "label": "City",
+              "type": "STRING"
+            },
+            {
+              "name": "state",
+              "label": "State / Province",
+              "type": "REFERENCE_ENTITY",
+              "reference": {
+                "entity": "state_province",
+                "output_attribute": "state_code"
+              }
+            },
+            {
+              "name": "postal_code",
+              "label": "Postal Code",
+              "type": "STRING"
+            },
+            {
+              "name": "country",
+              "label": "Country",
+              "type": "REFERENCE_ENTITY",
+              "reference": {
+                "entity": "country",
+                "output_attribute": "country_code"
+              }
+            }
+          ]
+        }
+      ],
+      "attributes": [
+        {
+          "name": "order_id",
+          "label": "Order ID",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "ORD-2026-000123"
+        },
+        {
+          "name": "order_number",
+          "label": "Order Number",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "unique": true,
+          "example": "NW-482113",
+          "description": "The number printed on receipts and emails."
+        },
+        {
+          "name": "account_id",
+          "label": "Account ID",
+          "type": "STRING",
+          "required": true,
+          "example": "ACC-58210"
+        },
+        {
+          "name": "placed_by_contact_id",
+          "label": "Placed By Contact ID",
+          "type": "STRING",
+          "example": "CON-30981",
+          "description": "Set when a business contact placed the order."
+        },
+        {
+          "name": "status",
+          "label": "Status",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "order_status",
+            "output_attribute": "status_code"
+          },
+          "required": true
+        },
+        {
+          "name": "ordered_at",
+          "label": "Ordered At",
+          "type": "TIMESTAMP",
+          "required": true,
+          "example": "2026-10-28T14:05:00Z"
+        },
+        {
+          "name": "shipping_address",
+          "label": "Shipping Address",
+          "type": "STRUCT",
+          "struct_type": "address",
+          "pii": true
+        },
+        {
+          "name": "order_total",
+          "label": "Order Total",
+          "type": "DECIMAL",
+          "precision": 18,
+          "scale": 2,
+          "required": true,
+          "example": "389.95",
+          "description": "Sum of the lines plus shipping and tax, in the account's currency."
+        }
+      ],
+      "ui": {
+        "x": 1400,
+        "y": 40
+      }
+    },
+    {
+      "name": "order_line",
+      "display_name": "Order Line",
+      "entity_type": "standard",
+      "color_code": "#9A4A10",
+      "area": "Orders",
+      "description": "One product and quantity on an order.",
+      "attributes": [
+        {
+          "name": "order_line_id",
+          "label": "Order Line ID",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "OL-7741902"
+        },
+        {
+          "name": "line_number",
+          "label": "Line Number",
+          "type": "INT",
+          "is_label": true,
+          "required": true,
+          "example": "1"
+        },
+        {
+          "name": "order_id",
+          "label": "Order ID",
+          "type": "STRING",
+          "required": true,
+          "example": "ORD-2026-000123"
+        },
+        {
+          "name": "sku",
+          "label": "SKU",
+          "type": "STRING",
+          "required": true,
+          "example": "TNT-2P-ULT"
+        },
+        {
+          "name": "quantity",
+          "label": "Quantity",
+          "type": "INT",
+          "required": true,
+          "example": "2"
+        },
+        {
+          "name": "unit_price",
+          "label": "Unit Price",
+          "type": "DECIMAL",
+          "precision": 18,
+          "scale": 2,
+          "required": true,
+          "example": "149.00"
+        }
+      ],
+      "struct_types": [],
+      "ui": {
+        "x": 1400,
+        "y": 540
+      }
+    },
+    {
+      "name": "product",
+      "display_name": "Product",
+      "entity_type": "standard",
+      "color_code": "#5E7A5A",
+      "area": "Orders",
+      "description": "An item Northwind Outfitters sells, identified by SKU.",
+      "attributes": [
+        {
+          "name": "sku",
+          "label": "SKU",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "TNT-2P-ULT",
+          "description": "Stock keeping unit."
+        },
+        {
+          "name": "product_name",
+          "label": "Product Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Ridgeline 2P Ultralight Tent"
+        },
+        {
+          "name": "category",
+          "label": "Category",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "product_category",
+            "output_attribute": "category_name"
+          },
+          "required": true
+        },
+        {
+          "name": "list_price",
+          "label": "List Price",
+          "type": "DECIMAL",
+          "precision": 18,
+          "scale": 2,
+          "required": true,
+          "example": "349.00",
+          "description": "Price before discounts, in USD."
+        },
+        {
+          "name": "is_active",
+          "label": "Is Active",
+          "type": "BOOLEAN",
+          "required": true
+        }
+      ],
+      "struct_types": [],
+      "ui": {
+        "x": 1840,
+        "y": 540
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "name": "held_by",
+      "source": "account",
+      "target": "customer",
+      "cardinality": "N:1",
+      "forward_label": "Held By",
+      "reverse_label": "Holds",
+      "bidirectional": true,
+      "foreign_key": "customer_id",
+      "description": "Every account belongs to exactly one customer.",
+      "attributes": []
+    },
+    {
+      "name": "works_for",
+      "source": "contact",
+      "target": "customer",
+      "cardinality": "N:1",
+      "forward_label": "Works For",
+      "reverse_label": "Has Contact",
+      "bidirectional": true,
+      "foreign_key": "customer_id",
+      "description": "Contacts exist for business customers only.",
+      "attributes": []
+    },
+    {
+      "name": "subsidiary_of",
+      "source": "customer",
+      "target": "customer",
+      "cardinality": "N:1",
+      "forward_label": "Subsidiary Of",
+      "reverse_label": "Parent Of",
+      "bidirectional": true,
+      "foreign_key": "parent_customer_id",
+      "description": "Links a business customer to its parent company.",
+      "attributes": []
+    },
+    {
+      "name": "placed_on",
+      "source": "customer_order",
+      "target": "account",
+      "cardinality": "N:1",
+      "forward_label": "Placed On",
+      "reverse_label": "Has Order",
+      "bidirectional": true,
+      "foreign_key": "account_id",
+      "description": "The account an order is billed to.",
+      "attributes": []
+    },
+    {
+      "name": "placed_by",
+      "source": "customer_order",
+      "target": "contact",
+      "cardinality": "N:1",
+      "forward_label": "Placed By",
+      "reverse_label": "Placed",
+      "bidirectional": true,
+      "foreign_key": "placed_by_contact_id",
+      "description": "The business contact who placed the order, when there is one.",
+      "attributes": []
+    },
+    {
+      "name": "part_of",
+      "source": "order_line",
+      "target": "customer_order",
+      "cardinality": "N:1",
+      "forward_label": "Part Of",
+      "reverse_label": "Contains",
+      "bidirectional": true,
+      "foreign_key": "order_id",
+      "description": "",
+      "attributes": []
+    },
+    {
+      "name": "for_product",
+      "source": "order_line",
+      "target": "product",
+      "cardinality": "N:1",
+      "forward_label": "For Product",
+      "reverse_label": "Ordered In",
+      "bidirectional": true,
+      "foreign_key": "sku",
+      "description": "",
+      "attributes": []
+    }
+  ],
+  "hierarchies": [
+    {
+      "name": "corporate_family",
+      "display_name": "Corporate Family",
+      "root": "customer",
+      "status": "draft",
+      "max_depth": 6,
+      "allow_multi_parent": false,
+      "description": "Business customers rolled up to their ultimate parent, for account management and credit exposure.",
+      "levels": [
+        {
+          "level": 2,
+          "branches": [
+            {
+              "name": "Subsidiaries",
+              "entity": "customer",
+              "relationship": "subsidiary_of",
+              "direction": "forward",
+              "parent_branch": "Root"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "areas": [
+    {
+      "id": "area_customers",
+      "name": "Customers",
+      "color": "#3E6A8F",
+      "x": -40,
+      "y": -40,
+      "w": 1240,
+      "h": 640,
+      "description": "Who buys, and how they are organized."
+    },
+    {
+      "id": "area_geography",
+      "name": "Geography",
+      "color": "#1F6366",
+      "x": 400,
+      "y": 620,
+      "w": 800,
+      "h": 320,
+      "description": ""
+    },
+    {
+      "id": "area_orders",
+      "name": "Orders",
+      "color": "#7A5C8E",
+      "x": 1360,
+      "y": -40,
+      "w": 800,
+      "h": 1020,
+      "description": "What they buy."
+    }
+  ],
+  "notes": []
+}

@@ -1,0 +1,594 @@
+{
+  "format": "entitymodeler",
+  "format_version": 1,
+  "source": "https://entitymodel.com",
+  "name": "data_vault",
+  "title": "Data Vault 2.0 (Orders)",
+  "organization": "EntityModel.com examples",
+  "description": "A Data Vault 2.0 raw vault for customers, products and orders: hubs for business keys, links for relationships, and satellites for descriptive history.",
+  "version": "1.0",
+  "author": "EntityModel.com",
+  "status": "approved",
+  "created_at": "2026-11-03T00:00:00.000Z",
+  "updated_at": "2026-11-03T00:00:00.000Z",
+  "entities": [
+    {
+      "name": "hub_customer",
+      "display_name": "Hub Customer",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "One row per customer business key, ever. Never updated.",
+      "attributes": [
+        {
+          "name": "customer_hk",
+          "label": "Customer Hk",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "description": "Hash of the business key.",
+          "example": "9f2c…e1"
+        },
+        {
+          "name": "customer_bk",
+          "label": "Customer Bk",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "unique": true,
+          "description": "Business key from the source.",
+          "example": "CUS-104233"
+        },
+        {
+          "name": "load_dts",
+          "label": "Load Dts",
+          "type": "TIMESTAMP",
+          "required": true,
+          "description": "When the key was first loaded.",
+          "example": "2026-11-03T02:00:00Z"
+        },
+        {
+          "name": "record_source",
+          "label": "Record Source",
+          "type": "STRING",
+          "required": true,
+          "example": "crm.customers"
+        }
+      ],
+      "struct_types": [],
+      "area": "Hubs"
+    },
+    {
+      "name": "hub_product",
+      "display_name": "Hub Product",
+      "entity_type": "standard",
+      "color_code": "#7A5C8E",
+      "description": "One row per product business key (SKU).",
+      "attributes": [
+        {
+          "name": "product_hk",
+          "label": "Product Hk",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "41ab…7c"
+        },
+        {
+          "name": "product_bk",
+          "label": "Product Bk",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "unique": true,
+          "example": "TEE-ORG-M-BLU"
+        },
+        {
+          "name": "load_dts",
+          "label": "Load Dts",
+          "type": "TIMESTAMP",
+          "required": true,
+          "example": "2026-11-03T02:00:00Z"
+        },
+        {
+          "name": "record_source",
+          "label": "Record Source",
+          "type": "STRING",
+          "required": true,
+          "example": "erp.items"
+        }
+      ],
+      "struct_types": [],
+      "area": "Hubs"
+    },
+    {
+      "name": "hub_order",
+      "display_name": "Hub Order",
+      "entity_type": "standard",
+      "color_code": "#1F6366",
+      "description": "One row per order business key.",
+      "attributes": [
+        {
+          "name": "order_hk",
+          "label": "Order Hk",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "c07d…90"
+        },
+        {
+          "name": "order_bk",
+          "label": "Order Bk",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "unique": true,
+          "example": "SO-2026-000123"
+        },
+        {
+          "name": "load_dts",
+          "label": "Load Dts",
+          "type": "TIMESTAMP",
+          "required": true,
+          "example": "2026-11-03T02:00:00Z"
+        },
+        {
+          "name": "record_source",
+          "label": "Record Source",
+          "type": "STRING",
+          "required": true,
+          "example": "shop.orders"
+        }
+      ],
+      "struct_types": [],
+      "area": "Hubs"
+    },
+    {
+      "name": "link_order_customer",
+      "display_name": "Link Order Customer",
+      "entity_type": "standard",
+      "color_code": "#9A4A10",
+      "description": "Relates an order to the customer who placed it.",
+      "attributes": [
+        {
+          "name": "order_customer_hk",
+          "label": "Order Customer Hk",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "description": "Hash of both business keys.",
+          "example": "5d3e…aa"
+        },
+        {
+          "name": "order_hk",
+          "label": "Order Hk",
+          "type": "STRING",
+          "required": true,
+          "example": "c07d…90"
+        },
+        {
+          "name": "customer_hk",
+          "label": "Customer Hk",
+          "type": "STRING",
+          "required": true,
+          "example": "9f2c…e1"
+        },
+        {
+          "name": "load_dts",
+          "label": "Load Dts",
+          "type": "TIMESTAMP",
+          "is_label": true,
+          "required": true,
+          "example": "2026-11-03T02:00:00Z"
+        },
+        {
+          "name": "record_source",
+          "label": "Record Source",
+          "type": "STRING",
+          "required": true,
+          "example": "shop.orders"
+        }
+      ],
+      "struct_types": [],
+      "area": "Links"
+    },
+    {
+      "name": "link_order_product",
+      "display_name": "Link Order Product",
+      "entity_type": "standard",
+      "color_code": "#4A4D52",
+      "description": "Relates an order to each product on it (the order line).",
+      "attributes": [
+        {
+          "name": "order_product_hk",
+          "label": "Order Product Hk",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "e81f…02"
+        },
+        {
+          "name": "order_hk",
+          "label": "Order Hk",
+          "type": "STRING",
+          "required": true,
+          "example": "c07d…90"
+        },
+        {
+          "name": "product_hk",
+          "label": "Product Hk",
+          "type": "STRING",
+          "required": true,
+          "example": "41ab…7c"
+        },
+        {
+          "name": "line_number",
+          "label": "Line Number",
+          "type": "INT",
+          "required": true,
+          "description": "Dependent child key.",
+          "example": "1"
+        },
+        {
+          "name": "load_dts",
+          "label": "Load Dts",
+          "type": "TIMESTAMP",
+          "is_label": true,
+          "required": true,
+          "example": "2026-11-03T02:00:00Z"
+        },
+        {
+          "name": "record_source",
+          "label": "Record Source",
+          "type": "STRING",
+          "required": true,
+          "example": "shop.order_lines"
+        }
+      ],
+      "struct_types": [],
+      "area": "Links"
+    },
+    {
+      "name": "sat_customer_details",
+      "display_name": "Sat Customer Details",
+      "entity_type": "standard",
+      "color_code": "#2F5D73",
+      "description": "Customer attributes over time. A new row only when the hash diff changes.",
+      "attributes": [
+        {
+          "name": "customer_hk",
+          "label": "Customer Hk",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "9f2c…e1"
+        },
+        {
+          "name": "load_dts",
+          "label": "Load Dts",
+          "type": "TIMESTAMP",
+          "is_primary_key": true,
+          "required": true,
+          "example": "2026-11-03T02:00:00Z"
+        },
+        {
+          "name": "hash_diff",
+          "label": "Hash Diff",
+          "type": "STRING",
+          "required": true,
+          "description": "Hash of the descriptive columns.",
+          "example": "77e0…4b"
+        },
+        {
+          "name": "customer_name",
+          "label": "Customer Name",
+          "type": "STRING",
+          "is_label": true,
+          "pii": true,
+          "example": "Ana Silva"
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "STRING",
+          "pii": true,
+          "example": "ana@example.com"
+        },
+        {
+          "name": "segment",
+          "label": "Segment",
+          "type": "STRING",
+          "example": "Loyalty Gold"
+        },
+        {
+          "name": "record_source",
+          "label": "Record Source",
+          "type": "STRING",
+          "required": true,
+          "example": "crm.customers"
+        }
+      ],
+      "struct_types": [],
+      "area": "Satellites"
+    },
+    {
+      "name": "sat_product_details",
+      "display_name": "Sat Product Details",
+      "entity_type": "standard",
+      "color_code": "#5C7F9E",
+      "description": "Product attributes over time.",
+      "attributes": [
+        {
+          "name": "product_hk",
+          "label": "Product Hk",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "41ab…7c"
+        },
+        {
+          "name": "load_dts",
+          "label": "Load Dts",
+          "type": "TIMESTAMP",
+          "is_primary_key": true,
+          "required": true,
+          "example": "2026-11-03T02:00:00Z"
+        },
+        {
+          "name": "hash_diff",
+          "label": "Hash Diff",
+          "type": "STRING",
+          "required": true,
+          "example": "1c9a…dd"
+        },
+        {
+          "name": "product_name",
+          "label": "Product Name",
+          "type": "STRING",
+          "is_label": true,
+          "example": "Organic Tee"
+        },
+        {
+          "name": "category",
+          "label": "Category",
+          "type": "STRING",
+          "example": "Apparel"
+        },
+        {
+          "name": "list_price",
+          "label": "List Price",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "example": "24.99"
+        },
+        {
+          "name": "record_source",
+          "label": "Record Source",
+          "type": "STRING",
+          "required": true,
+          "example": "erp.items"
+        }
+      ],
+      "struct_types": [],
+      "area": "Satellites"
+    },
+    {
+      "name": "sat_order_details",
+      "display_name": "Sat Order Details",
+      "entity_type": "standard",
+      "color_code": "#A12F18",
+      "description": "Order header attributes over time, such as status changes.",
+      "attributes": [
+        {
+          "name": "order_hk",
+          "label": "Order Hk",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "c07d…90"
+        },
+        {
+          "name": "load_dts",
+          "label": "Load Dts",
+          "type": "TIMESTAMP",
+          "is_primary_key": true,
+          "required": true,
+          "example": "2026-11-03T02:00:00Z"
+        },
+        {
+          "name": "hash_diff",
+          "label": "Hash Diff",
+          "type": "STRING",
+          "required": true,
+          "example": "0b44…19"
+        },
+        {
+          "name": "order_status",
+          "label": "Order Status",
+          "type": "STRING",
+          "is_label": true,
+          "example": "SHIPPED"
+        },
+        {
+          "name": "ordered_at",
+          "label": "Ordered At",
+          "type": "TIMESTAMP",
+          "example": "2026-11-02T18:52:11Z"
+        },
+        {
+          "name": "total_amount",
+          "label": "Total Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "example": "146.82"
+        },
+        {
+          "name": "record_source",
+          "label": "Record Source",
+          "type": "STRING",
+          "required": true,
+          "example": "shop.orders"
+        }
+      ],
+      "struct_types": [],
+      "area": "Satellites"
+    },
+    {
+      "name": "sat_order_product",
+      "display_name": "Sat Order Product",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "Attributes of an order line (on the link): quantity and price.",
+      "attributes": [
+        {
+          "name": "order_product_hk",
+          "label": "Order Product Hk",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "e81f…02"
+        },
+        {
+          "name": "load_dts",
+          "label": "Load Dts",
+          "type": "TIMESTAMP",
+          "is_primary_key": true,
+          "required": true,
+          "example": "2026-11-03T02:00:00Z"
+        },
+        {
+          "name": "hash_diff",
+          "label": "Hash Diff",
+          "type": "STRING",
+          "required": true,
+          "example": "9a01…3e"
+        },
+        {
+          "name": "quantity",
+          "label": "Quantity",
+          "type": "INT",
+          "is_label": true,
+          "example": "2"
+        },
+        {
+          "name": "unit_price",
+          "label": "Unit Price",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "example": "24.99"
+        },
+        {
+          "name": "record_source",
+          "label": "Record Source",
+          "type": "STRING",
+          "required": true,
+          "example": "shop.order_lines"
+        }
+      ],
+      "struct_types": [],
+      "area": "Satellites"
+    }
+  ],
+  "relationships": [
+    {
+      "name": "links_order",
+      "source": "link_order_customer",
+      "target": "hub_order",
+      "cardinality": "N:1",
+      "forward_label": "Links",
+      "reverse_label": "Linked In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "order_hk"
+    },
+    {
+      "name": "links_customer",
+      "source": "link_order_customer",
+      "target": "hub_customer",
+      "cardinality": "N:1",
+      "forward_label": "Links",
+      "reverse_label": "Linked In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "customer_hk"
+    },
+    {
+      "name": "line_order",
+      "source": "link_order_product",
+      "target": "hub_order",
+      "cardinality": "N:1",
+      "forward_label": "Links",
+      "reverse_label": "Linked In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "order_hk"
+    },
+    {
+      "name": "line_product",
+      "source": "link_order_product",
+      "target": "hub_product",
+      "cardinality": "N:1",
+      "forward_label": "Links",
+      "reverse_label": "Linked In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "product_hk"
+    },
+    {
+      "name": "describes_customer",
+      "source": "sat_customer_details",
+      "target": "hub_customer",
+      "cardinality": "N:1",
+      "forward_label": "Describes",
+      "reverse_label": "Described By",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "customer_hk"
+    },
+    {
+      "name": "describes_product",
+      "source": "sat_product_details",
+      "target": "hub_product",
+      "cardinality": "N:1",
+      "forward_label": "Describes",
+      "reverse_label": "Described By",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "product_hk"
+    },
+    {
+      "name": "describes_order",
+      "source": "sat_order_details",
+      "target": "hub_order",
+      "cardinality": "N:1",
+      "forward_label": "Describes",
+      "reverse_label": "Described By",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "order_hk"
+    },
+    {
+      "name": "describes_line",
+      "source": "sat_order_product",
+      "target": "link_order_product",
+      "cardinality": "N:1",
+      "forward_label": "Describes",
+      "reverse_label": "Described By",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "order_product_hk"
+    }
+  ],
+  "hierarchies": [],
+  "areas": [],
+  "notes": []
+}

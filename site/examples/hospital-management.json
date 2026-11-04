@@ -1,0 +1,954 @@
+{
+  "format": "entitymodeler",
+  "format_version": 1,
+  "source": "https://entitymodel.com",
+  "name": "hospital_management",
+  "title": "Hospital Management System",
+  "organization": "EntityModel.com examples",
+  "description": "A hospital: patients, doctors and departments, appointments, admissions to wards and beds, diagnoses, prescriptions and billing.",
+  "version": "1.0",
+  "author": "EntityModel.com",
+  "status": "approved",
+  "created_at": "2026-11-03T00:00:00.000Z",
+  "updated_at": "2026-11-03T00:00:00.000Z",
+  "entities": [
+    {
+      "name": "patient",
+      "display_name": "Patient",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "A person who receives care. Holds personal and health data, so most attributes are PII.",
+      "attributes": [
+        {
+          "name": "patient_id",
+          "label": "Patient ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "300451"
+        },
+        {
+          "name": "medical_record_number",
+          "label": "Medical Record Number",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "pii": true,
+          "description": "MRN.",
+          "example": "MRN-0300451"
+        },
+        {
+          "name": "full_name",
+          "label": "Full Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "example": "Daniel Brooks"
+        },
+        {
+          "name": "date_of_birth",
+          "label": "Date Of Birth",
+          "type": "DATE",
+          "required": true,
+          "pii": true,
+          "example": "1975-02-14"
+        },
+        {
+          "name": "sex",
+          "label": "Sex",
+          "type": "STRING",
+          "pii": true,
+          "example": "M"
+        },
+        {
+          "name": "phone",
+          "label": "Phone",
+          "type": "STRING",
+          "pii": true,
+          "example": "+1 555 0190"
+        },
+        {
+          "name": "blood_type_code",
+          "label": "Blood Type Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "blood_type",
+            "output_attribute": "blood_type_code"
+          },
+          "pii": true,
+          "example": "O+"
+        },
+        {
+          "name": "insurance_provider_id",
+          "label": "Insurance Provider ID",
+          "type": "INT",
+          "example": "8"
+        },
+        {
+          "name": "insurance_member_id",
+          "label": "Insurance Member ID",
+          "type": "STRING",
+          "pii": true,
+          "example": "XGH4410021"
+        }
+      ],
+      "struct_types": [],
+      "area": "Patients"
+    },
+    {
+      "name": "department",
+      "display_name": "Department",
+      "entity_type": "standard",
+      "color_code": "#7A5C8E",
+      "description": "A clinical department, such as Cardiology.",
+      "attributes": [
+        {
+          "name": "department_id",
+          "label": "Department ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "4"
+        },
+        {
+          "name": "department_name",
+          "label": "Department Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Cardiology"
+        },
+        {
+          "name": "floor",
+          "label": "Floor",
+          "type": "INT",
+          "example": "3"
+        }
+      ],
+      "struct_types": [],
+      "area": "Staff"
+    },
+    {
+      "name": "doctor",
+      "display_name": "Doctor",
+      "entity_type": "standard",
+      "color_code": "#1F6366",
+      "description": "A physician on staff.",
+      "attributes": [
+        {
+          "name": "doctor_id",
+          "label": "Doctor ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "812"
+        },
+        {
+          "name": "license_number",
+          "label": "License Number",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "example": "MD-778201"
+        },
+        {
+          "name": "full_name",
+          "label": "Full Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "example": "Dr. Aisha Patel"
+        },
+        {
+          "name": "specialty_code",
+          "label": "Specialty Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "specialty",
+            "output_attribute": "specialty_code"
+          },
+          "required": true,
+          "example": "CARD"
+        },
+        {
+          "name": "department_id",
+          "label": "Department ID",
+          "type": "INT",
+          "required": true,
+          "example": "4"
+        },
+        {
+          "name": "phone",
+          "label": "Phone",
+          "type": "STRING",
+          "pii": true,
+          "example": "+1 555 0123"
+        }
+      ],
+      "struct_types": [],
+      "area": "Staff"
+    },
+    {
+      "name": "appointment",
+      "display_name": "Appointment",
+      "entity_type": "standard",
+      "color_code": "#9A4A10",
+      "description": "A scheduled outpatient visit.",
+      "attributes": [
+        {
+          "name": "appointment_id",
+          "label": "Appointment ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "1200045"
+        },
+        {
+          "name": "patient_id",
+          "label": "Patient ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "300451"
+        },
+        {
+          "name": "doctor_id",
+          "label": "Doctor ID",
+          "type": "INT",
+          "required": true,
+          "example": "812"
+        },
+        {
+          "name": "scheduled_at",
+          "label": "Scheduled At",
+          "type": "TIMESTAMP",
+          "is_label": true,
+          "required": true,
+          "example": "2026-11-12T09:30:00Z"
+        },
+        {
+          "name": "status",
+          "label": "Status",
+          "type": "STRING",
+          "required": true,
+          "description": "Scheduled, completed, cancelled or no-show.",
+          "example": "SCHEDULED"
+        },
+        {
+          "name": "reason",
+          "label": "Reason",
+          "type": "STRING",
+          "pii": true,
+          "example": "Chest pain follow-up"
+        }
+      ],
+      "struct_types": [],
+      "area": "Care"
+    },
+    {
+      "name": "ward",
+      "display_name": "Ward",
+      "entity_type": "standard",
+      "color_code": "#4A4D52",
+      "description": "An inpatient ward.",
+      "attributes": [
+        {
+          "name": "ward_id",
+          "label": "Ward ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "6"
+        },
+        {
+          "name": "ward_name",
+          "label": "Ward Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Cardiac Care Unit"
+        },
+        {
+          "name": "department_id",
+          "label": "Department ID",
+          "type": "INT",
+          "required": true,
+          "example": "4"
+        }
+      ],
+      "struct_types": [],
+      "area": "Facilities"
+    },
+    {
+      "name": "bed",
+      "display_name": "Bed",
+      "entity_type": "standard",
+      "color_code": "#2F5D73",
+      "description": "A bed in a ward.",
+      "attributes": [
+        {
+          "name": "bed_id",
+          "label": "Bed ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "6012"
+        },
+        {
+          "name": "bed_number",
+          "label": "Bed Number",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "CCU-12"
+        },
+        {
+          "name": "ward_id",
+          "label": "Ward ID",
+          "type": "INT",
+          "required": true,
+          "example": "6"
+        },
+        {
+          "name": "is_occupied",
+          "label": "Is Occupied",
+          "type": "BOOLEAN",
+          "required": true,
+          "example": "true"
+        }
+      ],
+      "struct_types": [],
+      "area": "Facilities"
+    },
+    {
+      "name": "admission",
+      "display_name": "Admission",
+      "entity_type": "standard",
+      "color_code": "#5C7F9E",
+      "description": "An inpatient stay, from admission to discharge.",
+      "attributes": [
+        {
+          "name": "admission_id",
+          "label": "Admission ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "88010"
+        },
+        {
+          "name": "patient_id",
+          "label": "Patient ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "300451"
+        },
+        {
+          "name": "attending_doctor_id",
+          "label": "Attending Doctor ID",
+          "type": "INT",
+          "required": true,
+          "example": "812"
+        },
+        {
+          "name": "bed_id",
+          "label": "Bed ID",
+          "type": "INT",
+          "required": true,
+          "example": "6012"
+        },
+        {
+          "name": "admitted_at",
+          "label": "Admitted At",
+          "type": "TIMESTAMP",
+          "is_label": true,
+          "required": true,
+          "example": "2026-10-30T22:15:00Z"
+        },
+        {
+          "name": "discharged_at",
+          "label": "Discharged At",
+          "type": "TIMESTAMP",
+          "description": "Empty while admitted."
+        }
+      ],
+      "struct_types": [],
+      "area": "Care"
+    },
+    {
+      "name": "diagnosis",
+      "display_name": "Diagnosis",
+      "entity_type": "standard",
+      "color_code": "#A12F18",
+      "description": "A condition recorded for a patient during an admission or appointment.",
+      "attributes": [
+        {
+          "name": "diagnosis_id",
+          "label": "Diagnosis ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "500912"
+        },
+        {
+          "name": "patient_id",
+          "label": "Patient ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "300451"
+        },
+        {
+          "name": "admission_id",
+          "label": "Admission ID",
+          "type": "BIGINT",
+          "example": "88010"
+        },
+        {
+          "name": "appointment_id",
+          "label": "Appointment ID",
+          "type": "BIGINT"
+        },
+        {
+          "name": "icd10_code",
+          "label": "Icd10 Code",
+          "type": "STRING",
+          "required": true,
+          "pii": true,
+          "description": "ICD-10 diagnosis code.",
+          "example": "I21.4"
+        },
+        {
+          "name": "description",
+          "label": "Description",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "pii": true,
+          "example": "Non-ST elevation myocardial infarction"
+        },
+        {
+          "name": "diagnosed_at",
+          "label": "Diagnosed At",
+          "type": "TIMESTAMP",
+          "required": true,
+          "example": "2026-10-31T08:00:00Z"
+        }
+      ],
+      "struct_types": [],
+      "area": "Care"
+    },
+    {
+      "name": "medication",
+      "display_name": "Medication",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "A drug in the hospital formulary.",
+      "attributes": [
+        {
+          "name": "medication_id",
+          "label": "Medication ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "1450"
+        },
+        {
+          "name": "medication_name",
+          "label": "Medication Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Atorvastatin 40 mg"
+        },
+        {
+          "name": "form",
+          "label": "Form",
+          "type": "STRING",
+          "example": "Tablet"
+        }
+      ],
+      "struct_types": [],
+      "area": "Care"
+    },
+    {
+      "name": "prescription",
+      "display_name": "Prescription",
+      "entity_type": "standard",
+      "color_code": "#7A5C8E",
+      "description": "A medication prescribed to a patient by a doctor.",
+      "attributes": [
+        {
+          "name": "prescription_id",
+          "label": "Prescription ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "730055"
+        },
+        {
+          "name": "patient_id",
+          "label": "Patient ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "300451"
+        },
+        {
+          "name": "doctor_id",
+          "label": "Doctor ID",
+          "type": "INT",
+          "required": true,
+          "example": "812"
+        },
+        {
+          "name": "medication_id",
+          "label": "Medication ID",
+          "type": "INT",
+          "required": true,
+          "example": "1450"
+        },
+        {
+          "name": "dosage",
+          "label": "Dosage",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "40 mg once daily"
+        },
+        {
+          "name": "start_date",
+          "label": "Start Date",
+          "type": "DATE",
+          "required": true,
+          "example": "2026-11-01"
+        },
+        {
+          "name": "end_date",
+          "label": "End Date",
+          "type": "DATE"
+        }
+      ],
+      "struct_types": [],
+      "area": "Care"
+    },
+    {
+      "name": "invoice",
+      "display_name": "Invoice",
+      "entity_type": "standard",
+      "color_code": "#1F6366",
+      "description": "A bill for an admission or appointment.",
+      "attributes": [
+        {
+          "name": "invoice_id",
+          "label": "Invoice ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "61022"
+        },
+        {
+          "name": "invoice_number",
+          "label": "Invoice Number",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "unique": true,
+          "example": "INV-2026-061022"
+        },
+        {
+          "name": "patient_id",
+          "label": "Patient ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "300451"
+        },
+        {
+          "name": "admission_id",
+          "label": "Admission ID",
+          "type": "BIGINT",
+          "example": "88010"
+        },
+        {
+          "name": "total_amount",
+          "label": "Total Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "example": "18450.00"
+        },
+        {
+          "name": "insurance_covered_amount",
+          "label": "Insurance Covered Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "example": "15000.00"
+        },
+        {
+          "name": "issued_on",
+          "label": "Issued On",
+          "type": "DATE",
+          "required": true,
+          "example": "2026-11-04"
+        },
+        {
+          "name": "paid_on",
+          "label": "Paid On",
+          "type": "DATE"
+        }
+      ],
+      "struct_types": [],
+      "area": "Billing"
+    },
+    {
+      "name": "insurance_provider",
+      "display_name": "Insurance Provider",
+      "entity_type": "standard",
+      "color_code": "#9A4A10",
+      "description": "An insurance company that pays for care.",
+      "attributes": [
+        {
+          "name": "insurance_provider_id",
+          "label": "Insurance Provider ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "8"
+        },
+        {
+          "name": "provider_name",
+          "label": "Provider Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Blue Ridge Health Plan"
+        }
+      ],
+      "struct_types": [],
+      "area": "Billing"
+    },
+    {
+      "name": "specialty",
+      "display_name": "Specialty",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Medical specialties.",
+      "attributes": [
+        {
+          "name": "specialty_code",
+          "label": "Specialty Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "CARD"
+        },
+        {
+          "name": "specialty_name",
+          "label": "Specialty Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Cardiology"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "specialty_code": "CARD",
+          "specialty_name": "Cardiology"
+        },
+        {
+          "specialty_code": "NEUR",
+          "specialty_name": "Neurology"
+        },
+        {
+          "specialty_code": "ORTH",
+          "specialty_name": "Orthopedics"
+        },
+        {
+          "specialty_code": "PED",
+          "specialty_name": "Pediatrics"
+        },
+        {
+          "specialty_code": "ONC",
+          "specialty_name": "Oncology"
+        },
+        {
+          "specialty_code": "EM",
+          "specialty_name": "Emergency medicine"
+        }
+      ],
+      "reference_values_source": "Example values"
+    },
+    {
+      "name": "blood_type",
+      "display_name": "Blood Type",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "ABO and Rh blood types.",
+      "attributes": [
+        {
+          "name": "blood_type_code",
+          "label": "Blood Type Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "O+"
+        },
+        {
+          "name": "blood_type_name",
+          "label": "Blood Type Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "O positive"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "blood_type_code": "A+",
+          "blood_type_name": "A positive"
+        },
+        {
+          "blood_type_code": "A-",
+          "blood_type_name": "A negative"
+        },
+        {
+          "blood_type_code": "B+",
+          "blood_type_name": "B positive"
+        },
+        {
+          "blood_type_code": "B-",
+          "blood_type_name": "B negative"
+        },
+        {
+          "blood_type_code": "AB+",
+          "blood_type_name": "AB positive"
+        },
+        {
+          "blood_type_code": "AB-",
+          "blood_type_name": "AB negative"
+        },
+        {
+          "blood_type_code": "O+",
+          "blood_type_name": "O positive"
+        },
+        {
+          "blood_type_code": "O-",
+          "blood_type_name": "O negative"
+        }
+      ],
+      "reference_values_source": "Example values"
+    }
+  ],
+  "relationships": [
+    {
+      "name": "insured_by",
+      "source": "patient",
+      "target": "insurance_provider",
+      "cardinality": "N:1",
+      "forward_label": "Insured By",
+      "reverse_label": "Insures",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "insurance_provider_id"
+    },
+    {
+      "name": "doctor_in",
+      "source": "doctor",
+      "target": "department",
+      "cardinality": "N:1",
+      "forward_label": "Works In",
+      "reverse_label": "Staffed By",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "department_id"
+    },
+    {
+      "name": "appointment_for",
+      "source": "appointment",
+      "target": "patient",
+      "cardinality": "N:1",
+      "forward_label": "For",
+      "reverse_label": "Has Appointment",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "patient_id"
+    },
+    {
+      "name": "appointment_with",
+      "source": "appointment",
+      "target": "doctor",
+      "cardinality": "N:1",
+      "forward_label": "With",
+      "reverse_label": "Sees",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "doctor_id"
+    },
+    {
+      "name": "ward_of",
+      "source": "ward",
+      "target": "department",
+      "cardinality": "N:1",
+      "forward_label": "Run By",
+      "reverse_label": "Runs",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "department_id"
+    },
+    {
+      "name": "bed_in",
+      "source": "bed",
+      "target": "ward",
+      "cardinality": "N:1",
+      "forward_label": "In",
+      "reverse_label": "Has Bed",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "ward_id"
+    },
+    {
+      "name": "admits",
+      "source": "admission",
+      "target": "patient",
+      "cardinality": "N:1",
+      "forward_label": "Admits",
+      "reverse_label": "Admitted In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "patient_id"
+    },
+    {
+      "name": "attended_by",
+      "source": "admission",
+      "target": "doctor",
+      "cardinality": "N:1",
+      "forward_label": "Attended By",
+      "reverse_label": "Attends",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "attending_doctor_id"
+    },
+    {
+      "name": "assigned_bed",
+      "source": "admission",
+      "target": "bed",
+      "cardinality": "N:1",
+      "forward_label": "Assigned",
+      "reverse_label": "Occupied In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "bed_id"
+    },
+    {
+      "name": "diagnosis_of",
+      "source": "diagnosis",
+      "target": "patient",
+      "cardinality": "N:1",
+      "forward_label": "Of",
+      "reverse_label": "Diagnosed With",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "patient_id"
+    },
+    {
+      "name": "made_during_admission",
+      "source": "diagnosis",
+      "target": "admission",
+      "cardinality": "N:1",
+      "forward_label": "During",
+      "reverse_label": "Has Diagnosis",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "admission_id"
+    },
+    {
+      "name": "made_during_appointment",
+      "source": "diagnosis",
+      "target": "appointment",
+      "cardinality": "N:1",
+      "forward_label": "During",
+      "reverse_label": "Has Diagnosis",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "appointment_id"
+    },
+    {
+      "name": "prescribed_to",
+      "source": "prescription",
+      "target": "patient",
+      "cardinality": "N:1",
+      "forward_label": "Prescribed To",
+      "reverse_label": "Receives",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "patient_id"
+    },
+    {
+      "name": "prescribed_by",
+      "source": "prescription",
+      "target": "doctor",
+      "cardinality": "N:1",
+      "forward_label": "Prescribed By",
+      "reverse_label": "Prescribes",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "doctor_id"
+    },
+    {
+      "name": "prescribes",
+      "source": "prescription",
+      "target": "medication",
+      "cardinality": "N:1",
+      "forward_label": "Of",
+      "reverse_label": "Prescribed In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "medication_id"
+    },
+    {
+      "name": "billed_to",
+      "source": "invoice",
+      "target": "patient",
+      "cardinality": "N:1",
+      "forward_label": "Billed To",
+      "reverse_label": "Billed",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "patient_id"
+    },
+    {
+      "name": "bills_admission",
+      "source": "invoice",
+      "target": "admission",
+      "cardinality": "N:1",
+      "forward_label": "Bills",
+      "reverse_label": "Billed In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "admission_id"
+    }
+  ],
+  "hierarchies": [],
+  "areas": [],
+  "notes": []
+}

@@ -1,0 +1,34 @@
+# Comments on pull requests that change a model: what changed per tab in modeling terms, validation before and
+# after, and migration SQL for physical tabs. One comment, updated on every push.
+name: Model review
+
+on:
+  pull_request:
+    paths:
+      - 'models/**/model.json'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Review model changes
+        run: node bin/em.mjs review --base "origin/${{ github.base_ref }}" --head HEAD --out review.md
+      - name: Comment on the pull request
+        # Pull requests from forks get a read-only token; the review is still in the job log.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          cat review.md
+          gh pr comment "$PR" --body-file review.md --edit-last --create-if-none

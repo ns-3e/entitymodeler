@@ -1,0 +1,1110 @@
+{
+  "format": "entitymodeler",
+  "format_version": 1,
+  "source": "https://entitymodel.com",
+  "name": "saas_subscription",
+  "title": "SaaS Subscription Billing",
+  "organization": "EntityModel.com examples",
+  "description": "Subscription billing for a SaaS product: customer organizations and users, plans and prices, subscriptions and their items, metered usage, invoices, invoice lines and payments.",
+  "version": "1.0",
+  "author": "EntityModel.com",
+  "status": "approved",
+  "created_at": "2026-11-03T00:00:00.000Z",
+  "updated_at": "2026-11-03T00:00:00.000Z",
+  "entities": [
+    {
+      "name": "organization",
+      "display_name": "Organization",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "A customer company or team that subscribes. The billing entity.",
+      "attributes": [
+        {
+          "name": "organization_id",
+          "label": "Organization ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "4100"
+        },
+        {
+          "name": "organization_name",
+          "label": "Organization Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Acme Robotics"
+        },
+        {
+          "name": "billing_email",
+          "label": "Billing Email",
+          "type": "STRING",
+          "required": true,
+          "pii": true,
+          "example": "billing@acme.example"
+        },
+        {
+          "name": "country_code",
+          "label": "Country Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "country",
+            "output_attribute": "country_code"
+          },
+          "required": true,
+          "description": "Drives tax.",
+          "example": "US"
+        },
+        {
+          "name": "tax_id",
+          "label": "Tax ID",
+          "type": "STRING",
+          "description": "VAT or tax number."
+        },
+        {
+          "name": "created_at",
+          "label": "Created At",
+          "type": "TIMESTAMP",
+          "required": true,
+          "example": "2025-04-02T09:00:00Z"
+        }
+      ],
+      "struct_types": [],
+      "area": "Customers"
+    },
+    {
+      "name": "app_user",
+      "display_name": "User",
+      "entity_type": "standard",
+      "color_code": "#7A5C8E",
+      "description": "A person who signs in. Belongs to one organization; seat-based plans count active users.",
+      "attributes": [
+        {
+          "name": "user_id",
+          "label": "User ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "88120"
+        },
+        {
+          "name": "organization_id",
+          "label": "Organization ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "4100"
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "pii": true,
+          "example": "dev@acme.example"
+        },
+        {
+          "name": "full_name",
+          "label": "Full Name",
+          "type": "STRING",
+          "is_label": true,
+          "pii": true,
+          "example": "Robin Ito"
+        },
+        {
+          "name": "role",
+          "label": "Role",
+          "type": "STRING",
+          "required": true,
+          "description": "Owner, admin or member.",
+          "example": "ADMIN"
+        },
+        {
+          "name": "is_active",
+          "label": "Is Active",
+          "type": "BOOLEAN",
+          "required": true,
+          "example": "true"
+        }
+      ],
+      "struct_types": [],
+      "area": "Customers"
+    },
+    {
+      "name": "plan",
+      "display_name": "Plan",
+      "entity_type": "standard",
+      "color_code": "#1F6366",
+      "description": "A product tier customers can subscribe to, such as Team or Business.",
+      "attributes": [
+        {
+          "name": "plan_id",
+          "label": "Plan ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "3"
+        },
+        {
+          "name": "plan_code",
+          "label": "Plan Code",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "example": "TEAM"
+        },
+        {
+          "name": "plan_name",
+          "label": "Plan Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Team"
+        },
+        {
+          "name": "is_public",
+          "label": "Is Public",
+          "type": "BOOLEAN",
+          "required": true,
+          "description": "Shown on the pricing page.",
+          "example": "true"
+        }
+      ],
+      "struct_types": [],
+      "area": "Catalog"
+    },
+    {
+      "name": "plan_price",
+      "display_name": "Price",
+      "entity_type": "standard",
+      "color_code": "#9A4A10",
+      "description": "A price for a plan in one currency and billing interval. Prices are never edited; a new price replaces an old one.",
+      "attributes": [
+        {
+          "name": "price_id",
+          "label": "Price ID",
+          "type": "INT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "31"
+        },
+        {
+          "name": "plan_id",
+          "label": "Plan ID",
+          "type": "INT",
+          "required": true,
+          "example": "3"
+        },
+        {
+          "name": "currency_code",
+          "label": "Currency Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "currency",
+            "output_attribute": "currency_code"
+          },
+          "required": true,
+          "example": "USD"
+        },
+        {
+          "name": "billing_interval_code",
+          "label": "Billing Interval Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "billing_interval",
+            "output_attribute": "interval_code"
+          },
+          "required": true,
+          "example": "MONTH"
+        },
+        {
+          "name": "pricing_model",
+          "label": "Pricing Model",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "pricing_model",
+            "output_attribute": "model_code"
+          },
+          "required": true,
+          "example": "PER_SEAT"
+        },
+        {
+          "name": "unit_amount",
+          "label": "Unit Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "is_label": true,
+          "required": true,
+          "description": "Price per unit (seat, unit of usage or flat).",
+          "example": "12.00"
+        },
+        {
+          "name": "is_active",
+          "label": "Is Active",
+          "type": "BOOLEAN",
+          "required": true,
+          "example": "true"
+        }
+      ],
+      "struct_types": [],
+      "area": "Catalog"
+    },
+    {
+      "name": "subscription",
+      "display_name": "Subscription",
+      "entity_type": "standard",
+      "color_code": "#4A4D52",
+      "description": "An organization's subscription. Its items say which prices it pays and in what quantity.",
+      "attributes": [
+        {
+          "name": "subscription_id",
+          "label": "Subscription ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "7001"
+        },
+        {
+          "name": "organization_id",
+          "label": "Organization ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "4100"
+        },
+        {
+          "name": "subscription_status_code",
+          "label": "Subscription Status Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "subscription_status",
+            "output_attribute": "status_code"
+          },
+          "required": true,
+          "example": "ACTIVE"
+        },
+        {
+          "name": "started_at",
+          "label": "Started At",
+          "type": "TIMESTAMP",
+          "is_label": true,
+          "required": true,
+          "example": "2025-04-02T09:05:00Z"
+        },
+        {
+          "name": "current_period_start",
+          "label": "Current Period Start",
+          "type": "DATE",
+          "required": true,
+          "example": "2026-11-01"
+        },
+        {
+          "name": "current_period_end",
+          "label": "Current Period End",
+          "type": "DATE",
+          "required": true,
+          "example": "2026-11-30"
+        },
+        {
+          "name": "trial_ends_at",
+          "label": "Trial Ends At",
+          "type": "TIMESTAMP"
+        },
+        {
+          "name": "cancel_at_period_end",
+          "label": "Cancel At Period End",
+          "type": "BOOLEAN",
+          "required": true,
+          "example": "false"
+        },
+        {
+          "name": "canceled_at",
+          "label": "Canceled At",
+          "type": "TIMESTAMP"
+        }
+      ],
+      "struct_types": [],
+      "area": "Billing"
+    },
+    {
+      "name": "subscription_item",
+      "display_name": "Subscription Item",
+      "entity_type": "standard",
+      "color_code": "#2F5D73",
+      "description": "One price on a subscription with its quantity, such as 25 seats of Team monthly.",
+      "attributes": [
+        {
+          "name": "subscription_item_id",
+          "label": "Subscription Item ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "70011"
+        },
+        {
+          "name": "subscription_id",
+          "label": "Subscription ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "7001"
+        },
+        {
+          "name": "price_id",
+          "label": "Price ID",
+          "type": "INT",
+          "required": true,
+          "example": "31"
+        },
+        {
+          "name": "quantity",
+          "label": "Quantity",
+          "type": "INT",
+          "is_label": true,
+          "required": true,
+          "description": "Seats or units; 1 for flat and metered prices.",
+          "example": "25"
+        }
+      ],
+      "struct_types": [],
+      "area": "Billing"
+    },
+    {
+      "name": "usage_record",
+      "display_name": "Usage Record",
+      "entity_type": "standard",
+      "color_code": "#5C7F9E",
+      "description": "Metered usage reported against a subscription item, summed at the end of each period.",
+      "attributes": [
+        {
+          "name": "usage_record_id",
+          "label": "Usage Record ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "9900122"
+        },
+        {
+          "name": "subscription_item_id",
+          "label": "Subscription Item ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "70012"
+        },
+        {
+          "name": "quantity",
+          "label": "Quantity",
+          "type": "BIGINT",
+          "is_label": true,
+          "required": true,
+          "example": "15000"
+        },
+        {
+          "name": "recorded_at",
+          "label": "Recorded At",
+          "type": "TIMESTAMP",
+          "required": true,
+          "example": "2026-11-03T12:00:00Z"
+        },
+        {
+          "name": "idempotency_key",
+          "label": "Idempotency Key",
+          "type": "STRING",
+          "required": true,
+          "unique": true,
+          "description": "Stops duplicate reports.",
+          "example": "evt_5521"
+        }
+      ],
+      "struct_types": [],
+      "area": "Billing"
+    },
+    {
+      "name": "invoice",
+      "display_name": "Invoice",
+      "entity_type": "standard",
+      "color_code": "#A12F18",
+      "description": "A bill for one billing period of a subscription, or a one-off charge.",
+      "attributes": [
+        {
+          "name": "invoice_id",
+          "label": "Invoice ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "300045"
+        },
+        {
+          "name": "invoice_number",
+          "label": "Invoice Number",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "unique": true,
+          "example": "INV-2026-0045"
+        },
+        {
+          "name": "organization_id",
+          "label": "Organization ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "4100"
+        },
+        {
+          "name": "subscription_id",
+          "label": "Subscription ID",
+          "type": "BIGINT",
+          "example": "7001"
+        },
+        {
+          "name": "invoice_status_code",
+          "label": "Invoice Status Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "invoice_status",
+            "output_attribute": "status_code"
+          },
+          "required": true,
+          "example": "OPEN"
+        },
+        {
+          "name": "currency_code",
+          "label": "Currency Code",
+          "type": "REFERENCE_ENTITY",
+          "reference": {
+            "entity": "currency",
+            "output_attribute": "currency_code"
+          },
+          "required": true,
+          "example": "USD"
+        },
+        {
+          "name": "period_start",
+          "label": "Period Start",
+          "type": "DATE",
+          "example": "2026-11-01"
+        },
+        {
+          "name": "period_end",
+          "label": "Period End",
+          "type": "DATE",
+          "example": "2026-11-30"
+        },
+        {
+          "name": "subtotal_amount",
+          "label": "Subtotal Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "example": "300.00"
+        },
+        {
+          "name": "tax_amount",
+          "label": "Tax Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "example": "24.00"
+        },
+        {
+          "name": "total_amount",
+          "label": "Total Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "example": "324.00"
+        },
+        {
+          "name": "issued_at",
+          "label": "Issued At",
+          "type": "TIMESTAMP",
+          "required": true,
+          "example": "2026-11-01T00:00:00Z"
+        },
+        {
+          "name": "due_at",
+          "label": "Due At",
+          "type": "TIMESTAMP",
+          "required": true,
+          "example": "2026-11-15T00:00:00Z"
+        }
+      ],
+      "struct_types": [],
+      "area": "Invoicing"
+    },
+    {
+      "name": "invoice_line",
+      "display_name": "Invoice Line",
+      "entity_type": "standard",
+      "color_code": "#3E6A8F",
+      "description": "A charge on an invoice: a subscription item for the period, prorations, or usage.",
+      "attributes": [
+        {
+          "name": "invoice_line_id",
+          "label": "Invoice Line ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "3000451"
+        },
+        {
+          "name": "invoice_id",
+          "label": "Invoice ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "300045"
+        },
+        {
+          "name": "subscription_item_id",
+          "label": "Subscription Item ID",
+          "type": "BIGINT",
+          "example": "70011"
+        },
+        {
+          "name": "description",
+          "label": "Description",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Team (25 seats) Nov 2026"
+        },
+        {
+          "name": "quantity",
+          "label": "Quantity",
+          "type": "BIGINT",
+          "required": true,
+          "example": "25"
+        },
+        {
+          "name": "unit_amount",
+          "label": "Unit Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "example": "12.00"
+        },
+        {
+          "name": "amount",
+          "label": "Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "example": "300.00"
+        },
+        {
+          "name": "is_proration",
+          "label": "Is Proration",
+          "type": "BOOLEAN",
+          "required": true,
+          "description": "Credit or charge for a mid-period change.",
+          "example": "false"
+        }
+      ],
+      "struct_types": [],
+      "area": "Invoicing"
+    },
+    {
+      "name": "payment",
+      "display_name": "Payment",
+      "entity_type": "standard",
+      "color_code": "#7A5C8E",
+      "description": "A payment attempt for an invoice through the payment provider.",
+      "attributes": [
+        {
+          "name": "payment_id",
+          "label": "Payment ID",
+          "type": "BIGINT",
+          "is_primary_key": true,
+          "required": true,
+          "example": "610201"
+        },
+        {
+          "name": "invoice_id",
+          "label": "Invoice ID",
+          "type": "BIGINT",
+          "required": true,
+          "example": "300045"
+        },
+        {
+          "name": "provider_reference",
+          "label": "Provider Reference",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "description": "Payment provider's charge ID.",
+          "example": "ch_3Q..."
+        },
+        {
+          "name": "amount",
+          "label": "Amount",
+          "type": "DECIMAL",
+          "precision": 12,
+          "scale": 2,
+          "required": true,
+          "example": "324.00"
+        },
+        {
+          "name": "succeeded",
+          "label": "Succeeded",
+          "type": "BOOLEAN",
+          "required": true,
+          "example": "true"
+        },
+        {
+          "name": "attempted_at",
+          "label": "Attempted At",
+          "type": "TIMESTAMP",
+          "required": true,
+          "example": "2026-11-01T00:05:00Z"
+        },
+        {
+          "name": "failure_reason",
+          "label": "Failure Reason",
+          "type": "STRING"
+        }
+      ],
+      "struct_types": [],
+      "area": "Invoicing"
+    },
+    {
+      "name": "subscription_status",
+      "display_name": "Subscription Status",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Lifecycle states of a subscription.",
+      "attributes": [
+        {
+          "name": "status_code",
+          "label": "Status Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "ACTIVE"
+        },
+        {
+          "name": "status_name",
+          "label": "Status Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Active"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "status_code": "TRIALING",
+          "status_name": "Trialing"
+        },
+        {
+          "status_code": "ACTIVE",
+          "status_name": "Active"
+        },
+        {
+          "status_code": "PAST_DUE",
+          "status_name": "Past due"
+        },
+        {
+          "status_code": "PAUSED",
+          "status_name": "Paused"
+        },
+        {
+          "status_code": "CANCELED",
+          "status_name": "Canceled"
+        }
+      ],
+      "reference_values_source": "Example values"
+    },
+    {
+      "name": "invoice_status",
+      "display_name": "Invoice Status",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Lifecycle states of an invoice.",
+      "attributes": [
+        {
+          "name": "status_code",
+          "label": "Status Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "OPEN"
+        },
+        {
+          "name": "status_name",
+          "label": "Status Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Open"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "status_code": "DRAFT",
+          "status_name": "Draft"
+        },
+        {
+          "status_code": "OPEN",
+          "status_name": "Open"
+        },
+        {
+          "status_code": "PAID",
+          "status_name": "Paid"
+        },
+        {
+          "status_code": "VOID",
+          "status_name": "Void"
+        },
+        {
+          "status_code": "UNCOLLECTIBLE",
+          "status_name": "Uncollectible"
+        }
+      ],
+      "reference_values_source": "Example values"
+    },
+    {
+      "name": "billing_interval",
+      "display_name": "Billing Interval",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "How often a price is billed.",
+      "attributes": [
+        {
+          "name": "interval_code",
+          "label": "Interval Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "MONTH"
+        },
+        {
+          "name": "interval_name",
+          "label": "Interval Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Monthly"
+        },
+        {
+          "name": "months",
+          "label": "Months",
+          "type": "INT",
+          "required": true,
+          "example": "1"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "interval_code": "MONTH",
+          "interval_name": "Monthly",
+          "months": "1"
+        },
+        {
+          "interval_code": "QUARTER",
+          "interval_name": "Quarterly",
+          "months": "3"
+        },
+        {
+          "interval_code": "YEAR",
+          "interval_name": "Yearly",
+          "months": "12"
+        }
+      ],
+      "reference_values_source": "Example values"
+    },
+    {
+      "name": "pricing_model",
+      "display_name": "Pricing Model",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "How a price turns into an amount.",
+      "attributes": [
+        {
+          "name": "model_code",
+          "label": "Model Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "example": "PER_SEAT"
+        },
+        {
+          "name": "model_name",
+          "label": "Model Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "Per seat"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "model_code": "FLAT",
+          "model_name": "Flat fee"
+        },
+        {
+          "model_code": "PER_SEAT",
+          "model_name": "Per seat"
+        },
+        {
+          "model_code": "METERED",
+          "model_name": "Metered usage"
+        },
+        {
+          "model_code": "TIERED",
+          "model_name": "Tiered"
+        }
+      ],
+      "reference_values_source": "Example values"
+    },
+    {
+      "name": "country",
+      "display_name": "Country",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Countries, identified by their ISO 3166-1 alpha-2 code.",
+      "attributes": [
+        {
+          "name": "country_code",
+          "label": "Country Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "description": "ISO 3166-1 alpha-2 code.",
+          "example": "US"
+        },
+        {
+          "name": "country_name",
+          "label": "Country Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "description": "English short name.",
+          "example": "United States"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "country_code": "US",
+          "country_name": "United States"
+        },
+        {
+          "country_code": "CA",
+          "country_name": "Canada"
+        },
+        {
+          "country_code": "GB",
+          "country_name": "United Kingdom"
+        },
+        {
+          "country_code": "DE",
+          "country_name": "Germany"
+        },
+        {
+          "country_code": "FR",
+          "country_name": "France"
+        },
+        {
+          "country_code": "AU",
+          "country_name": "Australia"
+        }
+      ],
+      "reference_values_source": "ISO 3166-1 (excerpt)"
+    },
+    {
+      "name": "currency",
+      "display_name": "Currency",
+      "entity_type": "reference",
+      "color_code": "#4E7C8C",
+      "description": "Currencies, identified by their ISO 4217 code.",
+      "attributes": [
+        {
+          "name": "currency_code",
+          "label": "Currency Code",
+          "type": "STRING",
+          "is_primary_key": true,
+          "required": true,
+          "description": "ISO 4217 code.",
+          "example": "USD"
+        },
+        {
+          "name": "currency_name",
+          "label": "Currency Name",
+          "type": "STRING",
+          "is_label": true,
+          "required": true,
+          "example": "US Dollar"
+        }
+      ],
+      "struct_types": [],
+      "reference_values": [
+        {
+          "currency_code": "USD",
+          "currency_name": "US Dollar"
+        },
+        {
+          "currency_code": "CAD",
+          "currency_name": "Canadian Dollar"
+        },
+        {
+          "currency_code": "GBP",
+          "currency_name": "Pound Sterling"
+        },
+        {
+          "currency_code": "EUR",
+          "currency_name": "Euro"
+        },
+        {
+          "currency_code": "AUD",
+          "currency_name": "Australian Dollar"
+        }
+      ],
+      "reference_values_source": "ISO 4217 (excerpt)"
+    }
+  ],
+  "relationships": [
+    {
+      "name": "member_of",
+      "source": "app_user",
+      "target": "organization",
+      "cardinality": "N:1",
+      "forward_label": "Member Of",
+      "reverse_label": "Has User",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "organization_id"
+    },
+    {
+      "name": "price_of",
+      "source": "plan_price",
+      "target": "plan",
+      "cardinality": "N:1",
+      "forward_label": "Price Of",
+      "reverse_label": "Priced As",
+      "bidirectional": true,
+      "description": "A plan has a price per currency and interval, and keeps its old prices.",
+      "attributes": [],
+      "foreign_key": "plan_id"
+    },
+    {
+      "name": "subscribed_by",
+      "source": "subscription",
+      "target": "organization",
+      "cardinality": "N:1",
+      "forward_label": "Held By",
+      "reverse_label": "Subscribes",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "organization_id"
+    },
+    {
+      "name": "item_of",
+      "source": "subscription_item",
+      "target": "subscription",
+      "cardinality": "N:1",
+      "forward_label": "Item Of",
+      "reverse_label": "Has Item",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "subscription_id"
+    },
+    {
+      "name": "item_price",
+      "source": "subscription_item",
+      "target": "plan_price",
+      "cardinality": "N:1",
+      "forward_label": "Pays",
+      "reverse_label": "Paid In",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "price_id"
+    },
+    {
+      "name": "usage_for",
+      "source": "usage_record",
+      "target": "subscription_item",
+      "cardinality": "N:1",
+      "forward_label": "Reported For",
+      "reverse_label": "Has Usage",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "subscription_item_id"
+    },
+    {
+      "name": "billed_to",
+      "source": "invoice",
+      "target": "organization",
+      "cardinality": "N:1",
+      "forward_label": "Billed To",
+      "reverse_label": "Billed",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "organization_id"
+    },
+    {
+      "name": "bills",
+      "source": "invoice",
+      "target": "subscription",
+      "cardinality": "N:1",
+      "forward_label": "Bills",
+      "reverse_label": "Billed On",
+      "bidirectional": true,
+      "description": "Empty for one-off invoices.",
+      "attributes": [],
+      "foreign_key": "subscription_id"
+    },
+    {
+      "name": "line_on",
+      "source": "invoice_line",
+      "target": "invoice",
+      "cardinality": "N:1",
+      "forward_label": "Line On",
+      "reverse_label": "Has Line",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "invoice_id"
+    },
+    {
+      "name": "line_for_item",
+      "source": "invoice_line",
+      "target": "subscription_item",
+      "cardinality": "N:1",
+      "forward_label": "Charges",
+      "reverse_label": "Charged On",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "subscription_item_id"
+    },
+    {
+      "name": "pays",
+      "source": "payment",
+      "target": "invoice",
+      "cardinality": "N:1",
+      "forward_label": "Pays",
+      "reverse_label": "Paid By",
+      "bidirectional": true,
+      "description": "",
+      "attributes": [],
+      "foreign_key": "invoice_id"
+    }
+  ],
+  "hierarchies": [],
+  "areas": [],
+  "notes": []
+}

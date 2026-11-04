@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>EntityModel.com — free, open-source data modeling and ER diagram tool</title>
+    <meta name="description" content="Design entity-relationship data models in your browser. Free and open source: ERD diagrams, SQL DDL for Postgres, MySQL, Snowflake and Databricks, DBML, Mermaid and PDF exports." />
+    <link rel="canonical" href="https://entitymodel.com/" />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#f4f3f0" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#17181a" media="(prefers-color-scheme: dark)" />
+    <!-- Link previews (Slack, LinkedIn, X, iMessage…) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="EntityModel.com" />
+    <meta property="og:title" content="EntityModel.com — design data models in your browser" />
+    <meta property="og:description" content="Free, open-source ERD tool: diagrams, SQL DDL, DBML, Mermaid and PDF exports. Nothing to install." />
+    <meta property="og:url" content="https://entitymodel.com/" />
+    <meta property="og:image" content="https://entitymodel.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "name": "EntityModel.com",
+            "url": "https://entitymodel.com/"
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://entitymodel.com/#app",
+            "name": "EntityModel.com",
+            "url": "https://entitymodel.com/",
+            "applicationCategory": "DeveloperApplication",
+            "applicationSubCategory": "Data modeling tool",
+            "operatingSystem": "Any (web browser)",
+            "description": "Free, open-source, browser-based entity-relationship data modeling tool: ERD diagrams, conceptual, logical and physical models, SQL DDL for PostgreSQL, MySQL, Snowflake and Databricks, DBML, Mermaid, dbt, data contracts and PDF design documents.",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "license": "https://opensource.org/licenses/MIT",
+            "isAccessibleForFree": true,
+            "codeRepository": "https://github.com/ns-3e/entitymodeler",
+            "image": "https://entitymodel.com/og-image.png",
+            "screenshot": "https://entitymodel.com/og-image.png"
+          }
+        ]
+      }
+    </script>
+    <style>
+      /* First paint before the app loads (replaced by React on mount). */
+      html, body { margin: 0; height: 100%; background: #f4f3f0; color: #1f2124; }
+      @media (prefers-color-scheme: dark) { html, body { background: #17181a; color: #f1f0ec; } .boot p { color: #c9c8c4; } .boot .mark { fill: #f1f0ec; } .boot .paper { fill: #17181a; } .boot .wire { stroke: #17181a; } }
+      .boot { max-width: 1180px; margin: 0 auto; padding: 40px 28px; font: 16px/26px 'Schibsted Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+      .boot header { display: flex; align-items: center; gap: 14px; }
+      .boot h1 { margin: 0; font: 400 clamp(36px, 5vw, 56px)/1 'DM Serif Display', Georgia, 'Times New Roman', serif; letter-spacing: -0.015em; }
+      .boot p { margin: 8px 0 0; color: #44474c; }
+      .boot nav { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+      .boot a { color: inherit; }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="boot">
+        <header>
+          <svg width="48" height="48" viewBox="0 0 32 32" aria-hidden="true"><rect class="mark" width="32" height="32" rx="3" fill="#1f2124"/><rect class="paper" x="6.5" y="7.5" width="11" height="7.5" fill="#fafaf8"/><rect x="14.5" y="17.5" width="11" height="7.5" fill="#f2a67c"/><path class="wire" d="M12 15v6.2h2.5" stroke="#fafaf8" stroke-width="1.5" stroke-linecap="square" fill="none"/></svg>
+          <div>
+            <h1>EntityModel<em>.com</em></h1>
+            <p>Design entity-relationship data models in your browser: ERD diagrams, SQL DDL for PostgreSQL, MySQL, Snowflake and Databricks, DBML, Mermaid and PDF exports. Free, no account, works offline.</p>
+          </div>
+        </header>
+        <nav aria-label="Documentation">
+          <a href="/docs/">Documentation</a>
+          <a href="/docs/getting-started/">Getting started</a>
+          <a href="/docs/sql-to-er-diagram/">SQL to ER diagram</a>
+          <a href="/docs/examples/">Example data models</a>
+          <a href="/docs/platforms/snowflake/">Snowflake data modeling</a>
+          <a href="/docs/platforms/databricks/">Databricks data modeling</a>
+          <a href="/docs/learn/free-open-source-data-modeling-tools/">Free and open-source data modeling tools</a>
+          <a href="https://github.com/ns-3e/entitymodeler">Source code on GitHub</a>
+        </nav>
+        <noscript><p>EntityModel.com runs in your browser and needs JavaScript enabled.</p></noscript>
+      </div>
+    </div>
+    <script type="module" src="/src/ui/main.tsx"></script>
+  </body>
+</html>

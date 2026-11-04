@@ -1,0 +1,95 @@
+{
+  "name": "EntityModel.com",
+  "short_name": "EntityModel",
+  "description": "Design entity-relationship data models in your browser: diagrams, SQL DDL, DBML, Mermaid and PDF exports.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f3f0",
+  "theme_color": "#fafaf8",
+  "categories": [
+    "developer",
+    "productivity",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": [
+      "focus-existing",
+      "auto"
+    ]
+  },
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "application/json": [
+          ".json"
+        ]
+      },
+      "launch_type": "single-client"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New model",
+      "short_name": "New",
+      "url": "/?action=new",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Open the demo",
+      "short_name": "Demo",
+      "url": "/?action=demo",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/app.jpg",
+      "sizes": "1520x900",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "The diagram canvas with the entity inspector open"
+    },
+    {
+      "src": "/screenshots/export.jpg",
+      "sizes": "1520x900",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Export to SQL DDL, dbt, data contracts and more"
+    }
+  ]
+}
