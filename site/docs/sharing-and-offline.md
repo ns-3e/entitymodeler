@@ -8,7 +8,7 @@ order: 8
 
 ## Where your models are stored
 
-On [entitymodel.com](/), models are stored in your browser's IndexedDB, on this device and in this browser profile only. They are never uploaded. When you [run it locally](/docs/getting-started/#run-it-locally), each model is a JSON file in `models/<id>/model.json` instead.
+On [entitymodel.com](/), models are stored in your browser's IndexedDB, on this device and in this browser profile only. They are never uploaded unless you add one to a [shared workspace](/docs/shared-workspaces/). When you [run it locally](/docs/getting-started/#run-it-locally), each model is a JSON file in `models/<id>/model.json` instead.
 
 Clearing site data deletes browser storage, so keep a copy of anything important: **Export → Model file** downloads `<name>.json`.
 
@@ -41,7 +41,7 @@ On phones, the side panels become drawers over the diagram; tap an entity to see
 
 ## Privacy
 
-Your models never leave your browser unless you export or share them. entitymodel.com counts visits with Cloudflare Web Analytics, which uses no cookies and no personal data. Self-hosted copies and local runs send nothing.
+Your models never leave your browser unless you export them, share a link, or add them to a [shared workspace](/docs/shared-workspaces/), whose models are stored on the server for the workspace's members. Signing in, which only workspaces need, stores your email address. entitymodel.com counts visits with Cloudflare Web Analytics, which uses no cookies and no personal data. Self-hosted copies and local runs send nothing.
 
 ## Frequently asked questions
 

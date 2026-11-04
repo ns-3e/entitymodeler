@@ -83,6 +83,9 @@ node bin/em.mjs pull <id> --from postgres [--url postgres://…] [--schema publi
 node bin/em.mjs pull <id> --csv result.csv --platform P [--catalog C] [--schema S]
 node bin/em.mjs catalog-query --platform P [--catalog C] [--schema S]
      # common: [--name TAB] [--propose]
+node bin/em.mjs profile <id> [--tab T] [--sample N] [--entities a,b] [--warehouse ID] [--propose]
+node bin/em.mjs profile <id> --query | --csv results.csv      # run the queries yourself
+node bin/em.mjs writeback <id> [--tab T] [--out F] [--no-tags] [--apply]   # descriptions and tags into the catalog
 ```
 
 See [Import from a database](/docs/import-from-database/).

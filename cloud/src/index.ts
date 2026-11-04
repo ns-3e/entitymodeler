@@ -1,0 +1,384 @@
+// Shared workspaces API, under /api/cloud. Accounts, workspaces and membership live in D1; each model's JSON lives
+// in its own Durable Object (room.ts), which orders saves and pushes new versions to everyone who has it open.
+// Phase 1 of docs/plans/shared-workspaces.md. Sign-in: GitHub and Google (auth.ts), one-time email links
+// (email.ts), and a development login that is off unless DEV_LOGIN is "1".
+import { PROVIDERS, pkceChallenge, randomToken, safeReturn } from './auth';
+import { LINKS_PER_HOUR, LINK_MINUTES, confirmPage, mailer } from './email';
+import { quotaFor } from './quotas';
+import type { WriteResult } from './room';
+
+export { ModelRoom } from './room';
+
+type Role = 'owner' | 'editor' | 'viewer';
+const RANK: Record<Role, number> = { viewer: 1, editor: 2, owner: 3 };
+const SESSION_COOKIE = 'em_session';
+const SESSION_DAYS = 30;
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+}
+
+class HttpError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+    public body?: object,
+  ) {
+    super(message);
+  }
+}
+
+const json = (body: unknown, status = 200, headers: HeadersInit = {}) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...headers } });
+const now = () => new Date().toISOString();
+/** 128-bit random id, URL-safe. */
+const newId = () => [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(36).padStart(2, '0')).join('').slice(0, 22);
+
+async function sha256(s: string): Promise<string> {
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function cookie(req: Request, name: string): string | undefined {
+  for (const part of (req.headers.get('Cookie') || '').split(';')) {
+    const [k, ...v] = part.trim().split('=');
+    if (k === name) return v.join('=');
+  }
+}
+
+async function body<T>(req: Request, max = 10_000): Promise<T> {
+  const text = await req.text();
+  if (text.length > max) throw new HttpError(413, 'Request too large.');
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new HttpError(400, 'Expected JSON.');
+  }
+}
+
+/** A model file: JSON with an entities list. Returns its title. */
+function checkModel(text: string, maxBytes: number): string {
+  if (new TextEncoder().encode(text).length > maxBytes) throw new HttpError(413, `Models are limited to ${Math.round(maxBytes / 1e6)} MB.`);
+  let m: { title?: unknown; entities?: unknown };
+  try {
+    m = JSON.parse(text);
+  } catch {
+    throw new HttpError(400, 'The model is not valid JSON.');
+  }
+  if (!m || typeof m !== 'object' || !Array.isArray(m.entities)) throw new HttpError(400, 'Not a model file: it has no entities list.');
+  return typeof m.title === 'string' && m.title.trim() ? m.title.trim().slice(0, 200) : 'Untitled model';
+}
+
+async function sessionUser(req: Request, env: Env): Promise<User | null> {
+  const token = cookie(req, SESSION_COOKIE);
+  if (!token) return null;
+  return env.DB.prepare('SELECT u.id, u.email, u.name FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ? AND u.suspended_at IS NULL')
+    .bind(await sha256(token), now())
+    .first<User>();
+}
+
+async function startSession(env: Env, userId: string): Promise<string> {
+  const token = [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, '0')).join('');
+  const expires = new Date(Date.now() + SESSION_DAYS * 86400_000).toISOString();
+  await env.DB.prepare('INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)').bind(await sha256(token), userId, now(), expires).run();
+  return `${SESSION_COOKIE}=${token}; Path=/api/cloud; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}`;
+}
+
+/** Find or create the user behind a sign-in (provider + subject), as every sign-in method will. */
+export async function signIn(env: Env, provider: string, subject: string, email: string, name: string, avatar?: string): Promise<string> {
+  const found = await env.DB.prepare('SELECT user_id FROM identities WHERE provider = ? AND subject = ?').bind(provider, subject).first<{ user_id: string }>();
+  let userId = found?.user_id;
+  if (!userId) {
+    // The same email from another provider is the same person.
+    userId = (await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first<{ id: string }>())?.id;
+    if (!userId) {
+      userId = newId();
+      await env.DB.prepare('INSERT INTO users (id, email, name, created_at) VALUES (?, ?, ?, ?)').bind(userId, email, name, now()).run();
+    }
+    await env.DB.prepare('INSERT INTO identities (provider, subject, user_id, created_at) VALUES (?, ?, ?, ?)').bind(provider, subject, userId, now()).run();
+  }
+  // Fill in a name and picture the account doesn't have yet; never overwrite what the person set.
+  await env.DB.prepare("UPDATE users SET name = CASE WHEN name = '' THEN ? ELSE name END, avatar_url = COALESCE(avatar_url, ?) WHERE id = ?").bind(name.slice(0, 100), avatar ?? null, userId).run();
+  return userId;
+}
+
+async function roleIn(env: Env, workspace: string, user: string): Promise<{ role: Role; plan: string } | null> {
+  return env.DB.prepare('SELECT m.role, w.plan FROM members m JOIN workspaces w ON w.id = m.workspace_id WHERE m.workspace_id = ? AND m.user_id = ?').bind(workspace, user).first<{ role: Role; plan: string }>();
+}
+
+async function need(env: Env, workspace: string, user: string, min: Role) {
+  const r = await roleIn(env, workspace, user);
+  // Not a member looks the same as not existing, so ids can't be probed.
+  if (!r) throw new HttpError(404, 'Not found.');
+  if (RANK[r.role] < RANK[min]) throw new HttpError(403, `This needs the ${min} role.`);
+  return r;
+}
+
+async function modelAccess(env: Env, model: string, user: string, min: Role) {
+  const row = await env.DB.prepare('SELECT workspace_id, title FROM models WHERE id = ?').bind(model).first<{ workspace_id: string; title: string }>();
+  if (!row) throw new HttpError(404, 'Not found.');
+  return { ...row, ...(await need(env, row.workspace_id, user, min)) };
+}
+
+const room = (env: Env, model: string) => env.MODEL.get(env.MODEL.idFromName(model));
+
+const OAUTH_COOKIE = 'em_oauth';
+
+/** GET auth/providers, GET auth/:provider/start?return=/path, GET auth/:provider/callback (the provider sends people back here). */
+async function auth(req: Request, env: Env, path: string[]): Promise<Response> {
+  const url = new URL(req.url);
+  const emailOn = !!(env.EMAIL && env.EMAIL_FROM);
+  if (path[1] === 'providers' && req.method === 'GET')
+    return json({ providers: [...Object.values(PROVIDERS).filter((p) => p.enabled(env)).map((p) => p.id), ...(emailOn ? ['email'] : [])], dev: env.DEV_LOGIN === '1' });
+  if (path[1] === 'email' && emailOn) return emailAuth(req, env, path[2], url);
+  const p = PROVIDERS[path[1]];
+  if (!p || !p.enabled(env) || req.method !== 'GET') throw new HttpError(404, 'Not found.');
+  const redirect = `${env.PUBLIC_URL}/api/cloud/auth/${p.id}/callback`;
+
+  if (path[2] === 'start') {
+    const state = randomToken();
+    const verifier = randomToken();
+    const back = safeReturn(url.searchParams.get('return'));
+    // The state ties the callback to this browser (no sign-in CSRF); the verifier is PKCE for Google.
+    const value = [p.id, state, verifier, encodeURIComponent(back)].join('.');
+    return new Response(null, {
+      status: 302,
+      headers: { Location: p.authorizeUrl(env, redirect, state, await pkceChallenge(verifier)), 'Set-Cookie': `${OAUTH_COOKIE}=${value}; Path=/api/cloud/auth; HttpOnly; Secure; SameSite=Lax; Max-Age=600`, 'Cache-Control': 'no-store' },
+    });
+  }
+
+  if (path[2] === 'callback') {
+    const [provider, state, verifier, back] = (cookie(req, OAUTH_COOKIE) || '').split('.');
+    const fail = (message: string) =>
+      new Response(null, { status: 302, headers: { Location: `/?signin_error=${encodeURIComponent(message)}`, 'Set-Cookie': `${OAUTH_COOKIE}=; Path=/api/cloud/auth; HttpOnly; Secure; SameSite=Lax; Max-Age=0` } });
+    if (url.searchParams.get('error')) return fail('Sign-in was cancelled.');
+    const code = url.searchParams.get('code');
+    if (!code || !state || provider !== p.id || url.searchParams.get('state') !== state) return fail('Sign-in expired or came from another browser. Try again.');
+    let userId: string;
+    try {
+      const prof = await p.profile(env, code, redirect, verifier);
+      userId = await signIn(env, p.id, prof.subject, prof.email, prof.name, prof.avatar);
+    } catch (e) {
+      console.error('sign-in failed', p.id, (e as Error).message);
+      return fail((e as Error).message.includes('verified email') ? (e as Error).message : `Sign-in with ${p.id === 'github' ? 'GitHub' : 'Google'} failed. Try again.`);
+    }
+    const headers = new Headers({ Location: safeReturn(decodeURIComponent(back || '')), 'Cache-Control': 'no-store' });
+    headers.append('Set-Cookie', await startSession(env, userId));
+    headers.append('Set-Cookie', `${OAUTH_COOKIE}=; Path=/api/cloud/auth; HttpOnly; Secure; SameSite=Lax; Max-Age=0`);
+    return new Response(null, { status: 302, headers });
+  }
+  throw new HttpError(404, 'Not found.');
+}
+
+/** POST auth/email/start {email, return} → a link by email; GET auth/email/callback?token → confirm page; POST auth/email/verify → session. */
+async function emailAuth(req: Request, env: Env, step: string | undefined, url: URL): Promise<Response> {
+  if (step === 'start' && req.method === 'POST') {
+    const b = await body<{ email?: string; return?: string }>(req);
+    const email = (b.email || '').trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 254) throw new HttpError(400, 'Enter an email address.');
+    const hourAgo = new Date(Date.now() - 3600_000).toISOString();
+    const recent = await env.DB.prepare('SELECT COUNT(*) AS n FROM email_links WHERE email = ? AND created_at > ?').bind(email, hourAgo).first<{ n: number }>();
+    if ((recent?.n ?? 0) >= LINKS_PER_HOUR) throw new HttpError(429, 'Too many sign-in links for this address. Try again in an hour.');
+    const token = randomToken();
+    await env.DB.prepare('INSERT INTO email_links (token_hash, email, return_path, created_at, expires_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(await sha256(token), email, safeReturn(b.return ?? null), now(), new Date(Date.now() + LINK_MINUTES * 60_000).toISOString())
+      .run();
+    try {
+      await mailer.send(env, { to: email, link: `${env.PUBLIC_URL}/api/cloud/auth/email/callback?token=${token}` });
+    } catch (e) {
+      console.error('sign-in email failed', (e as { code?: string }).code, (e as Error).message);
+      throw new HttpError(502, 'Could not send the email. Try again in a minute.');
+    }
+    return json({ ok: true });
+  }
+
+  if (step === 'callback' && req.method === 'GET') {
+    const token = url.searchParams.get('token') || '';
+    const link = await env.DB.prepare('SELECT email FROM email_links WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?').bind(await sha256(token), now()).first<{ email: string }>();
+    if (!link) return new Response(null, { status: 302, headers: { Location: `/?signin_error=${encodeURIComponent('That sign-in link has expired or was already used. Ask for a new one.')}` } });
+    // same-origin, not no-referrer: under no-referrer, browsers send "Origin: null" with the form's POST, which the
+    // origin check refuses. same-origin still keeps the token out of requests to other sites.
+    return new Response(confirmPage(token, link.email), {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'Referrer-Policy': 'same-origin',
+        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  }
+
+  if (step === 'verify' && req.method === 'POST') {
+    const token = String((await req.formData()).get('token') || '');
+    // Used once: the update succeeds for only one request.
+    const link = await env.DB.prepare('UPDATE email_links SET used_at = ? WHERE token_hash = ? AND used_at IS NULL AND expires_at > ? RETURNING email, return_path')
+      .bind(now(), await sha256(token), now())
+      .first<{ email: string; return_path: string }>();
+    if (!link) return new Response(null, { status: 303, headers: { Location: `/?signin_error=${encodeURIComponent('That sign-in link has expired or was already used. Ask for a new one.')}` } });
+    const userId = await signIn(env, 'email', link.email, link.email, '');
+    return new Response(null, { status: 303, headers: { Location: safeReturn(link.return_path), 'Set-Cookie': await startSession(env, userId), 'Cache-Control': 'no-store' } });
+  }
+  throw new HttpError(404, 'Not found.');
+}
+
+async function route(req: Request, env: Env, path: string[]): Promise<Response> {
+  const method = req.method;
+
+  if (path[0] === 'dev' && path[1] === 'login' && method === 'POST') {
+    if (env.DEV_LOGIN !== '1') throw new HttpError(404, 'Not found.');
+    const b = await body<{ email?: string; name?: string }>(req);
+    const email = (b.email || '').trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+$/.test(email)) throw new HttpError(400, 'An email address is needed.');
+    const userId = await signIn(env, 'email', email, email, (b.name || '').slice(0, 100));
+    return json({ ok: true }, 200, { 'Set-Cookie': await startSession(env, userId) });
+  }
+
+  if (path[0] === 'auth') return auth(req, env, path);
+
+  const user = await sessionUser(req, env);
+  if (!user) throw new HttpError(401, 'Sign in first.');
+
+  if (path[0] === 'logout' && method === 'POST') {
+    await env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(await sha256(cookie(req, SESSION_COOKIE)!)).run();
+    return json({ ok: true }, 200, { 'Set-Cookie': `${SESSION_COOKIE}=; Path=/api/cloud; HttpOnly; Secure; SameSite=Lax; Max-Age=0` });
+  }
+
+  if (path[0] === 'me' && method === 'GET') {
+    const { results } = await env.DB.prepare('SELECT w.id, w.name, w.plan, m.role FROM members m JOIN workspaces w ON w.id = m.workspace_id WHERE m.user_id = ? ORDER BY w.name').bind(user.id).all();
+    return json({ user, workspaces: results });
+  }
+
+  if (path[0] === 'workspaces' && !path[1] && method === 'POST') {
+    const b = await body<{ name?: string }>(req);
+    const name = (b.name || '').trim().slice(0, 100);
+    if (!name) throw new HttpError(400, 'A workspace needs a name.');
+    const owned = await env.DB.prepare('SELECT COUNT(*) AS n FROM workspaces WHERE created_by = ?').bind(user.id).first<{ n: number }>();
+    if ((owned?.n ?? 0) >= quotaFor('free').workspacesPerUser) throw new HttpError(403, `You can create up to ${quotaFor('free').workspacesPerUser} workspaces.`);
+    const id = newId();
+    await env.DB.batch([
+      env.DB.prepare('INSERT INTO workspaces (id, name, created_by, created_at) VALUES (?, ?, ?, ?)').bind(id, name, user.id, now()),
+      env.DB.prepare("INSERT INTO members (workspace_id, user_id, role, added_at) VALUES (?, ?, 'owner', ?)").bind(id, user.id, now()),
+    ]);
+    return json({ id, name, plan: 'free', role: 'owner' }, 201);
+  }
+
+  if (path[0] === 'workspaces' && path[1]) {
+    const ws = path[1];
+    if (!path[2] && method === 'GET') {
+      const { role } = await need(env, ws, user.id, 'viewer');
+      const [members, models] = await Promise.all([
+        env.DB.prepare('SELECT u.id, u.email, u.name, m.role FROM members m JOIN users u ON u.id = m.user_id WHERE m.workspace_id = ? ORDER BY u.email').bind(ws).all(),
+        env.DB.prepare('SELECT id, title, size, updated_at FROM models WHERE workspace_id = ? ORDER BY updated_at DESC').bind(ws).all(),
+      ]);
+      return json({ id: ws, role, members: members.results, models: models.results });
+    }
+
+    if (path[2] === 'members' && !path[3] && method === 'POST') {
+      const { plan } = await need(env, ws, user.id, 'owner');
+      const b = await body<{ email?: string; role?: Role }>(req);
+      const role = b.role && RANK[b.role] ? b.role : 'editor';
+      // Email invitations arrive with email sign-in; until then a member must have signed in once.
+      const target = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind((b.email || '').trim().toLowerCase()).first<{ id: string }>();
+      if (!target) throw new HttpError(404, 'Nobody with that email has signed in yet.');
+      const count = await env.DB.prepare('SELECT COUNT(*) AS n FROM members WHERE workspace_id = ?').bind(ws).first<{ n: number }>();
+      const existing = await roleIn(env, ws, target.id);
+      if (!existing && (count?.n ?? 0) >= quotaFor(plan).membersPerWorkspace) throw new HttpError(403, `Workspaces are limited to ${quotaFor(plan).membersPerWorkspace} members.`);
+      await env.DB.prepare('INSERT INTO members (workspace_id, user_id, role, added_at) VALUES (?, ?, ?, ?) ON CONFLICT (workspace_id, user_id) DO UPDATE SET role = excluded.role').bind(ws, target.id, role, now()).run();
+      return json({ ok: true, role });
+    }
+
+    if (path[2] === 'members' && path[3] && method === 'DELETE') {
+      // Owners remove anyone; anyone can leave.
+      if (path[3] !== user.id) await need(env, ws, user.id, 'owner');
+      else await need(env, ws, user.id, 'viewer');
+      const owners = await env.DB.prepare("SELECT user_id FROM members WHERE workspace_id = ? AND role = 'owner'").bind(ws).all<{ user_id: string }>();
+      if (owners.results.length === 1 && owners.results[0].user_id === path[3]) throw new HttpError(409, 'A workspace needs an owner: make someone else owner first.');
+      await env.DB.prepare('DELETE FROM members WHERE workspace_id = ? AND user_id = ?').bind(ws, path[3]).run();
+      return json({ ok: true });
+    }
+
+    if (path[2] === 'models' && !path[3] && method === 'POST') {
+      const { plan } = await need(env, ws, user.id, 'editor');
+      const q = quotaFor(plan);
+      const text = await req.text();
+      const title = checkModel(text, q.modelBytes);
+      const count = await env.DB.prepare('SELECT COUNT(*) AS n FROM models WHERE workspace_id = ?').bind(ws).first<{ n: number }>();
+      if ((count?.n ?? 0) >= q.modelsPerWorkspace) throw new HttpError(403, `Workspaces are limited to ${q.modelsPerWorkspace} models.`);
+      const id = newId();
+      await room(env, id).create(text, user.id);
+      await env.DB.prepare('INSERT INTO models (id, workspace_id, title, size, created_by, created_at, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(id, ws, title, text.length, user.id, now(), now(), user.id).run();
+      return json({ id, title, version: 1 }, 201);
+    }
+  }
+
+  if (path[0] === 'models' && path[1]) {
+    const id = path[1];
+
+    if (!path[2] && method === 'GET') {
+      const a = await modelAccess(env, id, user.id, 'viewer');
+      const r = await room(env, id).read();
+      if (!r) throw new HttpError(404, 'Not found.');
+      return json({ id, workspace_id: a.workspace_id, role: a.role, version: r.version, text: r.text }, 200, { ETag: `"${r.version}"` });
+    }
+
+    if (!path[2] && method === 'PUT') {
+      const a = await modelAccess(env, id, user.id, 'editor');
+      const base = Number((req.headers.get('If-Match') || '').replace(/"/g, ''));
+      if (!Number.isInteger(base) || base < 1) throw new HttpError(428, 'Send If-Match with the version this save is based on.');
+      const q = quotaFor(a.plan);
+      const text = await req.text();
+      const title = checkModel(text, q.modelBytes);
+      const r: WriteResult = await room(env, id).write(base, text, user.id, q.savesPerMinute);
+      if (!r.ok) {
+        if (r.reason === 'conflict') throw new HttpError(409, 'Someone else saved a newer version.', { version: r.version, text: r.text });
+        if (r.reason === 'rate') throw new HttpError(429, 'Too many saves for this model; try again in a minute.');
+        throw new HttpError(404, 'Not found.');
+      }
+      await env.DB.prepare('UPDATE models SET title = ?, size = ?, updated_at = ?, updated_by = ? WHERE id = ?').bind(title, text.length, now(), user.id, id).run();
+      return json({ version: r.version }, 200, { ETag: `"${r.version}"` });
+    }
+
+    if (!path[2] && method === 'DELETE') {
+      await modelAccess(env, id, user.id, 'owner');
+      await room(env, id).destroy();
+      await env.DB.prepare('DELETE FROM models WHERE id = ?').bind(id).run();
+      return json({ ok: true });
+    }
+
+    if (path[2] === 'history' && method === 'GET') {
+      await modelAccess(env, id, user.id, 'viewer');
+      return json(await room(env, id).history());
+    }
+
+    if (path[2] === 'live' && method === 'GET') {
+      if (req.headers.get('Upgrade') !== 'websocket') throw new HttpError(426, 'Expected a WebSocket.');
+      const a = await modelAccess(env, id, user.id, 'viewer');
+      const headers = new Headers({ Upgrade: 'websocket', 'x-user-id': user.id, 'x-user-name': user.name || user.email, 'x-role': a.role });
+      return room(env, id).fetch(new Request('https://room/live', { headers }));
+    }
+  }
+
+  throw new HttpError(404, 'Not found.');
+}
+
+export default {
+  async fetch(req: Request, env: Env): Promise<Response> {
+    const url = new URL(req.url);
+    if (!url.pathname.startsWith('/api/cloud/')) return json({ error: 'Not found.' }, 404);
+    // Changes and live connections only from our own pages, so another site can't act with someone's cookie.
+    const changes = req.method !== 'GET' && req.method !== 'HEAD';
+    if (changes || req.headers.get('Upgrade') === 'websocket') {
+      const allowed = env.ALLOWED_ORIGINS.split(',').map((s) => s.trim());
+      if (!allowed.includes(req.headers.get('Origin') || '')) return json({ error: 'Origin not allowed.' }, 403);
+    }
+    try {
+      return await route(req, env, url.pathname.slice('/api/cloud/'.length).split('/').filter(Boolean).map(decodeURIComponent));
+    } catch (e) {
+      if (e instanceof HttpError) return json({ error: e.message, ...e.body }, e.status);
+      console.error('cloud api error', (e as Error).message);
+      return json({ error: 'Something went wrong.' }, 500);
+    }
+  },
+} satisfies ExportedHandler<Env>;

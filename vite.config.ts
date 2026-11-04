@@ -9,6 +9,9 @@ export default defineConfig({
   server: {
     port: 5180,
     // Model files change underneath the app (Claude edits them); the API pushes those as events instead of page reloads.
-    watch: { ignored: ['**/models/**', '**/_archive/**', '**/bin/**'] },
+    watch: { ignored: ['**/models/**', '**/_archive/**', '**/bin/**', '**/cloud/.wrangler/**'] },
+    // Shared workspaces in development: EM_CLOUD=http://localhost:8787 npm run dev, with `wrangler dev` running in cloud/.
+    // Same origin for the app, so the session cookie and live connection work as they will on entitymodel.com.
+    proxy: process.env.EM_CLOUD ? { '/api/cloud': { target: process.env.EM_CLOUD, ws: true } } : undefined,
   },
 });

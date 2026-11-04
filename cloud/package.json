@@ -1,0 +1,18 @@
+{
+  "name": "entitymodel-cloud",
+  "private": true,
+  "type": "module",
+  "description": "Shared workspaces backend for entitymodel.com (Worker + D1 + one Durable Object per model). Not deployed yet.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "types": "wrangler types --strict-vars=false src/worker-configuration.d.ts"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.5.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12",
+    "wrangler": "4.157.0"
+  }
+}

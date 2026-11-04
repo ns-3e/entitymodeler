@@ -17,9 +17,9 @@ export interface PullPlan {
 
 const sourceKey = (s: { platform: string; catalog?: string; schema?: string }) => `${s.platform}|${(s.catalog || '').toLowerCase()}|${(s.schema || '').toLowerCase()}`;
 
-export function planPull(doc: DataModel, snap: CatalogSnapshot, opts: { name?: string } = {}): PullPlan {
+export function planPull(doc: DataModel, snap: CatalogSnapshot, opts: { name?: string; profile?: string } = {}): PullPlan {
   const { model, warnings } = fromCatalog(snap);
-  const source: NonNullable<TabMeta['source']> = { platform: snap.platform, ...(snap.catalog ? { catalog: snap.catalog } : {}), ...(snap.schema ? { schema: snap.schema } : {}), pulled_at: snap.captured_at };
+  const source: NonNullable<TabMeta['source']> = { platform: snap.platform, ...(snap.catalog ? { catalog: snap.catalog } : {}), ...(snap.schema ? { schema: snap.schema } : {}), ...(opts.profile && snap.platform === 'databricks' ? { profile: opts.profile } : {}), pulled_at: snap.captured_at };
   const key = sourceKey(source);
   const previous = listTabs(doc)
     .filter((t) => t.source && sourceKey(t.source) === key)

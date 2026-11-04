@@ -3,7 +3,7 @@ title: Mappings, glossary and comments
 seo_title: Source-to-target mappings and business glossary
 description: Record source-to-target mappings and generate dbt model SQL, link entities and attributes to a shared business glossary, and review data models with comment threads in EntityModel.com.
 section: Guides
-order: 9
+order: 10
 ---
 
 ## Source-to-target mappings

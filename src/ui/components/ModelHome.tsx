@@ -1,3 +1,4 @@
+import { WorkspacesSection } from './Workspaces';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Download, FileInput, FileJson, FolderOpen, HardDrive, Plus, Sparkles, Trash2, Workflow } from '../icons';
 import { createModel, decodeShareFragment, isShareFragment, normalizeModel, toInternalName, type DataModel, type ModelSummary } from '../../core';
@@ -266,6 +267,16 @@ export function ModelHome() {
           </div>
         )}
       </div>
+
+      <WorkspacesSection localModels={models || []} />
+
+      <footer className="home-foot">
+        © {new Date().getFullYear()}{' '}
+        <a href="https://advsys.io" target="_blank" rel="noopener">
+          Smith Advanced Systems LLC
+        </a>
+        . Free and open source under the MIT license.
+      </footer>
 
       {creating && (
         <Modal

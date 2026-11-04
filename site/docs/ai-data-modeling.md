@@ -3,7 +3,7 @@ title: AI data modeling with Claude and MCP
 seo_title: AI data modeling with Claude and MCP
 description: Use AI to design and change data models in EntityModel.com. Copy a prompt into Claude, use Ask Claude in the app, or connect any MCP agent. The agent proposes typed changes that you review and accept.
 section: Guides
-order: 12
+order: 13
 ---
 
 EntityModel.com is built so an AI assistant can work on a model safely. Models are plain JSON with a [documented format](/docs/model-format/), and agents change them through **proposals**: lists of typed changes you review, edit and accept in the app, as one undoable step.
@@ -41,7 +41,7 @@ When you [run EntityModel.com locally](/docs/getting-started/#run-it-locally) an
 | Purpose | Tools |
 | --- | --- |
 | Read and check | `get_model`, `get_entity`, `search`, `validate`, `list_tabs` |
-| Transform and generate | `diff_tabs`, `migration_sql`, `export`, `docs`, `derive_tab`, `import_ddl`, `pull_schema`, `sync_tabs`, `auto_map` |
+| Transform and generate | `diff_tabs`, `migration_sql`, `export`, `docs`, `derive_tab`, `import_ddl`, `pull_schema`, `profile_data`, `plan_writeback`, `sync_tabs`, `auto_map` |
 | Change | `propose_changes`, `fix_issues`, `propose_terms` |
 | Review | `list_comments`, `reply_comment`, `list_proposals`, `withdraw_proposal` |
 | Glossary | `search_glossary` |

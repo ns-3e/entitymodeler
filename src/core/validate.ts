@@ -4,6 +4,7 @@ import { primaryKey, relationshipEnds } from './model';
 import { checkStandards } from './standards';
 import { validateMappings } from './mappings';
 import { validateTerms } from './glossary';
+import { profileIssues } from './profile';
 import type { DataModel, Entity, Issue, IssueLevel } from './types';
 
 const ENTITY_NAME_RE = /^[a-z][a-z0-9_]*$/;
@@ -52,6 +53,20 @@ export function validateModel(m: DataModel): Issue[] {
       else if (entityByName.has(ends.child) && !entityByName.get(ends.child)!.attributes.some((a) => a.name === r.foreign_key))
         push('error', 'rel.fk', `Relationship "${r.name}": foreign key "${r.foreign_key}" is not an attribute of "${ends.child}".`, t);
     }
+    // The relationship's own attributes (an enrollment's grade): columns of the junction table (N:N) or the child table.
+    const ra = r.attributes || [];
+    dupes(ra.map((x) => x.name.toLowerCase())).forEach((n) => push('error', 'rel.attr_duplicate', `Relationship "${r.name}" has two attributes named "${n}".`, t));
+    for (const x of ra) {
+      if (!ATTR_NAME_RE.test(x.name)) push('error', 'rel.attr_name', `Relationship "${r.name}": invalid attribute name "${x.name}".`, t);
+      if (x.type === 'STRUCT' || x.type === 'REFERENCE_ENTITY')
+        push('error', 'rel.attr_type', `Relationship "${r.name}".${x.name}: relationship attributes take a simple type (STRING, INT, DATE…), not ${x.type === 'STRUCT' ? 'a struct' : 'a reference'}.`, t);
+    }
+    const relEnds = relationshipEnds(r);
+    const childEntity = relEnds && entityByName.get(relEnds.child);
+    if (childEntity)
+      for (const x of ra)
+        if (childEntity.attributes.some((c) => c.name.toLowerCase() === x.name.toLowerCase()))
+          push('warning', 'rel.attr_clash', `Relationship "${r.name}".${x.name} has the same name as ${childEntity.display_name}.${x.name}, where exports put it; the column gets a numbered name. Rename one of them.`, t);
     if (r.bidirectional && !r.reverse_label) push('warning', 'rel.rev', `Bidirectional relationship "${r.name}" has no reverse label.`, t);
     if (r.bidirectional && r.reverse_label && r.reverse_label === r.forward_label)
       push('error', 'rel.labels', `Relationship "${r.name}" reverse label must differ from forward label.`, t);
@@ -91,6 +106,8 @@ export function validateModel(m: DataModel): Issue[] {
   // Naming standards for this kind of tab, when the model sets them.
   issues.push(...checkStandards(m));
   issues.push(...validateTerms(m));
+  // Where profiled data disagrees with the design.
+  issues.push(...profileIssues(m));
   return issues;
 }
 

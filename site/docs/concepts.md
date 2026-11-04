@@ -40,9 +40,20 @@ A **relationship** is a named link between two entities with:
 - a **cardinality**: one-to-one (1:1), one-to-many (1:N), many-to-one (N:1) or many-to-many (N:N);
 - **forward and reverse labels**, so it reads as a sentence: "Customer *places* Order", "Order *is placed by* Customer";
 - optionally, a **foreign key**: the child attribute that holds the parent's key, used for SQL export;
-- optionally, **attributes of its own**, such as the quantity on a many-to-many link.
+- optionally, **attributes of its own**: facts about the link rather than either entity, such as a student's grade in a course or the date an advisor took a student on.
 
 Relationships use crow's foot notation on the diagram. Many-to-many relationships become junction tables when exported to SQL or derived into a physical model.
+
+### Relationship attributes
+
+Select a relationship and use **Relationship attributes → Attribute** in the inspector. Each one has a name, a type, a description and a **Required** flag. They show under the relationship's label on the diagram.
+
+Where they end up:
+
+- **Many-to-many:** columns of the junction table, next to the two keys. Required ones are `NOT NULL`.
+- **One-to-many, many-to-one, one-to-one:** columns of the child entity, the one that holds the foreign key. They are never `NOT NULL` there, because a child without the link has no value for them.
+
+Deriving a physical tab moves them onto those tables. Deriving a logical tab turns a link table keyed by its two foreign keys, with up to two other columns, back into a many-to-many relationship that carries those columns as attributes. SQL import does the same. Design documents list them in a **Relationship attributes** table, and compare reports when they're added, removed or changed.
 
 ## Hierarchies
 

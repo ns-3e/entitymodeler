@@ -1,0 +1,36 @@
+// Shared workspaces backend. Separate from the site's wrangler.jsonc (repo root): merging to main deploys only the
+// static site; this Worker is deployed with `cd cloud && npx wrangler deploy`. Its route on entitymodel.com/api/cloud/*
+// takes precedence over the site's custom domain for those paths only.
+{
+  "name": "entitymodel-cloud",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-02",
+  "workers_dev": false,
+  "routes": [{ "pattern": "entitymodel.com/api/cloud/*", "zone_name": "entitymodel.com" }],
+  "d1_databases": [
+    { "binding": "DB", "database_name": "entitymodel-cloud", "database_id": "99248fdf-0e58-4fdb-9fb0-2bd95644b922", "migrations_dir": "migrations" }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "MODEL", "class_name": "ModelRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ModelRoom"] }],
+  // Sign-in links: entitymodel.com is onboarded to Email Sending (SPF, DKIM, DMARC set up 2026-11-04).
+  "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["signin@entitymodel.com"] }],
+  "vars": {
+    // Origins allowed to make changes and open live connections (comma-separated). Local runs add theirs with
+    // --var ALLOWED_ORIGINS:http://localhost:5180 (see README).
+    "ALLOWED_ORIGINS": "https://entitymodel.com",
+    // "1" enables POST /api/cloud/dev/login (sign in by email, no password). Local development and tests only.
+    "DEV_LOGIN": "0",
+    // Where sign-in providers send people back to (the OAuth redirect URI is PUBLIC_URL/api/cloud/auth/<provider>/callback).
+    "PUBLIC_URL": "https://entitymodel.com",
+    // OAuth client ids are public. The secrets are set with `wrangler secret put GITHUB_CLIENT_SECRET` and
+    // `wrangler secret put GOOGLE_CLIENT_SECRET`, never in this file. A provider without both is not offered.
+    "EMAIL_FROM": "signin@entitymodel.com",
+    // Replies to sign-in emails reach support@, which Email Routing forwards to the owner.
+    "EMAIL_REPLY_TO": "support@entitymodel.com",
+    "GITHUB_CLIENT_ID": "Ov23lifnno0DlGr8eZSF",
+    "GOOGLE_CLIENT_ID": ""
+  },
+  "observability": { "enabled": true }
+}

@@ -51,6 +51,46 @@ node bin/em.mjs pull sales --csv result.csv --platform snowflake
 
 Add `--propose` to turn the pull into a proposal you review in the app instead of applying it directly.
 
+A Databricks tab remembers the CLI profile name it was pulled with (never the token), so profiling and write-back reach the same workspace without `--profile`.
+
+## Profile the data
+
+A schema says what a table may hold; profiling shows what it does hold. `em profile` runs one query per table where the tab was pulled from and stores, for each column, how many rows have a value, how many distinct values there are, the range of numbers and dates, and the longest string. It never stores sample values, so a profiled model is still safe to commit.
+
+```bash
+node bin/em.mjs profile sales                    # first 100,000 rows per table
+node bin/em.mjs profile sales --sample 0         # every row
+node bin/em.mjs profile sales --entities orders,customer --propose
+
+# Without a connection: print the queries, run them yourself, save the results as CSV
+node bin/em.mjs profile sales --query > profile.sql
+node bin/em.mjs profile sales --csv results.csv
+```
+
+In the app, running locally (`npm run dev`), a tab pulled from a database has a **Profile data** button in Issues and in the command palette (⌘K). It runs the same queries on this machine and applies the results as one undo step.
+
+On Databricks the queries run on a SQL warehouse: `--warehouse <id>` or `DATABRICKS_WAREHOUSE_ID`, else the first running warehouse (a stopped one is started). Distinct values are counted exactly in the sample; with `--sample 0`, Databricks and Snowflake estimate them (within a few percent), and the checks allow for that. The numbers then show under each attribute in the inspector, and validation reports where the data disagrees with the design:
+
+- a primary key that is empty or repeats, or a unique column that repeats
+- a required column with empty rows
+- a table without a primary key that has a column with a value in every row and no repeats: a candidate key
+- a column that is always empty, or columns that are always set (they could be required: one note per table, with a one-click fix in Issues)
+- a text column with only a handful of distinct values, a candidate reference list
+
+## Write descriptions back to the catalog
+
+Once tables and columns are described in the model, `em writeback` puts those descriptions into the catalog the tab was pulled from, so people browsing the catalog see them too. On Databricks it also tags personal-data columns (`pii`) and columns linked to a glossary term (`business_term`).
+
+```bash
+node bin/em.mjs writeback sales                 # print the statements, run nothing
+node bin/em.mjs writeback sales --out docs.sql  # save them to review or run elsewhere
+node bin/em.mjs writeback sales --apply         # run them
+```
+
+It reads the catalog first and lists only what differs. It never removes anything: a description left blank in the model keeps the catalog's comment. Agents get the same plan from the `plan_writeback` tool, which only returns the SQL; a person runs it.
+
+In the app, running locally, **Write back** in Issues (or ⌘K) shows the same statements for the active tab, ready to copy or download as a `.sql` file. The app never runs them; run them in your SQL editor or with `--apply`.
+
 ## Next steps
 
 - Derive a **logical** model from the imported physical tab to get business names and relationships. See [Conceptual, logical and physical data models](/docs/learn/conceptual-logical-physical-data-models/).
@@ -62,6 +102,10 @@ Add `--propose` to turn the pull into a proposal you review in the app instead o
 ### Does EntityModel.com need my database password?
 
 No. In the browser it gives you a metadata query to run in your own SQL tool and reads the pasted result. The command-line pull uses credentials from your environment or CLI profile and never writes them to the model.
+
+### Does profiling copy my data into the model?
+
+No. `em profile` stores counts (rows, non-empty rows, distinct values), the longest string, and the smallest and largest value of numbers and dates. Text values, such as names or emails, are never stored. Columns flagged as PII, or named like personal data (birth date, social security number, phone…), keep counts only, without their smallest and largest values.
 
 ### Can I reverse-engineer Databricks Unity Catalog tables into an ERD?
 

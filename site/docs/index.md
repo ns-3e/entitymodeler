@@ -31,8 +31,8 @@ order: 0
 
 ## Why EntityModel.com
 
-- **Free and open source.** MIT license, no paid tier, no account. Run the hosted site or your own copy.
-- **Private by default.** On entitymodel.com your models live in your browser's storage. Nothing is uploaded unless you export or share it, and share links keep the model in the part of the URL that browsers never send to a server.
+- **Free and open source.** MIT license, and no account needed to model: you only sign in for [shared workspaces](/docs/shared-workspaces/). Run the hosted site or your own copy.
+- **Private by default.** On entitymodel.com your models live in your browser's storage. Nothing is uploaded unless you export or share it or add it to a shared workspace, and share links keep the model in the part of the URL that browsers never send to a server.
 - **Works offline.** The site caches itself on your first visit and installs as an app.
 - **One model, many outputs.** The same model produces diagrams, SQL for four dialects, DBML, Mermaid, dbt tests, data contracts and a PDF design document.
 - **Conceptual, logical and physical in one file.** Derive one kind of model from another, compare them, and generate migration SQL between versions.
@@ -49,7 +49,7 @@ New to the topic? Start with [What is an ER diagram?](/docs/learn/what-is-an-er-
 
 ### Is EntityModel.com free?
 
-Yes. EntityModel.com is free to use at entitymodel.com and open source under the MIT license. There is no paid plan, no account and no usage limit.
+Yes. EntityModel.com is free to use at entitymodel.com and open source under the MIT license. There is no paid plan, and the modeler needs no account and has no usage limit. Shared workspaces need a free account and have limits on workspaces, models and members.
 
 ### Do I need to install anything?
 

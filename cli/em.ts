@@ -8,7 +8,11 @@ import { buildModelPdf, PDF_ASSET_FILES, type PdfAssets } from '../src/core/pdf'
 import { deleteProposal, listProposals, readGlossary, sha1, writeGlossary, writeProposal } from '../src/server/workbench';
 import { runMcp } from './mcp';
 import { pullSnapshot } from './pull';
+import { DEFAULT_SAMPLE, modelTables, profileFromCsv, profileLive, profileScope } from './profile';
+import { writeback } from './writeback';
 import {
+  profileIssues,
+  profileQuery,
   buildDocTables,
   createModel,
   dependencyOrder,
@@ -221,7 +225,7 @@ async function main() {
         // Apply every mechanical fix (naming standards) per tab; descriptions and the like stay for a person.
         let total = 0;
         for (const id of TAB ? [tabId(m)] : listTabs(m).map((t) => t.id)) {
-          const r = applyFixes(m, validateModel(tabView(m, id)), id);
+          const r = applyFixes(m, validateModel(tabView(m, id)).filter((i) => !i.suggested), id);
           total += r.applied;
           for (const o of r.ops) console.log(`${dry ? 'would ' : ''}${describeOp(o)}`);
         }
@@ -592,14 +596,15 @@ async function main() {
       const name = flag('name');
       const propose = bool('propose');
       const saveSnap = flag('save-snapshot');
+      const profile = flag('profile');
       const snap = await pullSnapshot(
-        { from: flag('from'), csv: flag('csv'), snapshot: flag('snapshot'), platform: flag('platform'), catalog: flag('catalog'), schema: flag('schema'), profile: flag('profile'), url: flag('url') },
+        { from: flag('from'), csv: flag('csv'), snapshot: flag('snapshot'), platform: flag('platform'), catalog: flag('catalog'), schema: flag('schema'), profile, url: flag('url') },
         (s) => console.log(s),
       );
       if (saveSnap) writeFileSync(saveSnap, JSON.stringify(snap, null, 2) + '\n');
       const text = readFileSync(p, 'utf8');
       const doc = normalizeModel(JSON.parse(text));
-      const plan = planPull(doc, snap, { name });
+      const plan = planPull(doc, snap, { name, profile });
       for (const w of plan.warnings) console.log(`note: ${w}`);
       const r = applyOps(doc, plan.ops);
       if (!r.ok) fail(r.error);
@@ -614,6 +619,59 @@ async function main() {
         const d = diffCounts(diffTabs(r.doc, plan.previous, id));
         console.log(`Since “${tabLabel(r.doc, plan.previous)}”: ${d.added} added, ${d.removed} removed, ${d.changed} changed. See: em diff ${basename(dirname(p))} ${plan.previous} ${id}`);
       }
+      return;
+    }
+    case 'profile': {
+      const p = resolveModelPath(args.shift());
+      const doc = load(p);
+      const id = tabId(doc);
+      const sampleFlag = flag('sample');
+      const sample = sampleFlag === undefined ? DEFAULT_SAMPLE : Number(sampleFlag);
+      const entities = flag('entities')?.split(',').map((x) => x.trim()).filter(Boolean);
+      const src = { from: flag('from') || flag('platform'), catalog: flag('catalog'), schema: flag('schema'), profile: flag('profile'), warehouse: flag('warehouse'), url: flag('url'), sample, entities };
+      const csv = flag('csv');
+      const propose = bool('propose');
+      if (bool('query')) {
+        // The paste path: one statement per table, to run in any SQL tool and save the results as CSV.
+        const s = profileScope(doc, id, src);
+        for (const { table } of modelTables(tabView(doc, id), entities, s.from)) console.log(profileQuery(s.from as CatalogPlatform, table, { catalog: s.catalog, sample }) + '\n');
+        return;
+      }
+      const r = csv ? { ...profileFromCsv(doc, id, csv, sample), skipped: [] as string[] } : await profileLive(doc, id, src, (s) => console.log(s));
+      if (!r.ops.length) fail(`No tables profiled.${r.skipped.length ? ` Skipped: ${r.skipped.join('; ')}` : ''}`);
+      const text = readFileSync(p, 'utf8');
+      const res = applyOps(doc, r.ops, { tab: id });
+      if (!res.ok) fail(res.error);
+      if (propose) {
+        const prop = writeProposal(dirname(p), { title: `Profile ${r.profiled} table(s)`, author: process.env.USER || 'cli', tab: id, base_hash: sha1(text), ops: r.ops });
+        console.log(`Saved proposal ${prop.id}.`);
+      } else save(p, res.doc);
+      if (r.skipped.length) console.log(`Not profiled: ${r.skipped.join('; ')}`);
+      const found = profileIssues(tabView(res.doc, id));
+      console.log(`${propose ? 'Proposed profiles for' : 'Profiled'} ${r.profiled} table(s). ${found.length} finding(s)${found.length ? ':' : '.'}`);
+      for (const i of found.slice(0, 40)) console.log(`  ${i.level.padEnd(7)} ${i.message}`);
+      if (found.length > 40) console.log(`  … ${found.length - 40} more: em validate ${basename(dirname(p))} --all`);
+      return;
+    }
+    case 'writeback': {
+      const p = resolveModelPath(args.shift());
+      const doc = load(p);
+      const id = tabId(doc);
+      const apply = bool('apply');
+      const out = flag('out');
+      const src = { from: flag('from'), catalog: flag('catalog'), schema: flag('schema'), profile: flag('profile'), warehouse: flag('warehouse'), url: flag('url'), tags: !bool('no-tags'), apply };
+      const r = await writeback(doc, id, src, (s) => console.log(s));
+      if (!r.statements.length) return void console.log('The catalog already has everything the model documents. Nothing to write.');
+      const sql = r.statements.map((s) => `-- ${s.what}\n${s.sql}`).join('\n');
+      if (out) writeFileSync(out, sql + '\n');
+      if (!apply) {
+        if (!out) console.log(sql);
+        console.log(`\n${r.statements.length} statement(s)${out ? ` written to ${out}` : ''}. Nothing was run: review them, then add --apply to run them.`);
+        return;
+      }
+      console.log(`Ran ${r.applied} of ${r.statements.length} statement(s).`);
+      for (const f of r.failed) console.log(`  failed: ${f}`);
+      if (r.failed.length) process.exitCode = 1;
       return;
     }
     case 'mcp':
@@ -737,6 +795,16 @@ Live schemas (credentials from env or the platform CLI profile; never stored)
                                          derived from the previous one (diff/migrate show the drift)
   catalog-query --platform P [--catalog C] [--schema S]
                                          The metadata query to run yourself (then pull --csv)
+  profile <model> [--tab T] [--sample N] [--entities a,b] [--warehouse ID] [--propose]
+                                         Measure the tab's tables (rows, nulls, distinct values, ranges,
+                                         longest string) where it was pulled from, or --from/--catalog/
+                                         --schema; first 100,000 rows per table unless --sample 0.
+                                         Findings show in validate (e.g. a key that repeats)
+  profile <model> --query [--platform P] The statements to run yourself (then profile --csv results.csv)
+  writeback <model> [--tab T] [--out F] [--no-tags] [--apply]
+                                         Put the model's descriptions (and on Databricks, PII and
+                                         glossary tags) into the catalog the tab was pulled from. Prints
+                                         only what differs; --apply runs it. Never removes anything
 
 Agents
   mcp [--allow-apply] [--author NAME]    MCP server on stdio (see .mcp.json); edits become proposals

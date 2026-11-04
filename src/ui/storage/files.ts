@@ -63,6 +63,14 @@ export async function connectFiles(): Promise<ModelStorage | null> {
       },
       onChange: (cb) => hot('em:glossary', () => cb()),
     },
+    async profile(id, req) {
+      const r = await fetch(`${modelUrl(id)}/profile`, { method: 'POST', body: JSON.stringify(req), headers: { 'Content-Type': 'application/json' } });
+      return json(r);
+    },
+    async writebackPlan(id, req) {
+      const r = await fetch(`${modelUrl(id)}/writeback-plan`, { method: 'POST', body: JSON.stringify(req), headers: { 'Content-Type': 'application/json' } });
+      return json(r);
+    },
     agentTools: {
       canRun,
       proposals: (id) => fetch(`${modelUrl(id)}/proposals`).then((r) => json<Proposal[]>(r)),

@@ -3,7 +3,7 @@ title: Naming standards and validation
 seo_title: Data model naming standards and validation
 description: EntityModel.com validates data models as you edit and enforces your naming standards per model kind (case, singular or plural, prefixes, key suffix, abbreviations, length, descriptions, PII review), with one-click fixes.
 section: Guides
-order: 10
+order: 11
 ---
 
 ## Validation

@@ -32,7 +32,10 @@ export function AttributesTab({ entity, upd, focus }: { entity: Entity; upd: Ent
   return (
     <div className="attr-list">
       <div className="attr-toolbar">
-        <span className="muted small">{entity.attributes.length} attributes · drag to reorder</span>
+        <span className="muted small">
+          {entity.attributes.length} attributes · drag to reorder
+          {entity.profile && ` · ${entity.profile.rows.toLocaleString()}${entity.profile.sampled ? ' sampled' : ''} rows profiled ${new Date(entity.profile.profiled_at).toLocaleDateString('en-CA')}`}
+        </span>
         <span className="spacer" />
         <button className="btn sm ghost" onClick={() => setBulk(true)}>
           <ClipboardPaste size={14} /> Paste columns
@@ -202,6 +205,11 @@ function AttributeRow({
           <Braces size={12} /> {a.struct_type || 'no struct type'}
         </div>
       )}
+      {a.profile && entity.profile?.rows ? (
+        <div className="attr-sub example" title="Measured with em profile">
+          {profileLine(a.profile, entity.profile.rows)}
+        </div>
+      ) : null}
       {open && (
         <div className="attr-detail">
           <div className="grid2">
@@ -278,6 +286,16 @@ function AttributeRow({
       )}
     </div>
   );
+}
+
+/** "12% empty · 3 distinct · 1 – 300": what profiling found, in one line. */
+function profileLine(p: NonNullable<Attribute['profile']>, rows: number): string {
+  const empty = rows - p.non_null;
+  const parts = [empty === 0 ? 'never empty' : empty === rows ? 'always empty' : `${Math.max(1, Math.round((100 * empty) / rows))}% empty`];
+  if (p.distinct !== undefined && p.non_null) parts.push(p.distinct >= p.non_null ? 'all distinct' : `${p.distinct.toLocaleString()} distinct`);
+  if (p.min !== undefined && p.max !== undefined) parts.push(p.min === p.max ? p.min : `${p.min} – ${p.max}`);
+  if (p.max_length !== undefined) parts.push(`up to ${p.max_length} chars`);
+  return parts.join(' · ');
 }
 
 export function AllowedValues({ values, emptyHint, max = 24 }: { values: string[]; emptyHint?: string; max?: number }) {

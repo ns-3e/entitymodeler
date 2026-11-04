@@ -38,18 +38,25 @@ export async function launch({ port = 9333 } = {}) {
   const profile = mkdtempSync(join(tmpdir(), 'em-chrome-'));
   // GitHub's Ubuntu runners don't allow Chrome's sandbox; there it only ever loads the local dev server.
   const sandbox = process.env.CI ? ['--no-sandbox'] : [];
-  const chrome = spawn(CHROME, ['--headless=new', ...sandbox, `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--hide-scrollbars', '--no-first-run', 'about:blank'], { stdio: 'ignore' });
+  // A cold CI runner can take well over 10 s to bring Chrome up: wait up to 45 s, and relaunch once.
+  let chrome;
   let target;
-  for (let i = 0; i < 50 && !target; i++) {
-    try {
-      target = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find((p) => p.type === 'page');
-    } catch {
-      // not listening yet
+  let stderr = '';
+  for (let attempt = 0; attempt < 2 && !target; attempt++) {
+    if (chrome) chrome.kill('SIGKILL');
+    chrome = spawn(CHROME, ['--headless=new', ...sandbox, `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--hide-scrollbars', '--no-first-run', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
+    chrome.stderr.on('data', (d) => (stderr = (stderr + d).slice(-2000)));
+    for (let i = 0; i < 150 && !target; i++) {
+      try {
+        target = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find((p) => p.type === 'page');
+      } catch {
+        // not listening yet
+      }
+      if (!target) await sleep(300);
     }
-    if (!target) await sleep(200);
   }
   const ws = target && new WebSocket(target.webSocketDebuggerUrl);
-  if (!ws) throw new Error('Chrome did not start');
+  if (!ws) throw new Error(`Chrome did not start within 90 s.${stderr ? `\nChrome said:\n${stderr}` : ''}`);
   await new Promise((r) => ws.addEventListener('open', r, { once: true }));
 
   let seq = 0;

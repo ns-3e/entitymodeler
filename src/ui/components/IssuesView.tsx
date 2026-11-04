@@ -1,6 +1,8 @@
-import { CircleCheck, CircleX, Info, TriangleAlert, Wand2 } from '../icons';
+import { CircleCheck, CircleX, Gauge, Info, Send, TriangleAlert, Wand2 } from '../icons';
+import { useDialogs } from '../dialogs';
 import { applyFixes, issueCounts, type DataModel, type Issue } from '../../core';
 import { useStore } from '../store';
+import { profileActiveTab, profileSource, writebackSource } from './actions';
 
 /** Apply the fixes of these issues to the active tab as one undo step. */
 function fix(issues: Issue[]) {
@@ -14,9 +16,14 @@ const ICON = { error: CircleX, warning: TriangleAlert, info: Info };
 
 export function IssuesView() {
   const issues = useStore((s) => s.issues);
+  // Subscribe to the tab's source so the button follows tab switches.
+  useStore((s) => s.model?.tab?.source);
+  const pulledFrom = profileSource();
+  const writeTo = writebackSource();
   const { select, setView } = useStore.getState();
   const c = issueCounts(issues);
   const fixable = issues.filter((i) => i.fix?.length);
+  const bulk = fixable.filter((i) => !i.suggested);
   const go = (i: Issue) => {
     const t = i.target;
     if (t.kind === 'entity' && t.name) select({ kind: 'entity', name: t.name, tab: t.tab, attribute: t.attribute });
@@ -40,9 +47,19 @@ export function IssuesView() {
           <span className="ic info">
             <Info size={14} /> {c.info} notes
           </span>
-          {fixable.length > 0 && (
-            <button className="btn sm primary" title="Apply every mechanical fix: naming-standard renames (they cascade) and PII flags" onClick={() => fix(fixable)}>
-              <Wand2 size={14} /> Fix {fixable.length} automatically
+          {pulledFrom && (
+            <button className="btn sm" title={`Measure the tables in ${pulledFrom} (rows, empty values, distinct values) and check the design against the data`} onClick={profileActiveTab}>
+              <Gauge size={14} /> Profile data
+            </button>
+          )}
+          {writeTo && (
+            <button className="btn sm" title={`Preview the SQL that writes this tab's descriptions to ${writeTo}. Nothing runs until you run it.`} onClick={() => useDialogs.getState().open({ writeback: true })}>
+              <Send size={14} /> Write back
+            </button>
+          )}
+          {bulk.length > 0 && (
+            <button className="btn sm primary" title="Apply every mechanical fix: naming-standard renames (they cascade) and PII flags" onClick={() => fix(bulk)}>
+              <Wand2 size={14} /> Fix {bulk.length} automatically
             </button>
           )}
         </div>

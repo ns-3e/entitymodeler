@@ -31,6 +31,24 @@ jobs:
         continue-on-error: true
         run: npm run bench -- --quick
 
+  # Shared workspaces backend (cloud/): its own package, run against local D1 and Durable Objects. Not deployed.
+  cloud:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cloud
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: cloud/package-lock.json
+      - run: npm ci
+      - run: npm run types
+      - run: npm run typecheck
+      - run: npm test
+
   # Opens every dialog, view and panel in headless Chrome and fails on layout bugs: elements sticking out of
   # their container, text spilling out of its box, fields too narrow to use, collapsed text boxes.
   ui-audit:

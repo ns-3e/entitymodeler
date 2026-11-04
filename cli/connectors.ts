@@ -67,6 +67,48 @@ export async function pullDatabricks(scope: CatalogScope & { profile?: string },
   return fromUnityCatalog(full, { catalog, schema });
 }
 
+/** Runs one SQL statement and returns its rows by column name (values as strings, nulls as ''). */
+export type SqlRunner = (sql: string) => Promise<Record<string, string>[]>;
+
+/**
+ * SQL on a Databricks SQL warehouse (Statement Execution API): --warehouse, DATABRICKS_WAREHOUSE_ID, else the
+ * first running warehouse, else the first one (which starts it).
+ */
+export async function databricksSql(opts: { profile?: string; warehouse?: string }, log: (s: string) => void): Promise<SqlRunner> {
+  const { host, token } = databricksAuth(opts.profile);
+  const base = host.replace(/\/+$/, '').replace(/^(?!https?:\/\/)/, 'https://');
+  let warehouse = opts.warehouse || process.env.DATABRICKS_WAREHOUSE_ID;
+  if (!warehouse) {
+    const list: any[] = (await getJson(`${base}/api/2.0/sql/warehouses`, token)).warehouses || [];
+    const pick = list.find((w) => w.state === 'RUNNING') || list.find((w) => w.enable_serverless_compute) || list[0];
+    if (!pick) throw new Error('No SQL warehouse in this workspace. Create one, or pass --warehouse <id>.');
+    warehouse = pick.id as string;
+    log(`Using SQL warehouse “${pick.name}” (${pick.state === 'RUNNING' ? 'running' : `${String(pick.state).toLowerCase()}, starting it`}). Pick another with --warehouse <id>.`);
+  }
+  const call = async (path: string, init?: RequestInit) => {
+    const r = await fetch(`${base}${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' } });
+    const body = await r.text();
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText} from ${path}: ${body.slice(0, 300)}`);
+    return JSON.parse(body);
+  };
+  return async (statement) => {
+    let res = await call('/api/2.0/sql/statements', { method: 'POST', body: JSON.stringify({ statement, warehouse_id: warehouse, wait_timeout: '50s', on_wait_timeout: 'CONTINUE', format: 'JSON_ARRAY', disposition: 'INLINE' }) });
+    while (res.status?.state === 'PENDING' || res.status?.state === 'RUNNING') {
+      await new Promise((ok) => setTimeout(ok, 2000));
+      res = await call(`/api/2.0/sql/statements/${res.statement_id}`);
+    }
+    if (res.status?.state !== 'SUCCEEDED') throw new Error(`Databricks SQL ${res.status?.state}: ${res.status?.error?.message || 'statement did not succeed'}`);
+    const cols: string[] = (res.manifest?.schema?.columns || []).map((c: any) => c.name);
+    const data: any[][] = [...(res.result?.data_array || [])];
+    for (let link = res.result?.next_chunk_internal_link; link; ) {
+      const chunk = await call(link);
+      data.push(...(chunk.data_array || []));
+      link = chunk.next_chunk_internal_link;
+    }
+    return data.map((row) => Object.fromEntries(cols.map((c, i) => [c, row[i] ?? ''])));
+  };
+}
+
 // ---------------------------------------------------------------- Snowflake (SQL API v2)
 
 /** Key-pair JWT (RS256) per Snowflake's SQL API docs; account is the identifier without region, uppercased. */
@@ -81,7 +123,7 @@ export function snowflakeJwt(account: string, user: string, pem: string): string
   return `${body}.${sign('RSA-SHA256', Buffer.from(body), key).toString('base64url')}`;
 }
 
-export async function pullSnowflake(scope: CatalogScope, log: (s: string) => void): Promise<CatalogSnapshot> {
+export function snowflakeSql(scope: CatalogScope): SqlRunner {
   const env = process.env;
   const account = need(env.SNOWFLAKE_ACCOUNT, 'Set SNOWFLAKE_ACCOUNT (account identifier, e.g. myorg-myaccount).');
   const database = need(scope.catalog || env.SNOWFLAKE_DATABASE, '--catalog (the database) is required for Snowflake.');
@@ -109,6 +151,13 @@ export async function pullSnowflake(scope: CatalogScope, log: (s: string) => voi
     for (let p = 1; p < (res.resultSetMetaData.partitionInfo?.length || 1); p++) data.push(...(await (await fetch(`${base}/${res.statementHandle}?partition=${p}`, { headers })).json()).data);
     return data.map((row) => Object.fromEntries(cols.map((c, i) => [c, row[i] ?? ''])));
   };
+  return run;
+}
+
+export async function pullSnowflake(scope: CatalogScope, log: (s: string) => void): Promise<CatalogSnapshot> {
+  const database = need(scope.catalog || process.env.SNOWFLAKE_DATABASE, '--catalog (the database) is required for Snowflake.');
+  const schema = need(scope.schema || process.env.SNOWFLAKE_SCHEMA, '--schema is required.');
+  const run = snowflakeSql({ catalog: database, schema });
   const [columnsSql, pkSql, fkSql] = catalogQuery('snowflake', { catalog: database, schema })
     .split(';')
     .map((x) => x.replace(/--.*$/gm, '').trim())
@@ -119,6 +168,15 @@ export async function pullSnowflake(scope: CatalogScope, log: (s: string) => voi
 }
 
 // ---------------------------------------------------------------- PostgreSQL (psql)
+
+export function postgresSql(url?: string): SqlRunner {
+  return async (sql) => {
+    const r = spawnSync('psql', [...(url ? [url] : []), '-X', '-q', '--csv', '-v', 'ON_ERROR_STOP=1', '-c', sql], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
+    if (r.error) throw new Error(`psql not found (${r.error.message}). Install the PostgreSQL client, or run the query elsewhere and pass --csv.`);
+    if (r.status !== 0) throw new Error(`psql failed: ${r.stderr.trim()}`);
+    return parseResultSets(r.stdout)[0] || [];
+  };
+}
 
 export async function pullPostgres(scope: CatalogScope & { url?: string }, log: (s: string) => void): Promise<CatalogSnapshot> {
   const schema = scope.schema || 'public';

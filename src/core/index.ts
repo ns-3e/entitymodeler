@@ -13,6 +13,8 @@ export * from './diff';
 export * from './share';
 export * from './operations';
 export * from './pull';
+export * from './profile';
+export * from './writeback';
 export * from './standards';
 export * from './yaml';
 export * from './sync';

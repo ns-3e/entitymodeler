@@ -1695,6 +1695,23 @@ body.resizing-panel {
   color: var(--muted);
   padding-right: 4px;
 }
+/* A relationship's own attributes, on a second line under the label: "grade, enrolled_on". */
+.rel-label:has(.rl-attrs) {
+  flex-wrap: wrap;
+  row-gap: 0;
+  max-width: 240px;
+}
+.rl-attrs {
+  flex-basis: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 14px;
+  font-weight: 400;
+  color: var(--muted);
+  padding-right: 4px;
+}
 .react-flow__edge-path.ref-edge {
   stroke: var(--ref);
   stroke-width: 1.4;
@@ -3930,4 +3947,111 @@ body.resizing-panel {
 }
 .side-window .side-item {
   margin-bottom: 1px;
+}
+
+/* Shared workspaces on the home page */
+.ws-account {
+  margin-left: auto;
+}
+.ws-signin .home-note {
+  margin-top: 0;
+}
+.ws-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ws-actions .input {
+  width: 220px;
+  max-width: 100%;
+}
+.ws-block {
+  margin-bottom: 20px;
+}
+.ws-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.ws-head h3 {
+  margin: 0;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.ws-add {
+  width: 200px;
+  max-width: 100%;
+}
+.ws-members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ws-members li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ws-members li > span:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Relationship attributes in the relationship inspector */
+.rel-attr-hint {
+  margin: -4px 0 0;
+}
+.rel-attr {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.rel-attr-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 120px) auto;
+  gap: 6px;
+  align-items: center;
+}
+.rel-attr-row:nth-child(2) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.rel-attr-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.rel-attr-num {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.rel-attr-num .input {
+  width: 64px;
+}
+
+.home-foot {
+  margin-top: 48px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ink-3);
+}
+.home-foot a {
+  color: var(--ink-2);
 }

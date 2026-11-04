@@ -129,6 +129,16 @@ export function diffViews(A: DataModel, B: DataModel, dir: LineageDir, a: TabDif
     if (ra.cardinality !== rb.cardinality) d.push(`cardinality ${ra.cardinality} → ${rb.cardinality}`);
     if ((ra.foreign_key || '') !== (rb.foreign_key || '')) d.push(`foreign key ${ra.foreign_key || '(none)'} → ${rb.foreign_key || '(none)'}`);
     if (ra.forward_label !== rb.forward_label) d.push(`label "${ra.forward_label}" → "${rb.forward_label}"`);
+    // The relationship's own attributes (by name: they have no lineage of their own).
+    const raAttrs = new Map((ra.attributes || []).map((x) => [x.name, x]));
+    const rbAttrs = new Map((rb.attributes || []).map((x) => [x.name, x]));
+    for (const [n, x] of rbAttrs) {
+      const old = raAttrs.get(n);
+      if (!old) d.push(`attribute ${n} added (${typeDisplay(x)})`);
+      else if (typeDisplay(old) !== typeDisplay(x) || !!old.required !== !!x.required)
+        d.push(`attribute ${n}: ${typeDisplay(old)}${old.required ? ' required' : ''} → ${typeDisplay(x)}${x.required ? ' required' : ''}`);
+    }
+    for (const n of raAttrs.keys()) if (!rbAttrs.has(n)) d.push(`attribute ${n} removed`);
     if (d.length || ra.name !== rb.name) relationships.push({ change: 'changed', name: rb.name, from: ra.name !== rb.name ? ra.name : undefined, details: d });
   }
   for (const ra of A.relationships) if (!usedA.has(ra.name)) relationships.push({ change: 'removed', name: ra.name, details: [`${ra.source} → ${ra.target} (${ra.cardinality})`] });

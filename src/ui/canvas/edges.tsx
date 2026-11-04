@@ -135,6 +135,11 @@ function RelationshipEdgeImpl({ id, source, target, data, selected }: EdgeProps<
           <span className="rl-text">{rel.forward_label || rel.name}</span>
           <span className="rl-card">{rel.cardinality}</span>
           {selected && rel.bidirectional && rel.reverse_label && <span className="rl-rev">⇄ {rel.reverse_label}</span>}
+          {!!rel.attributes?.length && (
+            <span className="rl-attrs" title={rel.attributes.map((x) => `${x.name} ${x.type}`).join('\n')}>
+              {rel.attributes.length > 3 ? `${rel.attributes.slice(0, 2).map((x) => x.name).join(', ')} +${rel.attributes.length - 2}` : rel.attributes.map((x) => x.name).join(', ')}
+            </span>
+          )}
         </div>
       </EdgeLabelRenderer>}
     </>

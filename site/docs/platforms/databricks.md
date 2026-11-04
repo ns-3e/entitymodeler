@@ -22,6 +22,10 @@ node bin/em.mjs pull lakehouse --from databricks --catalog main --schema sales -
 
 Each later pull becomes a dated version tab, so **Compare** shows schema drift between pulls.
 
+`em profile lakehouse` then measures the pulled tables on a SQL warehouse (rows, empty values, approximate distinct counts, ranges) and flags keys that repeat, empty columns and candidate reference lists. See [Profile the data](/docs/import-from-database/#profile-the-data).
+
+`em writeback lakehouse` writes the model's table and column descriptions back to Unity Catalog, and tags PII and glossary-linked columns (`pii`, `business_term`), setting only what the catalog doesn't already have. See [Write descriptions back](/docs/import-from-database/#write-descriptions-back-to-the-catalog).
+
 ## Generate Databricks DDL
 
 **Export → Code → SQL DDL → Databricks** (or a physical tab targeting Databricks) writes:

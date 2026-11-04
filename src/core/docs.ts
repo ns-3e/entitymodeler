@@ -164,14 +164,13 @@ export function buildDocTables(m: DataModel, opts: DocOptions = {}): DocTable[] 
 
   if (sections.has('relationships') && m.relationships.length) {
     const ent = (n: string) => m.entities.find((e) => e.name === n)?.display_name || n;
+    const rels = m.relationships.filter((r) => !opts.entities || opts.entities.includes(r.source) || opts.entities.includes(r.target));
     tables.push({
       id: 'relationships',
       section: 'relationships',
       title: 'Relationships',
-      columns: ['Relationship', 'Source', 'Target', 'Cardinality', 'Forward Label', 'Reverse Label', 'Key', 'Description'],
-      rows: m.relationships
-        .filter((r) => !opts.entities || opts.entities.includes(r.source) || opts.entities.includes(r.target))
-        .map((r) => [
+      columns: ['Relationship', 'Source', 'Target', 'Cardinality', 'Forward Label', 'Reverse Label', 'Key', 'Attributes', 'Description'],
+      rows: rels.map((r) => [
           r.name,
           ent(r.source),
           ent(r.target),
@@ -179,9 +178,23 @@ export function buildDocTables(m: DataModel, opts: DocOptions = {}): DocTable[] 
           r.forward_label,
           r.bidirectional ? r.reverse_label || '' : '',
           relationshipEnds(r) ? (resolveForeignKey(m, r) ? `${relationshipEnds(r)!.child}.${resolveForeignKey(m, r)}` : '') : 'junction table',
+          (r.attributes || []).map((a) => a.name).join(', '),
           r.description || '',
         ]),
     });
+    // The relationships' own attributes, like an attribute dictionary: where each one is stored, its type, its meaning.
+    const withAttrs = rels.filter((r) => r.attributes?.length);
+    if (withAttrs.length)
+      tables.push({
+        id: 'relationship-attributes',
+        section: 'relationships',
+        title: 'Relationship attributes',
+        caption: 'Facts about a link itself. They are stored on the junction table (N:N) or on the child entity.',
+        columns: ['Relationship', 'Attribute', 'Type', 'Required', 'Stored on', 'Description'],
+        rows: withAttrs.flatMap((r) =>
+          r.attributes!.map((a) => [r.name, a.name, typeDisplay(a), a.required ? 'Yes' : '', relationshipEnds(r) ? ent(relationshipEnds(r)!.child) : 'junction table', a.description || '']),
+        ),
+      });
   }
 
   if (sections.has('hierarchies'))

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { produce } from 'immer';
 import { MAIN_TAB, hasTab, normalizeModel, serializeModel, tabView, validateModel, validateTabs, withTab, type DataModel, type Issue } from '../core';
 import { storage } from './storage';
+import { CloudConflict } from './storage/cloud';
 import { placeUnpositioned } from './canvas/layout';
 
 export type Selection =
@@ -204,7 +205,14 @@ export const useStore = create<State>((set, get) => ({
 
   closeModel(resetHash = true) {
     clearTimeout(saveTimer);
-    if (get().saveState === 'pending') get().saveNow();
+    const id = get().modelId;
+    // Closing during "changed elsewhere": ask which version wins rather than dropping these edits silently.
+    if (get().externalModel && get().saveState === 'pending') {
+      if (window.confirm('Someone else saved this model while you had unsaved edits. Keep your edits (replacing their version)? Cancel keeps theirs.')) set({ externalModel: null });
+      else set({ saveState: 'saved' });
+    }
+    const saved = get().saveState === 'pending' ? get().saveNow() : Promise.resolve();
+    if (id) void saved.then(() => storage.release?.(id));
     set({ modelId: null, doc: null, model: null, past: [], future: [], externalModel: null, multi: [] });
     if (resetHash) history.replaceState(null, '', '#/');
   },
@@ -320,8 +328,11 @@ export const useStore = create<State>((set, get) => ({
 
   async saveNow() {
     clearTimeout(saveTimer);
-    const { doc, modelId } = get();
+    const { doc, modelId, externalModel } = get();
     if (!doc || !modelId) return;
+    // A newer version arrived while these edits were unsaved: wait for "Load theirs" or "Keep mine" instead of
+    // overwriting it. Edits made meanwhile stay pending.
+    if (externalModel) return;
     const stamped = { ...doc, updated_at: new Date().toISOString() };
     const text = serializeModel(stamped);
     set({ saveState: 'saving' });
@@ -330,6 +341,15 @@ export const useStore = create<State>((set, get) => ({
       // The in-memory model keeps its identity (no re-render mid-drag); only the file carries the new timestamp.
       set({ savedText: text, saveState: get().saveState === 'saving' ? 'saved' : get().saveState });
     } catch (e: any) {
+      if (e instanceof CloudConflict) {
+        // Someone else saved first: same choice as a file changed on disk ("Load theirs" / "Keep mine").
+        try {
+          set({ externalModel: normalizeModel(JSON.parse(e.text)), saveState: 'pending' });
+          return;
+        } catch {
+          /* unreadable: fall through to the error */
+        }
+      }
       set({ saveState: 'error' });
       get().toast(`Save failed: ${e.message}`, 'error');
     }

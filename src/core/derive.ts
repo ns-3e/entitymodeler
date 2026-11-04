@@ -66,7 +66,12 @@ function lineageCopy(src: DataModel): DataModel {
     // A new tab starts with everything visible.
     if (e.ui) delete e.ui.hidden;
     e.derived_from = e.name;
-    for (const a of e.attributes) a.derived_from = a.name;
+    // Profiles describe the tables they were measured on, not a new design.
+    delete e.profile;
+    for (const a of e.attributes) {
+      a.derived_from = a.name;
+      delete a.profile;
+    }
   }
   return m;
 }
@@ -312,7 +317,14 @@ function collapseJunctions(m: DataModel, rep: DeriveReport) {
     const fks = asChild.map((r) => resolveForeignKey(m, r, byName));
     if (fks.some((f) => !f)) continue;
     const rest = e.attributes.filter((a) => !fks.includes(a.name) && !(a.is_primary_key && !fks.includes(a.name) && /(_id|_key|_sk)$/.test(a.name)) && !isTechnicalColumn(a.name));
-    if (rest.length) continue;
+    // Up to two simple extra columns (an enrollment's grade) stay with the link as relationship attributes, as SQL
+    // import does; more, or structs and references, mean the table is an entity of its own.
+    // Only a table keyed by exactly its two links counts: orders(order_id, customer_id, store_id, total) is an entity.
+    if (rest.length) {
+      const pk = e.attributes.filter((a) => a.is_primary_key).map((a) => a.name).sort();
+      if (pk.length !== 2 || pk.join() !== [...fks].sort().join()) continue;
+      if (rest.length > 2 || rest.some((a) => a.type === 'STRUCT' || a.type === 'REFERENCE_ENTITY' || a.is_array)) continue;
+    }
     const [p1, p2] = asChild.map((r) => relationshipEnds(r)!.parent);
     for (const r of asChild) {
       deadRels.add(r.name);
@@ -330,7 +342,7 @@ function collapseJunctions(m: DataModel, rep: DeriveReport) {
       reverse_label: 'Related From',
       bidirectional: true,
       description: e.description || `Was link table ${e.name}.`,
-      attributes: [],
+      attributes: rest.map((a) => ({ ...a, is_primary_key: false, is_label: false })),
     });
     bump(p1, 1);
     if (p2 !== p1) bump(p2, 1);
@@ -374,7 +386,7 @@ function derivePhysical(src: DataModel, o: PhysicalOptions): { content: ModelCon
         attributes: [
           { name: a, label: toLabel(a), type: spk.type, is_primary_key: true, required: true, description: `${s.display_name} key` },
           { name: b, label: toLabel(b), type: tpk.type, is_primary_key: true, required: true, description: `${t.display_name} key` },
-          ...(r.attributes || []).map((x) => ({ ...x, is_primary_key: false })),
+          ...(r.attributes || []).map((x, i, all) => ({ ...x, name: uniqueName(x.name, [a, b, ...all.slice(0, i).map((y) => y.name)]), is_primary_key: false, is_label: false })),
         ],
         struct_types: [],
         dependent_reference: null,
@@ -407,6 +419,13 @@ function derivePhysical(src: DataModel, o: PhysicalOptions): { content: ModelCon
       const parent = getEntity(m, ends.parent);
       const pk = parent && primaryKey(parent);
       if (!child || !parent || !pk) continue;
+      // The relationship's own attributes become real columns of the child table, as the SQL export makes them.
+      // Not required: a child row without the link has no value for them.
+      for (const ra of r.attributes || []) {
+        const { required: _required, ...rest } = ra;
+        child.attributes.push({ ...rest, name: uniqueName(ra.name, child.attributes.map((a) => a.name)), is_primary_key: false, is_label: false, description: ra.description || `${r.forward_label || r.name}: ${ra.label || ra.name}` });
+      }
+      if (r.attributes?.length) r.attributes = [];
       const existing = r.foreign_key && child.attributes.some((a) => a.name === r.foreign_key) ? r.foreign_key : inferForeignKey(m, r);
       if (existing) {
         r.foreign_key = existing;

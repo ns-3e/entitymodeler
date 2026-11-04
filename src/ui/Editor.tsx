@@ -19,17 +19,20 @@ import { CommandPalette } from './components/CommandPalette';
 import { useDialogs } from './dialogs';
 import { useAgent } from './agent';
 import { ProposalBanner, ProposalDialog } from './components/ProposalDialog';
+import { WritebackDialog } from './components/WritebackDialog';
+import { isCloudId } from './storage/cloud';
 import { AgentPanel } from './components/AgentPanel';
 
 function ExternalBanner() {
   const ext = useStore((s) => s.externalModel);
+  const shared = useStore((s) => isCloudId(s.modelId));
   const { acceptExternal, dismissExternal } = useStore.getState();
   if (!ext) return null;
   return (
     <div className="ext-banner">
-      {storage.kind === 'files' ? 'The model file changed on disk (e.g. Claude edited it)' : 'This model changed in another tab'} while you had unsaved edits.
+      {shared ? 'Someone else saved this model' : storage.kind === 'files' ? 'The model file changed on disk (e.g. Claude edited it)' : 'This model changed in another tab'} while you had unsaved edits.
       <button className="btn sm primary" onClick={acceptExternal}>
-        {storage.kind === 'files' ? 'Load disk version' : 'Load other version'}
+        {shared ? 'Load their version' : storage.kind === 'files' ? 'Load disk version' : 'Load other version'}
       </button>
       <button className="btn sm ghost" onClick={dismissExternal}>
         Keep mine
@@ -165,6 +168,7 @@ export function Editor() {
       </div>
       <TabDialogs />
       <ProposalDialog />
+      <WritebackDialog />
       <AgentPanel />
       <CommandPalette />
     </ReactFlowProvider>

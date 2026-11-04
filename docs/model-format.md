@@ -75,6 +75,7 @@ There is one JSON file per model, at `models/<model-id>/model.json`. The UI, the
 - Types: `STRING BIGINT INT SMALLINT TINYINT DECIMAL DOUBLE FLOAT BOOLEAN DATE TIMESTAMP STRUCT REFERENCE_ENTITY`.
 - `DECIMAL` takes `precision` and `scale` (default 18, 2). Use it for money and other exact numbers.
 - `unique: true` marks values unique across rows. It becomes a UNIQUE constraint in SQL and a `unique` test in dbt.
+- `profile` (on attributes and entities) is written by `em profile`, not by hand: `{ "non_null": 480, "distinct": 3, "min": "1", "max": "300", "max_length": 6 }` on an attribute, `{ "rows": 500, "sampled": true, "profiled_at": "…" }` on its entity. It holds counts and ranges only (min/max for numbers and dates), never sample values. Validation compares it with the design (`profile.*` issues), and derived tabs don't copy it.
 - `is_label` marks the primary display attribute. Each entity has one.
 - STRUCT and array attributes cannot be primary keys.
 - `output_attribute` on a reference is the attribute of the reference entity whose value is stored on the referencing record.
@@ -128,6 +129,8 @@ Fields are scalars or REFERENCE_ENTITY only; structs cannot nest. For repeating 
 - **1:N:** the child is the target.
 - **N:N:** there is no foreign key; export writes a junction table named after the relationship.
 
+`attributes` describe the relationship itself (an enrollment's `grade`), with the same shape as entity attributes but simple types only (no `STRUCT` or `REFERENCE_ENTITY`). Exports make them columns of the junction table for N:N (`required` → NOT NULL) and of the child table otherwise (always nullable there). Deriving a physical tab moves them onto those tables. Validation flags duplicate or invalid names (`rel.attr_duplicate`, `rel.attr_name`), complex types (`rel.attr_type`) and a name already used by a column of the child entity (`rel.attr_clash`).
+
 When `foreign_key` is unset, it is inferred from the names: the parent's PK name, then `<parent>_<pk>`, then `<parent>_id`, and for self-relationships `parent_<pk>`. If nothing matches, the export adds a key column. Set it explicitly when the column name is unusual, e.g. `parent_supplier_id`.
 
 ## Hierarchy
@@ -163,7 +166,7 @@ A model can hold several diagrams, shown as tabs: a conceptual view, a logical m
     "dialect": "snowflake",          // physical tabs: target platform (default SQL dialect)
     "derived_from": "main",          // id of the tab this one was derived or copied from
     "derived_at": "ISO-8601",
-    "source": { "platform": "databricks", "catalog": "main", "schema": "sales", "pulled_at": "ISO-8601" },  // tabs from `em pull`
+    "source": { "platform": "databricks", "catalog": "main", "schema": "sales", "profile": "dev", "pulled_at": "ISO-8601" },  // tabs from `em pull`; profile = Databricks CLI profile name, never a secret
     "entities": [], "relationships": [], "hierarchies": [], "areas": [], "notes": [] }
 ]
 ```

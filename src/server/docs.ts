@@ -333,7 +333,7 @@ function pageHtml(page: Page, pages: Page[]): string {
     <nav class="pager" aria-label="Previous and next">${prev ? `<a class="prev" href="${pageUrl(prev.slug)}"><small>Previous</small>${esc(prev.slug ? prev.title : 'Overview')}</a>` : '<span></span>'}${next ? `<a class="next" href="${pageUrl(next.slug)}"><small>Next</small>${esc(next.title)}</a>` : ''}</nav>
     <footer class="foot">
       <p>Updated <time datetime="${page.updated}">${page.updated}</time> · <a href="${REPO}/blob/main/${page.source}" rel="noopener">Edit this page on GitHub</a> · <a href="${mdUrl(page.slug)}">Markdown</a></p>
-      <p>EntityModel.com is free and open source under the MIT license.</p>
+      <p>© ${new Date().getFullYear()} <a href="https://advsys.io" rel="noopener">Smith Advanced Systems LLC</a>. EntityModel.com is free and open source under the MIT license.</p>
     </footer>
   </main>
   ${tocHtml}

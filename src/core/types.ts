@@ -58,6 +58,31 @@ export interface Attribute {
   derived_from?: string;
   /** Business glossary term id (see glossary_snapshot). */
   term?: string;
+  /** What the data looks like, measured by `em profile` (never sample values, only counts and ranges). */
+  profile?: AttributeProfile;
+}
+
+/** Column statistics from data profiling. `rows` on the entity's profile is the denominator. */
+export interface AttributeProfile {
+  /** Rows where the column has a value. */
+  non_null: number;
+  /** Distinct values (approximate on Databricks and Snowflake). Absent for types that can't be compared. */
+  distinct?: number;
+  /** Smallest and largest value, for numbers and dates only (strings could be personal data). */
+  min?: string;
+  max?: string;
+  /** Longest value in characters, for strings. */
+  max_length?: number;
+}
+
+/** Table-level result of data profiling. */
+export interface EntityProfile {
+  rows: number;
+  /** True when profiling stopped at the row limit, so counts describe a sample. */
+  sampled?: boolean;
+  /** True when distinct counts are estimates (a full-table scan on Databricks or Snowflake). */
+  approx_distinct?: boolean;
+  profiled_at: string;
 }
 
 export interface StructField {
@@ -109,6 +134,8 @@ export interface Entity {
   derived_from?: string;
   /** Business glossary term id (see glossary_snapshot). */
   term?: string;
+  /** Data profiling result for the table (see Attribute.profile). */
+  profile?: EntityProfile;
   /** Canvas state for this tab. `hidden` keeps the entity in the model but off the diagram. */
   /** Diagram layout. `folded` lists STRUCT attributes whose fields are collapsed into one row. */
   ui?: Position & { collapsed?: boolean; hidden?: boolean; folded?: string[] };
@@ -204,7 +231,14 @@ export interface TabMeta {
   derived_from?: string;
   derived_at?: string;
   /** Tabs pulled from a live database: where from and when (`em pull`). */
-  source?: { platform: 'databricks' | 'snowflake' | 'postgres' | 'mysql'; catalog?: string; schema?: string; pulled_at: string };
+  source?: {
+    platform: 'databricks' | 'snowflake' | 'postgres' | 'mysql';
+    catalog?: string;
+    schema?: string;
+    /** Databricks CLI profile it was pulled with (a name in ~/.databrickscfg, never a credential), so profiling and write-back reach the same workspace. */
+    profile?: string;
+    pulled_at: string;
+  };
 }
 
 /** An additional diagram tab: its own entities, relationships and layout. */
@@ -346,4 +380,6 @@ export interface Issue {
   code: string;
   /** Operations that resolve the issue (naming standards and other auto-fixable checks). */
   fix?: import('./operations').Op[];
+  /** The fix is a judgement call (e.g. from profiled data): offer it one at a time, never in a bulk "fix all". */
+  suggested?: boolean;
 }

@@ -83,6 +83,8 @@ export const Send = make('Send', 'M2 2.5L14 8 2 13.5 4 8ZM4 8h4');
 export const MousePointer2 = make('MousePointer2', 'M3 2.5L13 8l-4.5 1.5L7 14Z');
 export const Wrench = make('Wrench', 'M2.5 13.5L8 8M8 8l-.5-3L10 2.5h2l-2 2 1.5 1.5 2-2v2L11 8.5Z');
 export const Wand2 = make('Wand2', 'M2.5 13.5L10 6M8.5 4.5l3 3M12.5 1.5v3M11 3h3');
+/** A faceted dial with its needle: measuring data. */
+export const Gauge = make('Gauge', 'M1.5 12.5V9.5l1.5-4 3-2.5h4l3 2.5 1.5 4v3M8 11l3-4.5M6.5 12.5h3');
 export const Sparkles = make('Sparkles', 'M6.5 2l1.2 3.8 3.8 1.2-3.8 1.2L6.5 12 5.3 8.2 1.5 7l3.8-1.2ZM12.5 10v4M10.5 12h4');
 export const SlidersHorizontal = make('SlidersHorizontal', 'M2 4.5h12M2 8h12M2 11.5h12M10 3v3M5 6.5v3M9 10v3');
 export const Eye = make('Eye', EYE);
@@ -101,6 +103,7 @@ export const Download = make('Download', 'M8 2v8M4.5 6.5L8 10l3.5-3.5M2.5 13.5h1
 export const Image = make('Image', 'M2.5 2.5h11v11h-11ZM2.5 11L6 7.5l3 3 2-2 2.5 2.5M10 5.25h.75');
 export const HardDrive = make('HardDrive', 'M2 9.5L4 3h8l2 6.5v4H2ZM2 9.5h12M10.5 11.5h1');
 export const Cloud = make('Cloud', CLOUD);
+export const Users = make('Users', 'M6 2.5l2 1.5v2L6 7.5 4 6V4ZM1.5 13.5v-1L4 10h4l2.5 2.5v1M10.5 3l1.5 1v2l-1.5 1M12 10l2.5 2.5v1');
 export const CloudOff = make('CloudOff', `${CLOUD}M2 2l12 12`);
 export const Database = make('Database', 'M3 4l2-1.5h6L13 4l-2 1.5H5ZM3 4v8l2 1.5h6l2-1.5V4M3 8l2 1.5h6L13 8');
 

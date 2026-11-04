@@ -12,6 +12,7 @@ An open-source, browser-based entity-relationship modeling tool (entitymodel.com
 - `src/core/` has the model types, validation, doc tables and PDF. `tabs.ts` (projection of one tab as a single-tab model: `tabView`, `withTab`), `derive.ts` (logical ⇄ physical ⇄ conceptual) and `diff.ts` (tab compare, migration SQL). `src/ui/` is the React app. `src/server/api.ts` is the dev-server middleware for `models/`.
 - The UI stores models in one of two places (`src/ui/storage/`). It uses `models/` files when the dev-server API answers (`npm run dev`), and browser IndexedDB otherwise (the hosted site at entitymodel.com, `npm run preview`). Only file mode sees your edits.
 - `site/docs/**/*.md` is the public documentation at entitymodel.com/docs/ (static HTML, no JS), rendered by `src/server/docs.ts` at build time along with `sitemap.xml`, `llms.txt` and `llms-full.txt`. When a feature changes, update its page; keep claims true to the code. A `## Frequently asked questions` section with `###` questions becomes FAQPage structured data. Example pages name a model in front matter (`model: site/examples/<id>.json`); its diagram, dictionary, DDL and share link are generated (`src/server/examples.ts`, `diagram.ts`), and `examples.test.ts` checks each model validates and its DDL runs. Each page has a link-preview image in `site/og/`; after adding a page or changing a title or description, run `npm run og-images` with `npm run dev` up (needs Chrome) and commit the JPEGs.
+- `cloud/` is the shared-workspaces backend (Cloudflare Worker + D1 + one Durable Object per model), its own npm package with its own `wrangler.jsonc`, not deployed yet. `cd cloud && npm test` runs it against local D1 and Durable Objects. Plan: `docs/plans/shared-workspaces.md`.
 - `_archive/` holds retired code and material (git-ignored). Do not read from it or build on it.
 
 ## Working on a model
@@ -47,6 +48,8 @@ node bin/em.mjs review [--base REF] [--head REF] [--format md|json]   # model di
 node bin/em.mjs glossary [add "Term" --definition D | suggest <id> | link <id> | sync <id>]
 node bin/em.mjs pull <id> --from databricks|snowflake|postgres --catalog C --schema S [--propose]
 node bin/em.mjs pull <id> --csv result.csv --platform P      # catalog-query output run elsewhere
+node bin/em.mjs profile <id> [--tab T] [--sample N] [--warehouse ID] [--propose]   # data profiles; --query/--csv to run it yourself
+node bin/em.mjs writeback <id> [--tab T] [--out F] [--apply]   # model descriptions/tags → live catalog; prints only, unless --apply (only when asked)
 ```
 `--tab <name|id>` targets one diagram tab for summary/docs/export/import/values; `validate` checks all tabs.
 If `bin/em.mjs` is missing, or stale after changes to `src/core` or `cli/`, run `npm run build:cli`.

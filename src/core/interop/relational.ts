@@ -1,7 +1,7 @@
 // The relational shape of a model, shared by the SQL and DBML writers: tables (entities plus N:N junctions),
 // their columns (attributes plus generated key columns) and every foreign key.
 import { dependencyOrder, entityIndex, getEntity, primaryKey, relationshipEnds, resolveForeignKey, toLabel, uniqueName } from '../model';
-import type { Attribute, DataModel, Entity } from '../types';
+import type { Attribute, DataModel, Entity, Relationship } from '../types';
 
 export interface RelColumn {
   name: string;
@@ -67,6 +67,16 @@ export function relationalPlan(m: DataModel): RelPlan {
     t.columns.push(col(t.entity!, { name, label: toLabel(name), type: like.type === 'STRUCT' ? 'STRING' : like.type, reference: like.reference, description }, origin));
     return name;
   };
+  /**
+   * A relationship's own attribute as a column, keeping its type details (precision, scale…). On a junction table
+   * it can be NOT NULL; on the child table it can't, since a child row without the link has no value for it.
+   */
+  const addRelationshipColumn = (t: RelTable, ra: Attribute, r: Relationship, onJunction: boolean): void => {
+    const name = uniqueName(ra.name, t.columns.map((c) => c.name));
+    const a: Attribute = { ...ra, name, label: ra.label || toLabel(name), is_primary_key: false, is_label: false, unique: false, description: ra.description || `${r.forward_label || r.name}: ${ra.label || ra.name}` };
+    if (!onJunction) delete a.required;
+    t.columns.push(col(t.entity!, a, `relationship ${r.name}`));
+  };
 
   for (const e of dependencyOrder(m)) {
     tables.set(e.name, {
@@ -118,7 +128,7 @@ export function relationalPlan(m: DataModel): RelPlan {
       const b = addColumn(jt, s === tg ? `related_${spk.name}` : keyColumnName(tg, tpk), tpk, `${tg.display_name} key`, `relationship ${r.name}`);
       for (const c of jt.columns) c.pk = c.notNull = true;
       jt.pk = [a, b];
-      for (const ra of r.attributes || []) jt.columns.push(col(s, { ...ra, is_primary_key: false }, `relationship ${r.name}`));
+      for (const ra of r.attributes || []) addRelationshipColumn(jt, ra, r, true);
       tables.set(name, jt);
       foreignKeys.push({ name: fkName(`fk_${name}_${a}`), table: name, column: a, refTable: s.name, refColumn: spk.name, kind: 'relationship', relationship: r.name });
       foreignKeys.push({ name: fkName(`fk_${name}_${b}`), table: name, column: b, refTable: tg.name, refColumn: tpk.name, kind: 'relationship', relationship: r.name });
@@ -131,7 +141,7 @@ export function relationalPlan(m: DataModel): RelPlan {
     let fk = resolveForeignKey(m, r, byName);
     if (!fk) fk = addColumn(child, ends.child === ends.parent ? `parent_${pk.name}` : keyColumnName(parent, pk), pk, `${parent.display_name} (${r.forward_label})`, `relationship ${r.name}`);
     if (r.cardinality === '1:1' && !child.pk.includes(fk)) child.unique.push(fk);
-    for (const ra of r.attributes || []) addColumn(child, ra.name, ra, ra.description || `${r.forward_label} ${ra.label || ra.name}`, `relationship ${r.name}`);
+    for (const ra of r.attributes || []) addRelationshipColumn(child, ra, r, false);
     foreignKeys.push({ name: fkName(`fk_${r.name}`), table: child.name, column: fk, refTable: parent.name, refColumn: pk.name, kind: 'relationship', relationship: r.name });
   }
 

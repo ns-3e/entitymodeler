@@ -1,4 +1,4 @@
-import type { DataModel, GlossaryTerm, ModelSummary, Proposal } from '../../core';
+import type { DataModel, GlossaryTerm, ModelSummary, Op, Proposal, WritebackStatement } from '../../core';
 
 /**
  * Where models live. "files" is the dev-server API over models/<id>/model.json (local use, Claude, CLI);
@@ -16,8 +16,14 @@ export interface ModelStorage {
   remove?(id: string): Promise<void>;
   /** Files only: keep a copy of an export next to the model. Returns the written path. */
   saveExport?(id: string, filename: string, data: Blob | Uint8Array): Promise<string>;
+  /** The editor closed this model: stop listening for its changes (workspace models keep a live connection). */
+  release?(id: string): void;
   /** Called when a model changes outside this tab (file edited on disk, or another tab). Returns an unsubscribe. */
   onChange(cb: (id: string) => void): () => void;
+  /** Files only: measure a pulled tab's tables in its database (as `em profile`), returning update ops to apply. */
+  profile?(id: string, req: { tab: string; sample?: number }): Promise<ProfileResult>;
+  /** Files only: the SQL that would write the tab's descriptions (and Databricks tags) to its catalog, as `em writeback`. Never runs it. */
+  writebackPlan?(id: string, req: { tab: string; tags?: boolean }): Promise<{ statements: WritebackStatement[]; notes: string[] }>;
   /** Files only: changes proposed by agents or `em apply`, waiting for review. */
   agentTools?: AgentTools;
   /** The shared business glossary: models/_glossary.json, or this browser. */
@@ -26,6 +32,14 @@ export interface ModelStorage {
     put(terms: GlossaryTerm[]): Promise<void>;
     onChange(cb: () => void): () => void;
   };
+}
+
+export interface ProfileResult {
+  ops: Op[];
+  profiled: number;
+  /** Entities not profiled, with the reason when a query failed. */
+  skipped: string[];
+  notes: string[];
 }
 
 export interface AgentRequest {

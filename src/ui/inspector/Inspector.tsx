@@ -9,7 +9,6 @@ import {
   primaryKey,
   relationshipEnds,
   renameRelationship,
-  toLabel,
   type Cardinality,
   type Hierarchy,
   type HierarchyBranch,
@@ -18,6 +17,7 @@ import { useStore } from '../store';
 import { ColorSwatches, CommitInput, Field, NumberInput, Segmented, Select, TextArea, TextInput, Toggle } from '../components/forms';
 import { EntityInspector } from './EntityInspector';
 import { StandardsSection } from './StandardsSection';
+import { RelationshipAttributes } from './RelationshipAttributes';
 import { CommentsSection } from '../components/Comments';
 import { arrangeSelection, copySelection, copyToTab, deleteSelection, idsByKind, isolate, setColor, setHidden } from '../components/actions';
 
@@ -279,21 +279,7 @@ function RelationshipInspector({ name }: { name: string }) {
         <Field label="Description">
           <TextArea rows={2} value={r.description} onChange={(v) => set((x) => void (x.description = v), 'desc')} />
         </Field>
-        <div className="section-title">
-          <span>Edge attributes</span>
-          <button className="btn xs" onClick={() => set((x) => void (x.attributes = [...(x.attributes || []), { name: `attr_${(x.attributes || []).length + 1}`, label: '', type: 'STRING' }]))}>
-            <Plus size={12} /> Attribute
-          </button>
-        </div>
-        {(r.attributes || []).map((a, i) => (
-          <div className="grid3" key={i}>
-            <TextInput mono value={a.name} onChange={(v) => set((x) => void ((x.attributes![i].name = v), (x.attributes![i].label = toLabel(v))), `an${i}`)} />
-            <Select mono value={a.type} onChange={(v) => set((x) => void (x.attributes![i].type = v))} options={['STRING', 'DATE', 'TIMESTAMP', 'DOUBLE', 'INT', 'BIGINT', 'BOOLEAN']} />
-            <button className="icon-btn danger" onClick={() => set((x) => void x.attributes!.splice(i, 1))}>
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))}
+        <RelationshipAttributes r={r} />
         <CommentsSection target={{ kind: 'relationship', name: r.name }} />
       </div>
     </>

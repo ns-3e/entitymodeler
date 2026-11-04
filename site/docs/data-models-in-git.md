@@ -3,7 +3,7 @@ title: Data models in Git
 seo_title: Review data model changes in Git pull requests
 description: Keep EntityModel.com model files in Git and review data model changes in pull requests, with a model diff, validation before and after, and migration SQL posted by a GitHub Action.
 section: Guides
-order: 11
+order: 12
 ---
 
 Each EntityModel.com model is one JSON file, `models/<id>/model.json`, with stable formatting. That makes it a good fit for Git: diffs are readable, branches work, and changes can be reviewed like code.

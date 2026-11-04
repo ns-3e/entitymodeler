@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { BookMarked, Braces, Database, Download, Eye, EyeOff, GitCompareArrows, LayoutGrid, Link2, ListChecks, Maximize, Moon, Plus, Search, Table, Columns3, PanelsTopLeft, Sparkles } from '../icons';
+import { BookMarked, Braces, Database, Download, Eye, EyeOff, Gauge, GitCompareArrows, LayoutGrid, Link2, ListChecks, Maximize, Moon, Plus, Search, Table, Columns3, PanelsTopLeft, Send, Sparkles } from '../icons';
 import { listTabs } from '../../core';
 import { useStore } from '../store';
 import { useDialogs } from '../dialogs';
 import { useAgent } from '../agent';
 import { storage } from '../storage';
 import { installApp, useInstall } from '../install';
-import { addEntityAtCenter, applyFullLayout, focusEntity, hasStructs, setAllFolded, showAll } from './actions';
+import { addEntityAtCenter, applyFullLayout, focusEntity, hasStructs, profileActiveTab, profileSource, setAllFolded, showAll, writebackSource } from './actions';
 
 interface Cmd {
   id: string;
@@ -61,6 +61,10 @@ function Palette() {
     act('derive-logical', 'Derive logical model from this tab…', <PanelsTopLeft size={14} />, () => useDialogs.getState().open({ newTab: { source: activeTab, kind: 'logical' } }));
     act('derive-physical', 'Derive physical model from this tab…', <PanelsTopLeft size={14} />, () => useDialogs.getState().open({ newTab: { source: activeTab, kind: 'physical' } }));
     if (listTabs(doc).length > 1) act('compare', 'Compare tabs…', <GitCompareArrows size={14} />, () => useDialogs.getState().open({ compare: {} }), 'diff and migration SQL');
+    const pulled = profileSource();
+    if (pulled) act('profile', `Profile data in ${pulled}`, <Gauge size={14} />, profileActiveTab, 'rows, empty and distinct values');
+    const writeTo = writebackSource();
+    if (writeTo) act('writeback', `Write descriptions back to ${writeTo}`, <Send size={14} />, () => useDialogs.getState().open({ writeback: true }), 'preview the SQL');
     if (hidden) act('show-all', `Show all hidden entities (${hidden})`, <Eye size={14} />, showAll, '⇧H');
     if (hasStructs(model)) {
       act('fold-all', 'Fold all struct fields', <Braces size={14} />, () => setAllFolded(true), 'one row per struct');

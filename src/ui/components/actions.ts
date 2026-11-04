@@ -1,8 +1,9 @@
-import { copyEntities, createEntity, deleteEntity, deleteRelationship, structuredCopy, tabView, uid, withTab, AREA_COLORS, NOTE_COLORS, type DataModel, type EntityType } from '../../core';
+import { applyOpsInPlace, copyEntities, createEntity, deleteEntity, deleteRelationship, structuredCopy, tabView, uid, withTab, AREA_COLORS, NOTE_COLORS, type DataModel, type EntityType } from '../../core';
 import { bridge, fitDiagram } from '../canvas/bridge';
 import { autoLayout, autoLayoutAsync } from '../canvas/layout';
 import { nodeWidth } from '../canvas/geometry';
 import { useStore } from '../store';
+import { storage } from '../storage';
 
 function viewportCenter() {
   const rf = bridge.rf;
@@ -309,4 +310,45 @@ export function focusEntity(name: string, attribute?: string) {
   setTimeout(() => {
     if (e.ui && bridge.rf) bridge.rf.setCenter(e.ui.x + nodeWidth(e) / 2, e.ui.y + 120, { zoom: Math.max(bridge.rf.getZoom(), 0.9), duration: 400 });
   }, 30);
+}
+
+/** The active tab's database, when it was pulled from one and profiling can run here (local files mode). */
+export function profileSource(): string | undefined {
+  const src = useStore.getState().model?.tab?.source;
+  if (!src || !storage.profile) return undefined;
+  return [src.catalog, src.schema].filter(Boolean).join('.') || src.platform;
+}
+
+/** The active tab's database, when the write-back preview can run here (local files mode, not MySQL). */
+export function writebackSource(): string | undefined {
+  const src = useStore.getState().model?.tab?.source;
+  if (!src || !storage.writebackPlan || src.platform === 'mysql') return undefined;
+  return profileSource();
+}
+
+let profiling = false;
+/** Profile the active tab's tables (row counts, nulls, distinct values) and show what the data says in Issues. */
+export async function profileActiveTab() {
+  const s = useStore.getState();
+  const where = profileSource();
+  if (!where || !s.modelId || profiling) return;
+  profiling = true;
+  const tab = s.activeTab;
+  s.toast(`Profiling the tables in ${where}… This reads up to 100,000 rows per table.`, 'info');
+  try {
+    // The server reads the model file: write pending edits first so names match.
+    if (s.saveState === 'pending') await s.saveNow();
+    const r = await storage.profile!(s.modelId, { tab });
+    if (!r.ops.length) throw new Error(`No tables profiled.${r.skipped.length ? ` ${r.skipped.join('; ')}` : ''}`);
+    const now = useStore.getState();
+    if (now.modelId !== s.modelId) return;
+    now.updateDoc((d) => void applyOpsInPlace(d as DataModel, r.ops, { tab }));
+    const findings = useStore.getState().issues.filter((i) => i.code.startsWith('profile.')).length;
+    now.toast(`Profiled ${r.profiled} table${r.profiled === 1 ? '' : 's'}: ${findings} finding${findings === 1 ? '' : 's'} in Issues.${r.skipped.length ? ` Skipped ${r.skipped.length}.` : ''} ⌘Z undoes it.`, 'success');
+    if (findings) now.setView('issues');
+  } catch (e) {
+    useStore.getState().toast(`Profiling failed: ${(e as Error).message}`, 'error');
+  } finally {
+    profiling = false;
+  }
 }

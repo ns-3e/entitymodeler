@@ -5,9 +5,11 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, watch, writ
 import { join, resolve, sep } from 'node:path';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Plugin, ViteDevServer } from 'vite';
-import { summarizeModel } from '../core/model';
+import { normalizeModel, summarizeModel } from '../core/model';
 import { GLOSSARY_FILE, deleteProposal, glossaryText, listProposals, readGlossary } from './workbench';
 import { agentAvailable, cancelAgent, startAgent } from './agent';
+import { profileLive } from '../../cli/profile';
+import { writeback } from '../../cli/writeback';
 
 const MODEL_FILE = 'model.json';
 const ID_RE = /^[a-z0-9][a-z0-9_-]{0,80}$/;
@@ -61,7 +63,8 @@ export function modelApi(root: string): Plugin {
 
       server.middlewares.use(async (req, res, next) => {
         const url = new URL(req.url || '/', 'http://x');
-        if (!url.pathname.startsWith('/api/')) return next();
+        // /api/cloud belongs to the shared-workspaces Worker (proxied by vite.config.ts when EM_CLOUD is set).
+        if (!url.pathname.startsWith('/api/') || url.pathname.startsWith('/api/cloud/')) return next();
         const parts = url.pathname.split('/').filter(Boolean).slice(1).map(decodeURIComponent); // after "api"
         try {
           if (req.method !== 'GET' && !sameOrigin(req)) return send(res, 403, { error: 'Requests must come from the EntityModel.com app.' });
@@ -121,6 +124,36 @@ export function modelApi(root: string): Plugin {
 
           if (parts[2] === 'proposals' && !parts[3] && req.method === 'GET') return send(res, 200, listProposals(join(modelsDir, id)));
           if (parts[2] === 'proposals' && parts[3] && req.method === 'DELETE') return send(res, deleteProposal(join(modelsDir, id), parts[3]) ? 200 : 404, { ok: true });
+
+          if (parts[2] === 'profile' && req.method === 'POST') {
+            // Same as `em profile`: measure the tab's tables where it was pulled from, with this machine's credentials.
+            // The ops go back to the app, which applies them as one undo step.
+            if (!existsSync(modelPath(id))) return send(res, 404, { error: 'Model not found.' });
+            const body = JSON.parse((await readBody(req)).toString('utf8'));
+            const doc = normalizeModel(JSON.parse(readFileSync(modelPath(id), 'utf8')));
+            const notes: string[] = [];
+            try {
+              const sample = typeof body.sample === 'number' ? body.sample : undefined;
+              const r = await profileLive(doc, typeof body.tab === 'string' ? body.tab : 'main', { sample }, (s) => notes.push(s));
+              return send(res, 200, { ...r, notes });
+            } catch (e) {
+              return send(res, 400, { error: (e as Error).message, notes });
+            }
+          }
+
+          if (parts[2] === 'writeback-plan' && req.method === 'POST') {
+            // Same as `em writeback` without --apply: compare with the live catalog and return the SQL. Nothing is run.
+            if (!existsSync(modelPath(id))) return send(res, 404, { error: 'Model not found.' });
+            const body = JSON.parse((await readBody(req)).toString('utf8'));
+            const doc = normalizeModel(JSON.parse(readFileSync(modelPath(id), 'utf8')));
+            const notes: string[] = [];
+            try {
+              const r = await writeback(doc, typeof body.tab === 'string' ? body.tab : 'main', { apply: false, tags: body.tags !== false }, (s) => notes.push(s));
+              return send(res, 200, { statements: r.statements, notes });
+            } catch (e) {
+              return send(res, 400, { error: (e as Error).message, notes });
+            }
+          }
 
           if (parts[2] === 'agent' && req.method === 'POST') {
             if (!agentAvailable()) return send(res, 501, { error: 'The claude CLI is not installed on this machine.' });

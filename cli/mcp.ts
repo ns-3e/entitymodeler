@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { dirname, join } from 'node:path';
 import { createInterface } from 'node:readline';
 import {
+  profileIssues,
   DOC_SECTIONS,
   SQL_DIALECTS,
   applyOps,
@@ -53,6 +54,8 @@ import {
 } from '../src/core/index';
 import { MODEL_FILE, deleteProposal, findRoot, listProposals, readGlossary, sha1, writeProposal } from '../src/server/workbench';
 import { pullSnapshot } from './pull';
+import { profileLive } from './profile';
+import { writeback } from './writeback';
 
 const PROTOCOL = '2025-06-18';
 
@@ -73,8 +76,8 @@ update_entity {entity, set:{display_name?, description?, entity_type?, color_cod
 rename_entity {entity, to}   delete_entity {entity}
 add_attribute {entity, attribute:{name, type?, label?, description?, is_primary_key?, is_label?, required?, pii?, example?, is_array?, reference?:{entity, output_attribute}, struct_type?}, after?}
 update_attribute {entity, attribute, set:{…}}   rename_attribute {entity, attribute, to}   delete_attribute {entity, attribute}   move_attribute {entity, attribute, after: name|null}
-add_relationship {relationship:{source, target, name?, cardinality?: "1:1"|"1:N"|"N:1"|"N:N", forward_label?, reverse_label?, bidirectional?, foreign_key?, description?}}
-update_relationship {relationship, set:{…}}   rename_relationship {relationship, to}   delete_relationship {relationship}
+add_relationship {relationship:{source, target, name?, cardinality?: "1:1"|"1:N"|"N:1"|"N:N", forward_label?, reverse_label?, bidirectional?, foreign_key?, description?, attributes?: Attribute[]}}
+update_relationship {relationship, set:{…}} — set.attributes replaces the relationship's own attributes (facts about the link, e.g. an enrollment's grade; simple types only): junction-table columns for N:N, child-table columns otherwise   rename_relationship {relationship, to}   delete_relationship {relationship}
 set_reference_values {entity, values:[{attr: "value"}…], source?}
 add_note {text}   set_hidden {entities:[…], hidden}   update_model {set:{title?, description?, organization?, version?, author?, status?}}
 update_tab {tab, set:{name?, kind?, dialect?, description?}}   make_primary {tab}   delete_tab {tab}
@@ -237,7 +240,7 @@ export async function runMcp(opts: { allowApply: boolean; author: string }) {
       run: ({ model, tab, codes }) => {
         const doc = load(model);
         const id = tabOf(doc, tab);
-        const issues = validateModel(tabView(doc, id)).filter((i) => i.fix && (!codes?.length || codes.includes(i.code)));
+        const issues = validateModel(tabView(doc, id)).filter((i) => i.fix && (codes?.length ? codes.includes(i.code) : !i.suggested));
         const { ops } = applyFixes(JSON.parse(JSON.stringify(doc)), issues, id);
         if (!ops.length) return 'Nothing to fix mechanically.';
         return submit(model, `Fix ${ops.length} naming issue(s)`, 'Mechanical fixes from the model’s naming standards.', ops, undefined, false);
@@ -396,9 +399,74 @@ export async function runMcp(opts: { allowApply: boolean; author: string }) {
       run: async ({ model, from, catalog, schema, profile, url, name }) => {
         const notes: string[] = [];
         const snap = await pullSnapshot({ from, catalog, schema, profile, url }, (s) => notes.push(s));
-        const plan = planPull(load(model), snap, { name });
+        const plan = planPull(load(model), snap, { name, profile });
         const report = submit(model, `Pull ${plan.tables} tables into “${plan.tabName}”`, plan.previous ? `New version of the schema pulled into “${plan.previous}”, for comparison.` : undefined, plan.ops, undefined, false);
         return [report, ...plan.warnings.map((w) => `note: ${w}`)].join('\n');
+      },
+    },
+    {
+      name: 'profile_data',
+      description:
+        'Propose data profiles for a tab pulled from a database: row counts, nulls, distinct values, min/max for numbers and dates, longest string (never sample values). Runs one query per table where the tab was pulled from (Databricks needs a SQL warehouse). Returns what the data says about the design: keys that repeat or are empty, empty columns, columns that could be required, candidate reference lists.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: MODEL,
+          tab: TAB,
+          entities: { type: 'array', items: { type: 'string' }, description: 'Only these entities (default: all that match a table).' },
+          sample: { type: 'number', description: 'Rows per table (default 100000; 0 reads every row, which can be slow and costly on big tables).' },
+          from: { type: 'string', enum: ['databricks', 'snowflake', 'postgres'], description: 'Only when the tab has no recorded source.' },
+          catalog: str('Databricks catalog or Snowflake database (default: the tab’s source).'),
+          schema: str('Schema (default: the tab’s source).'),
+          profile: str('Databricks CLI profile (optional).'),
+          warehouse: str('Databricks SQL warehouse id (optional; default the first running one).'),
+          url: str('PostgreSQL connection URL (optional).'),
+        },
+        required: ['model'],
+      },
+      run: async ({ model, tab, entities, sample, from, catalog, schema, profile, warehouse, url }) => {
+        const doc = load(model);
+        const id = tabOf(doc, tab);
+        const notes: string[] = [];
+        const r = await profileLive(doc, id, { from, catalog, schema, profile, warehouse, url, sample, entities }, (s) => notes.push(s));
+        if (!r.ops.length) throw new Error(`No tables profiled.${r.skipped.length ? ` Skipped: ${r.skipped.join('; ')}` : ''}`);
+        // The op list is one line per column: report the outcome, not every op.
+        const out = submit(model, `Profile ${r.profiled} table(s)`, 'Measured from the database; counts and ranges only.', r.ops, id, false).split('\n');
+        const found = profileIssues(tabView(applyOps(doc, r.ops, { tab: id }).doc, id));
+        return [
+          out[0],
+          out[out.length - 1],
+          `Profiled ${r.profiled} table(s).${r.skipped.length ? ` Not profiled: ${r.skipped.join('; ')}` : ''}`,
+          ...notes.map((n) => `note: ${n}`),
+          found.length ? `Findings (${found.length}):\n${found.slice(0, 60).map((f) => `- [${f.level}] ${f.message}`).join('\n')}` : 'No findings: the data matches the design.',
+        ].join('\n');
+      },
+    },
+    {
+      name: 'plan_writeback',
+      description:
+        'The SQL that would put the model’s table and column descriptions (and on Databricks, PII and business_term tags) into the live catalog the tab was pulled from. Compares with the catalog first, so it lists only what differs, and never removes anything. Read-only: show the statements to the person, who runs them with `em writeback <model> --apply`.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: MODEL,
+          tab: TAB,
+          tags: { type: 'boolean', description: 'Include Databricks tags (default true).' },
+          from: { type: 'string', enum: ['databricks', 'snowflake', 'postgres'], description: 'Only when the tab has no recorded source.' },
+          catalog: str('Databricks catalog or Snowflake database (default: the tab’s source).'),
+          schema: str('Schema (default: the tab’s source).'),
+          profile: str('Databricks CLI profile (optional).'),
+          warehouse: str('Databricks SQL warehouse id, used to read current tags (optional).'),
+          url: str('PostgreSQL connection URL (optional).'),
+        },
+        required: ['model'],
+      },
+      run: async ({ model, tab, tags, from, catalog, schema, profile, warehouse, url }) => {
+        const doc = load(model);
+        const notes: string[] = [];
+        const r = await writeback(doc, tabOf(doc, tab), { from, catalog, schema, profile, warehouse, url, tags }, (s) => notes.push(s));
+        if (!r.statements.length) return 'The catalog already has everything the model documents. Nothing to write.';
+        return [`${r.statements.length} statement(s). Nothing was run; the person runs them with \`em writeback ${model}${tab ? ` --tab "${tab}"` : ''} --apply\`.`, ...notes.map((n) => `note: ${n}`), '```sql', ...r.statements.map((s) => `-- ${s.what}\n${s.sql}`), '```'].join('\n');
       },
     },
     {
@@ -487,7 +555,7 @@ export async function runMcp(opts: { allowApply: boolean; author: string }) {
   if (opts.allowApply) {
     // Trusted runs: the tools that normally propose can apply directly, so multi-step work chains.
     for (const t of tools)
-      if (['import_ddl', 'derive_tab', 'auto_map', 'fix_issues', 'sync_tabs', 'pull_schema', 'propose_terms'].includes(t.name))
+      if (['import_ddl', 'derive_tab', 'auto_map', 'fix_issues', 'sync_tabs', 'pull_schema', 'profile_data', 'propose_terms'].includes(t.name))
         (t.inputSchema.properties as Record<string, unknown>).apply = { type: 'boolean', description: 'Apply directly instead of saving a proposal (allowed on this server).' };
     tools.push({
       name: 'accept_proposal',

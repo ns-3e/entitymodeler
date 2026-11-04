@@ -16,9 +16,9 @@ var __commonJS = (cb, mod) => function __require2() {
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    for (let key2 of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key2) && key2 !== except)
+        __defProp(to, key2, { get: () => from[key2], enumerable: !(desc = __getOwnPropDesc(from, key2)) || desc.enumerable });
   }
   return to;
 };
@@ -1619,17 +1619,17 @@ var require_node = __commonJS({
       return EncodeUTF82;
     }();
     exports.EncodeUTF8 = EncodeUTF8;
-    function strToU8(str2, latin1) {
+    function strToU8(str3, latin1) {
       if (latin1) {
-        var ar_1 = new u8(str2.length);
-        for (var i2 = 0; i2 < str2.length; ++i2)
-          ar_1[i2] = str2.charCodeAt(i2);
+        var ar_1 = new u8(str3.length);
+        for (var i2 = 0; i2 < str3.length; ++i2)
+          ar_1[i2] = str3.charCodeAt(i2);
         return ar_1;
       }
       if (te)
-        return te.encode(str2);
-      var l = str2.length;
-      var ar = new u8(str2.length + (str2.length >> 1));
+        return te.encode(str3);
+      var l = str3.length;
+      var ar = new u8(str3.length + (str3.length >> 1));
       var ai = 0;
       var w = function(v) {
         ar[ai++] = v;
@@ -1640,13 +1640,13 @@ var require_node = __commonJS({
           n.set(ar);
           ar = n;
         }
-        var c = str2.charCodeAt(i2);
+        var c = str3.charCodeAt(i2);
         if (c < 128 || latin1)
           w(c);
         else if (c < 2048)
           w(192 | c >> 6), w(128 | c & 63);
         else if (c > 55295 && c < 57344)
-          c = 65536 + (c & 1023 << 10) | str2.charCodeAt(++i2) & 1023, w(240 | c >> 18), w(128 | c >> 12 & 63), w(128 | c >> 6 & 63), w(128 | c & 63);
+          c = 65536 + (c & 1023 << 10) | str3.charCodeAt(++i2) & 1023, w(240 | c >> 18), w(128 | c >> 12 & 63), w(128 | c >> 6 & 63), w(128 | c & 63);
         else
           w(224 | c >> 12), w(128 | c >> 6 & 63), w(128 | c & 63);
       }
@@ -2403,8 +2403,8 @@ var require_node = __commonJS({
 var require_node_atob = __commonJS({
   "node_modules/atob/node-atob.js"(exports, module) {
     "use strict";
-    function atob2(str2) {
-      return Buffer.from(str2, "base64").toString("binary");
+    function atob2(str3) {
+      return Buffer.from(str3, "base64").toString("binary");
     }
     module.exports = atob2.atob = atob2;
   }
@@ -2415,12 +2415,12 @@ var require_btoa = __commonJS({
   "node_modules/btoa/index.js"(exports, module) {
     (function() {
       "use strict";
-      function btoa2(str2) {
+      function btoa2(str3) {
         var buffer;
-        if (str2 instanceof Buffer) {
-          buffer = str2;
+        if (str3 instanceof Buffer) {
+          buffer = str3;
         } else {
-          buffer = Buffer.from(str2.toString(), "binary");
+          buffer = Buffer.from(str3.toString(), "binary");
         }
         return buffer.toString("base64");
       }
@@ -10918,15 +10918,15 @@ var require_jspdf_plugin_autotable = __commonJS({
                 function parseColumns(head, body, foot) {
                   var firstRow = head[0] || body[0] || foot[0] || [];
                   var result = [];
-                  Object.keys(firstRow).filter(function(key) {
-                    return key !== "_element";
-                  }).forEach(function(key) {
+                  Object.keys(firstRow).filter(function(key2) {
+                    return key2 !== "_element";
+                  }).forEach(function(key2) {
                     var colSpan = 1;
                     var input;
                     if (Array.isArray(firstRow)) {
-                      input = firstRow[parseInt(key)];
+                      input = firstRow[parseInt(key2)];
                     } else {
-                      input = firstRow[key];
+                      input = firstRow[key2];
                     }
                     if (typeof input === "object" && !Array.isArray(input)) {
                       colSpan = (input === null || input === void 0 ? void 0 : input.colSpan) || 1;
@@ -10936,7 +10936,7 @@ var require_jspdf_plugin_autotable = __commonJS({
                       if (Array.isArray(firstRow)) {
                         id = result.length;
                       } else {
-                        id = key + (i > 0 ? "_".concat(i) : "");
+                        id = key2 + (i > 0 ? "_".concat(i) : "");
                       }
                       var rowResult = { dataKey: id };
                       result.push(rowResult);
@@ -11036,8 +11036,8 @@ var require_jspdf_plugin_autotable = __commonJS({
                     }
                     var columnStyles = options2["columnStyles"] || {};
                     for (var _d = 0, _e = Object.keys(columnStyles); _d < _e.length; _d++) {
-                      var key = _e[_d];
-                      checkStyles(columnStyles[key] || {});
+                      var key2 = _e[_d];
+                      checkStyles(columnStyles[key2] || {});
                     }
                   };
                   for (var _i = 0, _a = [global2, document2, current]; _i < _a.length; _i++) {
@@ -11437,13 +11437,13 @@ var require_jspdf_plugin_autotable = __commonJS({
                 function createColumns(columns) {
                   return columns.map(function(input, index) {
                     var _a, _b;
-                    var key;
+                    var key2;
                     if (typeof input === "object") {
-                      key = (_b = (_a = input.dataKey) !== null && _a !== void 0 ? _a : input.key) !== null && _b !== void 0 ? _b : index;
+                      key2 = (_b = (_a = input.dataKey) !== null && _a !== void 0 ? _a : input.key) !== null && _b !== void 0 ? _b : index;
                     } else {
-                      key = index;
+                      key2 = index;
                     }
-                    return new models_1.Column(key, input, index);
+                    return new models_1.Column(key2, input, index);
                   });
                 }
                 function cellStyles(sectionName, column, rowIndex, themeName, styles, scaleFactor, cellInputStyles) {
@@ -12188,8 +12188,8 @@ var require_jspdf_plugin_autotable = __commonJS({
                   }
                 }
                 function ellipsize(text2, width, styles, doc, overflow) {
-                  return text2.map(function(str2) {
-                    return ellipsizeStr(str2, width, styles, doc, overflow);
+                  return text2.map(function(str3) {
+                    return ellipsizeStr(str3, width, styles, doc, overflow);
                   });
                 }
                 exports2.ellipsize = ellipsize;
@@ -12303,9 +12303,9 @@ var require_jspdf_plugin_autotable = __commonJS({
 });
 
 // cli/em.ts
-import { existsSync as existsSync4, mkdirSync as mkdirSync3, readFileSync as readFileSync5, readdirSync as readdirSync3, statSync, writeFileSync as writeFileSync3 } from "node:fs";
+import { existsSync as existsSync4, mkdirSync as mkdirSync3, readFileSync as readFileSync6, readdirSync as readdirSync3, statSync, writeFileSync as writeFileSync3 } from "node:fs";
 import { spawnSync as spawnSync2 } from "node:child_process";
-import { basename, dirname as dirname3, join as join4, resolve as resolve2 } from "node:path";
+import { basename, dirname as dirname3, join as join4, resolve as resolve3 } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // src/core/pdf.ts
@@ -12665,6 +12665,12 @@ function relationalPlan(m) {
     t.columns.push(col(t.entity, { name, label: toLabel(name), type: like.type === "STRUCT" ? "STRING" : like.type, reference: like.reference, description }, origin));
     return name;
   };
+  const addRelationshipColumn = (t, ra, r, onJunction) => {
+    const name = uniqueName(ra.name, t.columns.map((c) => c.name));
+    const a = { ...ra, name, label: ra.label || toLabel(name), is_primary_key: false, is_label: false, unique: false, description: ra.description || `${r.forward_label || r.name}: ${ra.label || ra.name}` };
+    if (!onJunction) delete a.required;
+    t.columns.push(col(t.entity, a, `relationship ${r.name}`));
+  };
   for (const e of dependencyOrder(m)) {
     tables.set(e.name, {
       name: e.name,
@@ -12710,7 +12716,7 @@ function relationalPlan(m) {
       const b = addColumn(jt, s2 === tg ? `related_${spk.name}` : keyColumnName(tg, tpk), tpk, `${tg.display_name} key`, `relationship ${r.name}`);
       for (const c of jt.columns) c.pk = c.notNull = true;
       jt.pk = [a, b];
-      for (const ra of r.attributes || []) jt.columns.push(col(s2, { ...ra, is_primary_key: false }, `relationship ${r.name}`));
+      for (const ra of r.attributes || []) addRelationshipColumn(jt, ra, r, true);
       tables.set(name, jt);
       foreignKeys.push({ name: fkName(`fk_${name}_${a}`), table: name, column: a, refTable: s2.name, refColumn: spk.name, kind: "relationship", relationship: r.name });
       foreignKeys.push({ name: fkName(`fk_${name}_${b}`), table: name, column: b, refTable: tg.name, refColumn: tpk.name, kind: "relationship", relationship: r.name });
@@ -12723,7 +12729,7 @@ function relationalPlan(m) {
     let fk = resolveForeignKey(m, r, byName);
     if (!fk) fk = addColumn(child, ends.child === ends.parent ? `parent_${pk.name}` : keyColumnName(parent, pk), pk, `${parent.display_name} (${r.forward_label})`, `relationship ${r.name}`);
     if (r.cardinality === "1:1" && !child.pk.includes(fk)) child.unique.push(fk);
-    for (const ra of r.attributes || []) addColumn(child, ra.name, ra, ra.description || `${r.forward_label} ${ra.label || ra.name}`, `relationship ${r.name}`);
+    for (const ra of r.attributes || []) addRelationshipColumn(child, ra, r, false);
     foreignKeys.push({ name: fkName(`fk_${r.name}`), table: child.name, column: fk, refTable: parent.name, refColumn: pk.name, kind: "relationship", relationship: r.name });
   }
   return { tables: [...tables.values()], foreignKeys, notes };
@@ -13013,7 +13019,11 @@ function lineageCopy(src) {
   for (const e of m.entities) {
     if (e.ui) delete e.ui.hidden;
     e.derived_from = e.name;
-    for (const a of e.attributes) a.derived_from = a.name;
+    delete e.profile;
+    for (const a of e.attributes) {
+      a.derived_from = a.name;
+      delete a.profile;
+    }
   }
   return m;
 }
@@ -13280,7 +13290,11 @@ function collapseJunctions(m, rep) {
     const fks = asChild.map((r) => resolveForeignKey(m, r, byName));
     if (fks.some((f) => !f)) continue;
     const rest = e.attributes.filter((a) => !fks.includes(a.name) && !(a.is_primary_key && !fks.includes(a.name) && /(_id|_key|_sk)$/.test(a.name)) && !isTechnicalColumn(a.name));
-    if (rest.length) continue;
+    if (rest.length) {
+      const pk = e.attributes.filter((a) => a.is_primary_key).map((a) => a.name).sort();
+      if (pk.length !== 2 || pk.join() !== [...fks].sort().join()) continue;
+      if (rest.length > 2 || rest.some((a) => a.type === "STRUCT" || a.type === "REFERENCE_ENTITY" || a.is_array)) continue;
+    }
     const [p1, p2] = asChild.map((r) => relationshipEnds(r).parent);
     for (const r of asChild) {
       deadRels.add(r.name);
@@ -13298,7 +13312,7 @@ function collapseJunctions(m, rep) {
       reverse_label: "Related From",
       bidirectional: true,
       description: e.description || `Was link table ${e.name}.`,
-      attributes: []
+      attributes: rest.map((a) => ({ ...a, is_primary_key: false, is_label: false }))
     });
     bump(p1, 1);
     if (p2 !== p1) bump(p2, 1);
@@ -13336,7 +13350,7 @@ function derivePhysical(src, o) {
         attributes: [
           { name: a, label: toLabel(a), type: spk.type, is_primary_key: true, required: true, description: `${s2.display_name} key` },
           { name: b, label: toLabel(b), type: tpk.type, is_primary_key: true, required: true, description: `${t.display_name} key` },
-          ...(r.attributes || []).map((x) => ({ ...x, is_primary_key: false }))
+          ...(r.attributes || []).map((x, i, all) => ({ ...x, name: uniqueName(x.name, [a, b, ...all.slice(0, i).map((y) => y.name)]), is_primary_key: false, is_label: false }))
         ],
         struct_types: [],
         dependent_reference: null
@@ -13368,6 +13382,11 @@ function derivePhysical(src, o) {
       const parent = getEntity(m, ends.parent);
       const pk = parent && primaryKey(parent);
       if (!child || !parent || !pk) continue;
+      for (const ra of r.attributes || []) {
+        const { required: _required, ...rest } = ra;
+        child.attributes.push({ ...rest, name: uniqueName(ra.name, child.attributes.map((a) => a.name)), is_primary_key: false, is_label: false, description: ra.description || `${r.forward_label || r.name}: ${ra.label || ra.name}` });
+      }
+      if (r.attributes?.length) r.attributes = [];
       const existing = r.foreign_key && child.attributes.some((a) => a.name === r.foreign_key) ? r.foreign_key : inferForeignKey(m, r);
       if (existing) {
         r.foreign_key = existing;
@@ -13741,12 +13760,13 @@ function buildDocTables(m, opts = {}) {
     }
   if (sections.has("relationships") && m.relationships.length) {
     const ent = (n) => m.entities.find((e) => e.name === n)?.display_name || n;
+    const rels = m.relationships.filter((r) => !opts.entities || opts.entities.includes(r.source) || opts.entities.includes(r.target));
     tables.push({
       id: "relationships",
       section: "relationships",
       title: "Relationships",
-      columns: ["Relationship", "Source", "Target", "Cardinality", "Forward Label", "Reverse Label", "Key", "Description"],
-      rows: m.relationships.filter((r) => !opts.entities || opts.entities.includes(r.source) || opts.entities.includes(r.target)).map((r) => [
+      columns: ["Relationship", "Source", "Target", "Cardinality", "Forward Label", "Reverse Label", "Key", "Attributes", "Description"],
+      rows: rels.map((r) => [
         r.name,
         ent(r.source),
         ent(r.target),
@@ -13754,9 +13774,22 @@ function buildDocTables(m, opts = {}) {
         r.forward_label,
         r.bidirectional ? r.reverse_label || "" : "",
         relationshipEnds(r) ? resolveForeignKey(m, r) ? `${relationshipEnds(r).child}.${resolveForeignKey(m, r)}` : "" : "junction table",
+        (r.attributes || []).map((a) => a.name).join(", "),
         r.description || ""
       ])
     });
+    const withAttrs = rels.filter((r) => r.attributes?.length);
+    if (withAttrs.length)
+      tables.push({
+        id: "relationship-attributes",
+        section: "relationships",
+        title: "Relationship attributes",
+        caption: "Facts about a link itself. They are stored on the junction table (N:N) or on the child entity.",
+        columns: ["Relationship", "Attribute", "Type", "Required", "Stored on", "Description"],
+        rows: withAttrs.flatMap(
+          (r) => r.attributes.map((a) => [r.name, a.name, typeDisplay(a), a.required ? "Yes" : "", relationshipEnds(r) ? ent(relationshipEnds(r).child) : "junction table", a.description || ""])
+        )
+      });
   }
   if (sections.has("hierarchies"))
     for (const h of m.hierarchies) {
@@ -13866,8 +13899,8 @@ function tableToHTML(t, theme = DEFAULT_DOC_THEME, withTitle = true) {
     const bg = ri % 2 ? `background:${theme.stripe};` : "background:#FFFFFF;";
     parts.push("<tr>");
     r.forEach((c, ci) => {
-      const key = t.section === "attributes" && ci === 1 ? `font-family:${theme.mono};color:${theme.ink};` : "";
-      parts.push(`<td style="${cell}${bg}${key}">${esc(c || "").replace(/\n/g, "<br>")}</td>`);
+      const key2 = t.section === "attributes" && ci === 1 ? `font-family:${theme.mono};color:${theme.ink};` : "";
+      parts.push(`<td style="${cell}${bg}${key2}">${esc(c || "").replace(/\n/g, "<br>")}</td>`);
     });
     parts.push("</tr>");
   });
@@ -14115,13 +14148,13 @@ function buildModelPdf(m, tables, opts = {}) {
       }
       const total = (t.widths || []).reduce((x, y2) => x + y2, 0);
       const avail = W() - M * 2;
-      const key = MONO_COLUMN[t.section];
+      const key2 = MONO_COLUMN[t.section];
       const columnStyles = {};
       t.columns.forEach((_, i) => {
         columnStyles[i] = {};
         if (total && t.widths) columnStyles[i].cellWidth = t.widths[i] / total * avail;
         if (i === 0) Object.assign(columnStyles[i], { fillColor: T.canvas, textColor: T.textStrong, font: F.semibold[0], fontStyle: F.semibold[1] });
-        else if (i === key) Object.assign(columnStyles[i], { textColor: T.textStrong, font: F.mono[0], fontStyle: F.mono[1] });
+        else if (i === key2) Object.assign(columnStyles[i], { textColor: T.textStrong, font: F.mono[0], fontStyle: F.mono[1] });
       });
       const dense = t.columns.length > 10;
       doc.autoTable({
@@ -14260,7 +14293,7 @@ function writeGlossary(modelsDir, terms) {
 }
 
 // cli/mcp.ts
-import { existsSync as existsSync3, mkdirSync as mkdirSync2, readFileSync as readFileSync4, readdirSync as readdirSync2, writeFileSync as writeFileSync2 } from "node:fs";
+import { existsSync as existsSync3, mkdirSync as mkdirSync2, readFileSync as readFileSync5, readdirSync as readdirSync2, writeFileSync as writeFileSync2 } from "node:fs";
 import { dirname as dirname2, join as join3 } from "node:path";
 import { createInterface } from "node:readline";
 
@@ -14446,10 +14479,10 @@ function applyOpsInPlace(doc, ops, opts = {}) {
           return { ...e, tab: t };
         };
         const target = end(op.target);
-        const same = (x) => x.target.tab === target.tab && x.target.entity === target.entity && x.target.attribute === target.attribute;
-        const rest = (doc.mappings || []).filter((x) => !same(x));
+        const same2 = (x) => x.target.tab === target.tab && x.target.entity === target.entity && x.target.attribute === target.attribute;
+        const rest = (doc.mappings || []).filter((x) => !same2(x));
         if (op.op === "set_mapping") {
-          const old = (doc.mappings || []).find(same);
+          const old = (doc.mappings || []).find(same2);
           rest.push({ id: old?.id || uid("map"), target, sources: op.sources.map(end), ...op.transform ? { transform: op.transform } : {}, ...op.notes ? { notes: op.notes } : {}, status: op.status || "draft" });
         }
         doc.mappings = rest;
@@ -14597,7 +14630,8 @@ function describeOp(op) {
 // src/core/standards.ts
 var NAME_RE2 = /^[a-z][a-z0-9_]*$/;
 var ATTR_RE2 = /^[A-Za-z][A-Za-z0-9_]*$/;
-var PII_NAME = /(^|_)(e?mail|phone|mobile|fax|ssn|social_security|passport|birth|dob|first_name|last_name|full_name|surname|address|street|postcode|postal_code|zip|ip_address|national_id|tax_id|iban|card_number|salary|gender|ethnicity)(_|$)/i;
+var PII_NAME = /(^|_)(e?mail|phone|mobile|fax|ssn|social_security|soc_sec|passport|birth|dob|first_name|last_name|full_name|surname|address|street|postcode|postal_code|zip|ip_address|national_id|tax_id|iban|card_number|salary|gender|ethnicity)(_|$)/i;
+var looksPersonal = (name) => PII_NAME.test(name.replace(/([a-z0-9])([A-Z])/g, "$1_$2"));
 var words = (name) => name.replace(/([a-z0-9])([A-Z])/g, "$1_$2").split(/[_\s]+/).filter(Boolean).map((w) => w.toLowerCase());
 function toCase(name, c) {
   const w = words(name);
@@ -14647,7 +14681,7 @@ function checkStandards(m, std = standardFor(m)) {
       }
       if (std.max_length && a.name.length > std.max_length) push("warning", "std.length", `${e.display_name}.${a.name}: name is ${a.name.length} characters; the limit is ${std.max_length}.`, ta);
       if (std.require_attribute_description && !a.description?.trim() && !a.is_primary_key) push("info", "std.attr_desc", `${e.display_name}.${a.name}: needs a description.`, ta);
-      if (std.require_pii_review && !a.pii && PII_NAME.test(a.name)) push("warning", "std.pii", `${e.display_name}.${a.name}: looks like personal data; mark it PII (or rename it if it isn't).`, ta, [{ op: "update_attribute", entity: e.name, attribute: a.name, set: { pii: true } }]);
+      if (std.require_pii_review && !a.pii && looksPersonal(a.name)) push("warning", "std.pii", `${e.display_name}.${a.name}: looks like personal data; mark it PII (or rename it if it isn't).`, ta, [{ op: "update_attribute", entity: e.name, attribute: a.name, set: { pii: true } }]);
     }
     const pk = e.attributes.filter((a) => a.is_primary_key);
     if (std.pk_suffix && e.entity_type === "standard" && pk.length === 1 && !pk[0].name.endsWith(std.pk_suffix))
@@ -14702,6 +14736,165 @@ function applyFixes(doc, issues, tab) {
   return { applied, skipped, ops };
 }
 
+// src/core/profile.ts
+var approximateDistinct = (platform, sample) => !sample && (platform === "databricks" || platform === "snowflake");
+function kindOf(type) {
+  const t = type.toLowerCase();
+  if (/^(struct|array|map|variant|object|json|jsonb|binary|bytea|blob|geography|geometry|xml|interval|void)/.test(t) || /\[\]$/.test(t)) return "other";
+  if (/^bool/.test(t)) return "bool";
+  if (/^(tiny|small|medium|big)?int|^integer|^decimal|^numeric|^number|^double|^float|^real|^serial|^bigserial|^smallserial|^money/.test(t)) return "number";
+  if (/^(date|time|timestamp|datetime)/.test(t)) return "date";
+  if (/^(string|text|varchar|char|character|nvarchar|nchar|citext|uuid|tinytext|mediumtext|longtext|enum)/.test(t)) return "string";
+  return "other";
+}
+var SQL = {
+  databricks: { q: (s2) => `\`${s2.replace(/`/g, "``")}\``, distinct: (c) => `approx_count_distinct(${c})`, str: (x) => `CAST(${x} AS STRING)`, len: (x) => `length(${x})`, text: "STRING", int: "BIGINT" },
+  snowflake: { q: (s2) => `"${s2.replace(/"/g, '""')}"`, distinct: (c) => `APPROX_COUNT_DISTINCT(${c})`, str: (x) => `TO_VARCHAR(${x})`, len: (x) => `LENGTH(${x})`, text: "VARCHAR", int: "BIGINT" },
+  postgres: { q: (s2) => `"${s2.replace(/"/g, '""')}"`, distinct: (c) => `COUNT(DISTINCT ${c})`, str: (x) => `CAST(${x} AS TEXT)`, len: (x) => `length(${x})`, text: "TEXT", int: "BIGINT" },
+  mysql: { q: (s2) => `\`${s2.replace(/`/g, "``")}\``, distinct: (c) => `COUNT(DISTINCT ${c})`, str: (x) => `CAST(${x} AS CHAR)`, len: (x) => `CHAR_LENGTH(${x})`, text: "CHAR", int: "SIGNED" }
+};
+var lit = (s2) => `'${s2.replace(/'/g, "''")}'`;
+function profileQuery(platform, t, opts = {}) {
+  const d = SQL[platform];
+  const catalog = platform === "postgres" ? void 0 : platform === "snowflake" && opts.catalog && /^[a-z_][a-z0-9_$]*$/.test(opts.catalog) ? opts.catalog.toUpperCase() : opts.catalog;
+  const from = [catalog, t.schema, t.name].filter(Boolean).map((x) => d.q(x)).join(".");
+  const src = opts.sample ? `(SELECT * FROM ${from} LIMIT ${Math.floor(opts.sample)}) s` : `${from} s`;
+  const nullText = `CAST(NULL AS ${d.text})`;
+  const nullInt = `CAST(NULL AS ${d.int})`;
+  const ni = platform === "mysql" ? "NULL" : nullInt;
+  const selects = t.columns.map((c) => {
+    const col = `s.${d.q(c.name)}`;
+    const k = kindOf(c.type);
+    const ranged = k === "number" || k === "date";
+    return [
+      `SELECT ${lit(t.name)} AS table_name, ${lit(c.name)} AS column_name, COUNT(*) AS row_count, COUNT(${col}) AS non_null`,
+      `${k === "other" ? ni : approximateDistinct(platform, opts.sample) ? d.distinct(col) : `COUNT(DISTINCT ${col})`} AS distinct_count`,
+      `${ranged ? d.str(`MIN(${col})`) : nullText} AS min_value, ${ranged ? d.str(`MAX(${col})`) : nullText} AS max_value`,
+      `${k === "string" ? `MAX(${d.len(col)})` : ni} AS max_length FROM ${src}`
+    ].join(", ");
+  });
+  return `-- EntityModel.com: profile of ${t.name} (${t.columns.length} columns${opts.sample ? `, first ${opts.sample} rows` : ""}). Export the result as CSV.
+${selects.join("\nUNION ALL\n")};`;
+}
+var num = (v) => v === null || v === void 0 || v === "" || /^null$/i.test(String(v)) ? void 0 : Number(v);
+var str = (v) => v === null || v === void 0 || v === "" || /^null$/i.test(String(v)) ? void 0 : String(v);
+function fromProfileRows(rows, opts = {}) {
+  const out = /* @__PURE__ */ new Map();
+  for (const raw of rows) {
+    const r = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k.trim().toLowerCase(), v]));
+    const table = str(r.table_name);
+    const column = str(r.column_name);
+    if (!table || !column) continue;
+    const rows_ = num(r.row_count) ?? 0;
+    if (!out.has(table)) out.set(table, { table, rows: rows_, sampled: !!opts.sample && rows_ >= opts.sample, ...approximateDistinct(opts.platform, opts.sample) ? { approx: true } : {}, columns: /* @__PURE__ */ new Map() });
+    const p = { non_null: num(r.non_null) ?? 0 };
+    const distinct = num(r.distinct_count);
+    if (distinct !== void 0) p.distinct = Math.min(distinct, p.non_null);
+    const min = str(r.min_value);
+    const max = str(r.max_value);
+    if (min !== void 0) p.min = min;
+    if (max !== void 0) p.max = max;
+    const len = num(r.max_length);
+    if (len !== void 0) p.max_length = len;
+    out.get(table).columns.set(column, p);
+  }
+  return [...out.values()];
+}
+var key = (s2) => s2.toLowerCase().replace(/[^a-z0-9]/g, "");
+function profileTargets(view2, snap, only) {
+  const byKey = /* @__PURE__ */ new Map();
+  for (const t of snap.tables) {
+    byKey.set(key(t.name), t);
+    if (t.schema) byKey.set(key(`${t.schema}_${t.name}`), t);
+  }
+  const wanted = only?.length ? new Set(only) : void 0;
+  return view2.entities.flatMap((e) => {
+    const table = byKey.get(key(e.name));
+    return table && (!wanted || wanted.has(e.name)) ? [{ entity: e.name, table }] : [];
+  });
+}
+function planProfile(view2, targets, profiles, at = (/* @__PURE__ */ new Date()).toISOString()) {
+  const byTable = new Map(profiles.map((p) => [key(p.table), p]));
+  const ops = [];
+  for (const { entity, table } of targets) {
+    const p = byTable.get(key(table.name));
+    const e = view2.entities.find((x) => x.name === entity);
+    if (!p || !e) continue;
+    const ep = { rows: p.rows, profiled_at: at, ...p.sampled ? { sampled: true } : {}, ...p.approx ? { approx_distinct: true } : {} };
+    ops.push({ op: "update_entity", entity, set: { profile: ep } });
+    const cols = new Map([...p.columns].map(([c, v]) => [key(c), v]));
+    for (const a of e.attributes) {
+      const ap = cols.get(key(a.name));
+      if (!ap) continue;
+      const keep = a.pii || looksPersonal(a.name) ? (({ min: _min, max: _max, ...rest }) => rest)(ap) : ap;
+      ops.push({ op: "update_attribute", entity, attribute: a.name, set: { profile: keep } });
+    }
+  }
+  return ops;
+}
+var pct = (n, d) => `${Math.round(100 * n / d)}%`;
+var KEYLIKE = /(^id$|_id$|_key$|key$|_no$|_num$|_code$|_uuid$|^uuid$)/i;
+function keyCandidate(attrs, rows, approx) {
+  const unique = attrs.filter((a) => {
+    const p = a.profile;
+    if (!p || p.non_null !== rows || p.distinct === void 0 || a.type === "REFERENCE_ENTITY") return false;
+    return approx ? p.distinct >= rows * 0.9 : p.distinct === rows;
+  });
+  return (unique.find((a) => KEYLIKE.test(a.name)) ?? (approx ? void 0 : unique.find((a) => !/(name|desc|comment|note|text)/i.test(a.name))))?.name;
+}
+function profileIssues(m) {
+  const issues = [];
+  for (const e of m.entities) {
+    const rows = e.profile?.rows;
+    if (rows === 0) issues.push({ level: "info", code: "profile.empty_table", message: `${e.name} had no rows when it was profiled.`, target: { kind: "entity", name: e.name } });
+    if (!rows) continue;
+    const pk = e.attributes.filter((a) => a.is_primary_key);
+    const of = `of ${rows.toLocaleString("en-US")}${e.profile.sampled ? " sampled" : ""} rows`;
+    const approx = !!e.profile.approx_distinct;
+    const repeats = (p) => p.distinct !== void 0 && p.distinct < (approx ? p.non_null * 0.9 : p.non_null);
+    const about = approx ? "about " : "";
+    const alwaysSet = [];
+    for (const a of e.attributes) {
+      const p = a.profile;
+      if (!p) continue;
+      const target = { kind: "entity", name: e.name, tab: "attributes", attribute: a.name };
+      const nulls = rows - p.non_null;
+      if (a.is_primary_key && nulls > 0) issues.push({ level: "warning", code: "profile.pk_null", message: `${e.name}.${a.name} is a primary key but is empty in ${pct(nulls, rows)} ${of}.`, target });
+      if (pk.length === 1 && a.is_primary_key && repeats(p))
+        issues.push({ level: "warning", code: "profile.pk_dupes", message: `${e.name}.${a.name} is the primary key but has ${about}${p.distinct.toLocaleString("en-US")} distinct values in ${p.non_null.toLocaleString("en-US")} rows: it may not identify a row.`, target });
+      if (a.unique && repeats(p))
+        issues.push({ level: "warning", code: "profile.unique", message: `${e.name}.${a.name} is marked unique but repeats (${about}${p.distinct.toLocaleString("en-US")} distinct in ${p.non_null.toLocaleString("en-US")} rows).`, target });
+      if (a.required && !a.is_primary_key && nulls > 0)
+        issues.push({ level: "warning", code: "profile.required_null", message: `${e.name}.${a.name} is required but empty in ${pct(nulls, rows)} ${of}.`, target });
+      if (p.non_null === 0) issues.push({ level: "info", code: "profile.empty", message: `${e.name}.${a.name} has no value in any ${of}. Is it still used?`, target });
+      else if (!a.required && !a.is_primary_key && nulls === 0 && rows >= 100) alwaysSet.push(a.name);
+      if (!a.is_primary_key && !a.reference && a.type === "STRING" && p.distinct !== void 0 && p.distinct >= 2 && p.distinct <= 25 && p.non_null >= 200 && !/(_id|_key|_uuid|_hash)$/i.test(a.name))
+        issues.push({ level: "info", code: "profile.reference_candidate", message: `${e.name}.${a.name} has only ${p.distinct} distinct values in ${p.non_null.toLocaleString("en-US")} rows: a candidate reference list.`, target });
+    }
+    const candidate = !pk.length && rows >= 2 ? keyCandidate(e.attributes, rows, approx) : void 0;
+    if (candidate)
+      issues.push({
+        level: "info",
+        code: "profile.key_candidate",
+        message: `${e.name} has no primary key; ${candidate} has a value in every one ${of} and ${approx ? "barely" : "never"} repeats. It could be the key.`,
+        target: { kind: "entity", name: e.name, tab: "attributes", attribute: candidate },
+        fix: [{ op: "update_attribute", entity: e.name, attribute: candidate, set: { is_primary_key: true, required: true } }],
+        suggested: true
+      });
+    const req = alwaysSet.filter((n) => n !== candidate);
+    if (req.length)
+      issues.push({
+        level: "info",
+        code: "profile.always_set",
+        message: req.length === 1 ? `${e.name}.${req[0]} has a value in all ${of}; it could be required.` : `${req.length} columns of ${e.name} have a value in all ${of} and could be required: ${req.slice(0, 6).join(", ")}${req.length > 6 ? `, and ${req.length - 6} more` : ""}.`,
+        target: req.length === 1 ? { kind: "entity", name: e.name, tab: "attributes", attribute: req[0] } : { kind: "entity", name: e.name, tab: "attributes" },
+        fix: req.map((attribute) => ({ op: "update_attribute", entity: e.name, attribute, set: { required: true } })),
+        suggested: true
+      });
+  }
+  return issues;
+}
+
 // src/core/validate.ts
 var ENTITY_NAME_RE = /^[a-z][a-z0-9_]*$/;
 var ATTR_NAME_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
@@ -14740,6 +14933,20 @@ function validateModel(m) {
       else if (entityByName.has(ends.child) && !entityByName.get(ends.child).attributes.some((a) => a.name === r.foreign_key))
         push("error", "rel.fk", `Relationship "${r.name}": foreign key "${r.foreign_key}" is not an attribute of "${ends.child}".`, t);
     }
+    const ra = r.attributes || [];
+    dupes(ra.map((x) => x.name.toLowerCase())).forEach((n) => push("error", "rel.attr_duplicate", `Relationship "${r.name}" has two attributes named "${n}".`, t));
+    for (const x of ra) {
+      if (!ATTR_NAME_RE.test(x.name)) push("error", "rel.attr_name", `Relationship "${r.name}": invalid attribute name "${x.name}".`, t);
+      if (x.type === "STRUCT" || x.type === "REFERENCE_ENTITY")
+        push("error", "rel.attr_type", `Relationship "${r.name}".${x.name}: relationship attributes take a simple type (STRING, INT, DATE\u2026), not ${x.type === "STRUCT" ? "a struct" : "a reference"}.`, t);
+    }
+    const relEnds = relationshipEnds(r);
+    const childEntity = relEnds && entityByName.get(relEnds.child);
+    if (childEntity) {
+      for (const x of ra)
+        if (childEntity.attributes.some((c) => c.name.toLowerCase() === x.name.toLowerCase()))
+          push("warning", "rel.attr_clash", `Relationship "${r.name}".${x.name} has the same name as ${childEntity.display_name}.${x.name}, where exports put it; the column gets a numbered name. Rename one of them.`, t);
+    }
     if (r.bidirectional && !r.reverse_label) push("warning", "rel.rev", `Bidirectional relationship "${r.name}" has no reverse label.`, t);
     if (r.bidirectional && r.reverse_label && r.reverse_label === r.forward_label)
       push("error", "rel.labels", `Relationship "${r.name}" reverse label must differ from forward label.`, t);
@@ -14775,6 +14982,7 @@ function validateModel(m) {
   }
   issues.push(...checkStandards(m));
   issues.push(...validateTerms(m));
+  issues.push(...profileIssues(m));
   return issues;
 }
 function validateEntity(e, entityByName, push, conceptual = false) {
@@ -14921,8 +15129,8 @@ function parseSqlType(raw) {
   const st = t.match(/^STRUCT\s*<([\s\S]*)>$/i);
   if (st) return { type: "STRUCT", is_array, fields: splitTopLevel(st[1]).map(parseStructField).filter((f) => !!f) };
   if (/^(JSONB?|VARIANT|OBJECT|MAP\s*<.*>|HSTORE|XML)$/i.test(t)) return { type: "STRING", is_array, note: t.toUpperCase().replace(/<.*$/, "") };
-  const num = numericType(t);
-  if (num) return { ...num, is_array };
+  const num2 = numericType(t);
+  if (num2) return { ...num2, is_array };
   return { type: mapSqlType(t), is_array };
 }
 function numericType(t) {
@@ -15282,14 +15490,14 @@ function fromSql(text2, opts = {}) {
       } else if (isKw(stmt[0], "COMMENT") && isKw(stmt[1], "ON")) {
         const what = stmt[2]?.v.toUpperCase();
         const nm = readName(stmt, 3);
-        const str2 = stmt.slice(nm.next).find((x) => x.k === "str")?.v;
+        const str3 = stmt.slice(nm.next).find((x) => x.k === "str")?.v;
         if (what === "TABLE") {
           const t = tables.get(keyOf(nm.parts[nm.parts.length - 1]));
-          if (t) t.comment = str2;
+          if (t) t.comment = str3;
         } else if (what === "COLUMN") {
           const t = tables.get(keyOf(nm.parts[nm.parts.length - 2] || ""));
           const col = t?.columns.find((x) => keyOf(x.name) === keyOf(nm.parts[nm.parts.length - 1]));
-          if (col) col.comment = str2;
+          if (col) col.comment = str3;
         }
       } else if (isKw(stmt[0], "INSERT")) {
         let i = 1;
@@ -15398,8 +15606,8 @@ function fromSql(text2, opts = {}) {
     if (toks.length === 1 && (toks[0].k === "str" || toks[0].k === "num")) return toks[0].v;
     if (toks.length === 2 && isSym(toks[0], "-") && toks[1].k === "num") return `-${toks[1].v}`;
     if (toks.length === 1 && isKw(toks[0], "TRUE", "FALSE")) return toks[0].v.toLowerCase();
-    const str2 = toks.find((x) => x.k === "str");
-    return str2 ? str2.v : joinTokens(toks);
+    const str3 = toks.find((x) => x.k === "str");
+    return str3 ? str3.v : joinTokens(toks);
   }
   if (skipped.size) warnings.push(`Skipped: ${[...skipped].map(([k, n]) => `${n}\xD7 ${k}`).join(", ")}.`);
   const model = buildModel([...tables.values()], fks, warnings, opts.title || "Imported model", { keepJunctions: opts.keepJunctions });
@@ -15751,13 +15959,13 @@ function fromDbml(text2, opts = {}) {
     } else i++;
   }
   for (const [name, values] of enums) {
-    const key = `${name}_code`;
-    tables.push({ name, columns: [{ name: key, type: "varchar", notNull: true, pk: true, unique: false }], pk: [key], rows: values.map((v) => ({ [key]: v })), comment: `Values of the ${name} enum.` });
+    const key2 = `${name}_code`;
+    tables.push({ name, columns: [{ name: key2, type: "varchar", notNull: true, pk: true, unique: false }], pk: [key2], rows: values.map((v) => ({ [key2]: v })), comment: `Values of the ${name} enum.` });
     for (const t of tables)
       for (const c of t.columns)
         if (c.type.toLowerCase() === name.toLowerCase()) {
           c.type = "varchar";
-          fks.push({ table: t.name, columns: [c.name], refTable: name, refColumns: [key] });
+          fks.push({ table: t.name, columns: [c.name], refTable: name, refColumns: [key2] });
         }
   }
   const validColors = new Map([...colors].filter(([, c]) => /^#[0-9a-f]{6}$/i.test(c)));
@@ -15829,7 +16037,7 @@ var CATALOG_PLATFORMS = [
   { id: "postgres", label: "PostgreSQL", scope: "schema" },
   { id: "mysql", label: "MySQL / MariaDB", scope: "database" }
 ];
-var lit = (s2) => `'${s2.replace(/'/g, "''")}'`;
+var lit2 = (s2) => `'${s2.replace(/'/g, "''")}'`;
 var ident2 = (s2) => /^[A-Za-z_][A-Za-z0-9_$]*$/.test(s2) ? s2 : `"${s2.replace(/"/g, '""')}"`;
 function catalogQuery(platform, scope) {
   const schema = scope.schema || (platform === "postgres" ? "public" : "");
@@ -15857,7 +16065,7 @@ LEFT JOIN (
   JOIN information_schema.key_column_usage r ON r.constraint_schema = rc.unique_constraint_schema AND r.constraint_name = rc.unique_constraint_name
        AND r.ordinal_position = k.position_in_unique_constraint
 ) fk ON fk.table_schema = c.table_schema AND fk.table_name = c.table_name AND fk.column_name = c.column_name
-WHERE c.table_schema = ${lit(schema)}
+WHERE c.table_schema = ${lit2(schema)}
 ORDER BY c.table_name, c.ordinal_position;`;
   if (platform === "mysql") {
     const db = scope.catalog || scope.schema || "";
@@ -15873,7 +16081,7 @@ LEFT JOIN information_schema.key_column_usage k ON k.table_schema = c.table_sche
      AND k.column_name = c.column_name AND k.constraint_name = 'PRIMARY'
 LEFT JOIN information_schema.key_column_usage f ON f.table_schema = c.table_schema AND f.table_name = c.table_name
      AND f.column_name = c.column_name AND f.referenced_table_name IS NOT NULL
-WHERE c.table_schema = ${lit(db)}
+WHERE c.table_schema = ${lit2(db)}
 ORDER BY c.table_name, c.ordinal_position;`;
   }
   const cat = scope.catalog ? `${ident2(scope.catalog)}.` : "";
@@ -15884,7 +16092,7 @@ SELECT c.table_schema, c.table_name, t.comment AS table_comment, c.column_name, 
        c.is_nullable, c.comment AS column_comment
 FROM ${is}.columns c
 JOIN ${is}.tables t ON t.table_schema = c.table_schema AND t.table_name = c.table_name AND t.table_type = 'BASE TABLE'
-WHERE c.table_schema = ${lit(schema.toUpperCase())}
+WHERE c.table_schema = ${lit2(schema.toUpperCase())}
 ORDER BY c.table_name, c.ordinal_position;
 -- Keys (optional, paste each result too):
 SHOW PRIMARY KEYS IN SCHEMA ${cat}${ident2(schema)};
@@ -15906,29 +16114,29 @@ LEFT JOIN ${is}.key_column_usage fk ON fk.table_schema = c.table_schema AND fk.t
 LEFT JOIN ${is}.referential_constraints rc ON rc.constraint_schema = fk.constraint_schema AND rc.constraint_name = fk.constraint_name
 LEFT JOIN ${is}.key_column_usage ref ON ref.constraint_schema = rc.unique_constraint_schema AND ref.constraint_name = rc.unique_constraint_name
      AND ref.ordinal_position = fk.position_in_unique_constraint
-WHERE c.table_schema = ${lit(schema)}
+WHERE c.table_schema = ${lit2(schema)}
 ORDER BY c.table_name, c.ordinal_position;`;
 }
 var low = (r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k.trim().toLowerCase().replace(/^"|"$/g, ""), (v ?? "").trim()]));
 var blank = (v) => !v || /^(null|\\N)$/i.test(v);
 function fromCatalogRows(rowsets, platform, scope = {}) {
   const tables = /* @__PURE__ */ new Map();
-  const key = (schema, table2) => `${(schema || "").toLowerCase()}.${table2.toLowerCase()}`;
+  const key2 = (schema, table2) => `${(schema || "").toLowerCase()}.${table2.toLowerCase()}`;
   const table = (schema, name) => {
-    const k = key(schema, name);
+    const k = key2(schema, name);
     if (!tables.has(k)) tables.set(k, { schema: schema || void 0, name, columns: [], primary_key: [], foreign_keys: [] });
     return tables.get(k);
   };
   const pkPos = /* @__PURE__ */ new Map();
   const fkParts = /* @__PURE__ */ new Map();
   const addFk = (t, name, refSchema, refTable, col, refCol, seq) => {
-    const k = `${key(t.schema, t.name)}|${name || `${col}>${refTable}`}`;
+    const k = `${key2(t.schema, t.name)}|${name || `${col}>${refTable}`}`;
     if (!fkParts.has(k)) fkParts.set(k, { t, name, ref_schema: refSchema, ref_table: refTable, parts: [] });
     const f = fkParts.get(k);
     if (!f.parts.some((p) => p.col === col && p.ref === refCol)) f.parts.push({ col, ref: refCol, seq });
   };
   const setPk = (t, col, pos) => {
-    const k = key(t.schema, t.name);
+    const k = key2(t.schema, t.name);
     if (!pkPos.has(k)) pkPos.set(k, /* @__PURE__ */ new Map());
     pkPos.get(k).set(col, pos);
   };
@@ -16038,10 +16246,10 @@ function block(v, indent) {
       return `${indent}- ${isEmpty(item) ? Array.isArray(item) ? "[]" : "{}" : scalar(item)}`;
     }).join("\n");
   return Object.entries(v).filter(([, x]) => x !== void 0).map(([k, x]) => {
-    const key = PLAIN.test(k) && !AMBIGUOUS.test(k) ? k : JSON.stringify(k);
-    if (x !== null && typeof x === "object") return isEmpty(x) ? `${indent}${key}: ${Array.isArray(x) ? "[]" : "{}"}` : `${indent}${key}:
+    const key2 = PLAIN.test(k) && !AMBIGUOUS.test(k) ? k : JSON.stringify(k);
+    if (x !== null && typeof x === "object") return isEmpty(x) ? `${indent}${key2}: ${Array.isArray(x) ? "[]" : "{}"}` : `${indent}${key2}:
 ${block(x, indent + "  ")}`;
-    return `${indent}${key}: ${scalar(x)}`;
+    return `${indent}${key2}: ${scalar(x)}`;
   }).join("\n");
 }
 function toYaml(v, header) {
@@ -16314,6 +16522,15 @@ function diffViews(A, B, dir, a = { id: "a", name: "Before" }, b = { id: "b", na
     if (ra.cardinality !== rb.cardinality) d.push(`cardinality ${ra.cardinality} \u2192 ${rb.cardinality}`);
     if ((ra.foreign_key || "") !== (rb.foreign_key || "")) d.push(`foreign key ${ra.foreign_key || "(none)"} \u2192 ${rb.foreign_key || "(none)"}`);
     if (ra.forward_label !== rb.forward_label) d.push(`label "${ra.forward_label}" \u2192 "${rb.forward_label}"`);
+    const raAttrs = new Map((ra.attributes || []).map((x) => [x.name, x]));
+    const rbAttrs = new Map((rb.attributes || []).map((x) => [x.name, x]));
+    for (const [n, x] of rbAttrs) {
+      const old = raAttrs.get(n);
+      if (!old) d.push(`attribute ${n} added (${typeDisplay(x)})`);
+      else if (typeDisplay(old) !== typeDisplay(x) || !!old.required !== !!x.required)
+        d.push(`attribute ${n}: ${typeDisplay(old)}${old.required ? " required" : ""} \u2192 ${typeDisplay(x)}${x.required ? " required" : ""}`);
+    }
+    for (const n of raAttrs.keys()) if (!rbAttrs.has(n)) d.push(`attribute ${n} removed`);
     if (d.length || ra.name !== rb.name) relationships.push({ change: "changed", name: rb.name, from: ra.name !== rb.name ? ra.name : void 0, details: d });
   }
   for (const ra of A.relationships) if (!usedA.has(ra.name)) relationships.push({ change: "removed", name: ra.name, details: [`${ra.source} \u2192 ${ra.target} (${ra.cardinality})`] });
@@ -16430,9 +16647,9 @@ function alterType(table, col, type, d) {
 var sourceKey = (s2) => `${s2.platform}|${(s2.catalog || "").toLowerCase()}|${(s2.schema || "").toLowerCase()}`;
 function planPull(doc, snap, opts = {}) {
   const { model, warnings } = fromCatalog(snap);
-  const source = { platform: snap.platform, ...snap.catalog ? { catalog: snap.catalog } : {}, ...snap.schema ? { schema: snap.schema } : {}, pulled_at: snap.captured_at };
-  const key = sourceKey(source);
-  const previous = listTabs(doc).filter((t) => t.source && sourceKey(t.source) === key).sort((a, b) => (b.source.pulled_at || "").localeCompare(a.source.pulled_at || ""))[0];
+  const source = { platform: snap.platform, ...snap.catalog ? { catalog: snap.catalog } : {}, ...snap.schema ? { schema: snap.schema } : {}, ...opts.profile && snap.platform === "databricks" ? { profile: opts.profile } : {}, pulled_at: snap.captured_at };
+  const key2 = sourceKey(source);
+  const previous = listTabs(doc).filter((t) => t.source && sourceKey(t.source) === key2).sort((a, b) => (b.source.pulled_at || "").localeCompare(a.source.pulled_at || ""))[0];
   const content = { entities: model.entities, relationships: model.relationships, hierarchies: [], areas: [], notes: [] };
   const where = [snap.catalog, snap.schema].filter(Boolean).join(".") || "database";
   const platform = CATALOG_PLATFORMS.find((p) => p.id === snap.platform)?.label.replace(/ \(.*\)$/, "") || snap.platform;
@@ -16481,6 +16698,56 @@ function planPull(doc, snap, opts = {}) {
   }
   const tabName = opts.name || uniqueTabName(doc, `${where} (${platform})`);
   return { ops: [{ op: "add_tab", name: tabName, kind: "physical", dialect: snap.platform, content, source }], tabName, tables: snap.tables.length, warnings };
+}
+
+// src/core/writeback.ts
+function columnTagsQuery(catalog, schema) {
+  return `SELECT table_name, column_name, tag_name, tag_value FROM ${quoteIdent(catalog, "databricks")}.information_schema.column_tags WHERE schema_name = ${sqlString(schema, "databricks")}`;
+}
+function addColumnTags(snap, rows) {
+  for (const r of rows) {
+    const t = snap.tables.find((x) => x.name.toLowerCase() === String(r.table_name).toLowerCase());
+    if (!t) continue;
+    ((t.tags ??= {})[r.column_name] ??= {})[r.tag_name] = r.tag_value ?? "";
+  }
+}
+function modelTags(m, a) {
+  const out = {};
+  if (a.pii) out.pii = "true";
+  const term = termOf(m, a.term);
+  if (term) out.business_term = term.name;
+  return out;
+}
+var same = (a, b) => (a || "").trim() === (b || "").trim();
+function writebackPlan(view2, snap, opts = {}) {
+  const platform = snap.platform;
+  if (platform === "mysql") throw new Error("Write-back supports Databricks, Snowflake and PostgreSQL. MySQL column comments need the full column definition.");
+  const q = (n) => platform === "snowflake" ? /^[A-Z_][A-Z0-9_$]*$/.test(n) ? n : `"${n.replace(/"/g, '""')}"` : quoteIdent(n, platform);
+  const catalog = platform === "postgres" ? void 0 : opts.catalog ?? snap.catalog;
+  const tableRef = (schema, name) => [catalog, schema ?? snap.schema, name].filter(Boolean).map((x) => q(x)).join(".");
+  const lit3 = (s2) => sqlString(s2, platform);
+  const out = [];
+  for (const { entity, table } of profileTargets(view2, snap)) {
+    const e = view2.entities.find((x) => x.name === entity);
+    const ref = tableRef(table.schema, table.name);
+    if (e.description && !same(e.description, table.comment)) out.push({ sql: `COMMENT ON TABLE ${ref} IS ${lit3(e.description)};`, what: `${table.name}: table description` });
+    const cols = new Map(table.columns.map((c) => [c.name.toLowerCase().replace(/[^a-z0-9]/g, ""), c]));
+    for (const a of e.attributes) {
+      const c = cols.get(a.name.toLowerCase().replace(/[^a-z0-9]/g, ""));
+      if (!c) continue;
+      if (a.description && !same(a.description, c.comment))
+        out.push({
+          sql: platform === "databricks" ? `ALTER TABLE ${ref} ALTER COLUMN ${q(c.name)} COMMENT ${lit3(a.description)};` : `COMMENT ON COLUMN ${ref}.${q(c.name)} IS ${lit3(a.description)};`,
+          what: `${table.name}.${c.name}: description`
+        });
+      if (platform !== "databricks" || opts.tags === false) continue;
+      const have = table.tags?.[c.name] || {};
+      const missing = Object.entries(modelTags(view2, a)).filter(([k, v]) => have[k] !== v);
+      if (missing.length)
+        out.push({ sql: `ALTER TABLE ${ref} ALTER COLUMN ${q(c.name)} SET TAGS (${missing.map(([k, v]) => `${lit3(k)} = ${lit3(v)}`).join(", ")});`, what: `${table.name}.${c.name}: tags ${missing.map(([k]) => k).join(", ")}` });
+    }
+  }
+  return out;
 }
 
 // src/core/sync.ts
@@ -16796,17 +17063,51 @@ async function pullDatabricks(scope, log) {
     full.push(...await Promise.all(names.slice(i, i + 8).map((n) => getJson(`${base}/api/2.1/unity-catalog/tables/${encodeURIComponent(n)}`, token))));
   return fromUnityCatalog(full, { catalog, schema });
 }
+async function databricksSql(opts, log) {
+  const { host, token } = databricksAuth(opts.profile);
+  const base = host.replace(/\/+$/, "").replace(/^(?!https?:\/\/)/, "https://");
+  let warehouse = opts.warehouse || process.env.DATABRICKS_WAREHOUSE_ID;
+  if (!warehouse) {
+    const list = (await getJson(`${base}/api/2.0/sql/warehouses`, token)).warehouses || [];
+    const pick = list.find((w) => w.state === "RUNNING") || list.find((w) => w.enable_serverless_compute) || list[0];
+    if (!pick) throw new Error("No SQL warehouse in this workspace. Create one, or pass --warehouse <id>.");
+    warehouse = pick.id;
+    log(`Using SQL warehouse \u201C${pick.name}\u201D (${pick.state === "RUNNING" ? "running" : `${String(pick.state).toLowerCase()}, starting it`}). Pick another with --warehouse <id>.`);
+  }
+  const call = async (path, init) => {
+    const r = await fetch(`${base}${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, Accept: "application/json", "Content-Type": "application/json" } });
+    const body = await r.text();
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText} from ${path}: ${body.slice(0, 300)}`);
+    return JSON.parse(body);
+  };
+  return async (statement) => {
+    let res = await call("/api/2.0/sql/statements", { method: "POST", body: JSON.stringify({ statement, warehouse_id: warehouse, wait_timeout: "50s", on_wait_timeout: "CONTINUE", format: "JSON_ARRAY", disposition: "INLINE" }) });
+    while (res.status?.state === "PENDING" || res.status?.state === "RUNNING") {
+      await new Promise((ok) => setTimeout(ok, 2e3));
+      res = await call(`/api/2.0/sql/statements/${res.statement_id}`);
+    }
+    if (res.status?.state !== "SUCCEEDED") throw new Error(`Databricks SQL ${res.status?.state}: ${res.status?.error?.message || "statement did not succeed"}`);
+    const cols = (res.manifest?.schema?.columns || []).map((c) => c.name);
+    const data = [...res.result?.data_array || []];
+    for (let link = res.result?.next_chunk_internal_link; link; ) {
+      const chunk = await call(link);
+      data.push(...chunk.data_array || []);
+      link = chunk.next_chunk_internal_link;
+    }
+    return data.map((row) => Object.fromEntries(cols.map((c, i) => [c, row[i] ?? ""])));
+  };
+}
 function snowflakeJwt(account, user, pem) {
   const acct = (account.includes(".global") ? account : account.split(".")[0]).toUpperCase();
   const qualified = `${acct}.${user.toUpperCase()}`;
-  const key = createPrivateKey(pem);
-  const fp = createHash2("sha256").update(createPublicKey(key).export({ type: "spki", format: "der" })).digest("base64");
+  const key2 = createPrivateKey(pem);
+  const fp = createHash2("sha256").update(createPublicKey(key2).export({ type: "spki", format: "der" })).digest("base64");
   const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
   const now = Math.floor(Date.now() / 1e3);
   const body = `${b64({ alg: "RS256", typ: "JWT" })}.${b64({ iss: `${qualified}.SHA256:${fp}`, sub: qualified, iat: now, exp: now + 55 * 60 })}`;
-  return `${body}.${sign("RSA-SHA256", Buffer.from(body), key).toString("base64url")}`;
+  return `${body}.${sign("RSA-SHA256", Buffer.from(body), key2).toString("base64url")}`;
 }
-async function pullSnowflake(scope, log) {
+function snowflakeSql(scope) {
   const env = process.env;
   const account = need(env.SNOWFLAKE_ACCOUNT, "Set SNOWFLAKE_ACCOUNT (account identifier, e.g. myorg-myaccount).");
   const database = need(scope.catalog || env.SNOWFLAKE_DATABASE, "--catalog (the database) is required for Snowflake.");
@@ -16833,10 +17134,24 @@ async function pullSnowflake(scope, log) {
     for (let p = 1; p < (res.resultSetMetaData.partitionInfo?.length || 1); p++) data.push(...(await (await fetch(`${base}/${res.statementHandle}?partition=${p}`, { headers })).json()).data);
     return data.map((row) => Object.fromEntries(cols.map((c, i) => [c, row[i] ?? ""])));
   };
+  return run;
+}
+async function pullSnowflake(scope, log) {
+  const database = need(scope.catalog || process.env.SNOWFLAKE_DATABASE, "--catalog (the database) is required for Snowflake.");
+  const schema = need(scope.schema || process.env.SNOWFLAKE_SCHEMA, "--schema is required.");
+  const run = snowflakeSql({ catalog: database, schema });
   const [columnsSql, pkSql, fkSql] = catalogQuery("snowflake", { catalog: database, schema }).split(";").map((x) => x.replace(/--.*$/gm, "").trim()).filter(Boolean);
   log(`Reading ${database}.${schema}\u2026`);
   const rowsets = [await run(columnsSql), await run(pkSql), await run(fkSql)];
   return fromCatalogRows(rowsets, "snowflake", { catalog: database, schema });
+}
+function postgresSql(url) {
+  return async (sql) => {
+    const r = spawnSync("psql", [...url ? [url] : [], "-X", "-q", "--csv", "-v", "ON_ERROR_STOP=1", "-c", sql], { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
+    if (r.error) throw new Error(`psql not found (${r.error.message}). Install the PostgreSQL client, or run the query elsewhere and pass --csv.`);
+    if (r.status !== 0) throw new Error(`psql failed: ${r.stderr.trim()}`);
+    return parseResultSets(r.stdout)[0] || [];
+  };
 }
 async function pullPostgres(scope, log) {
   const schema = scope.schema || "public";
@@ -16870,19 +17185,98 @@ async function pullSnapshot(src, log) {
   }
 }
 
+// cli/profile.ts
+import { readFileSync as readFileSync4 } from "node:fs";
+import { resolve as resolve2 } from "node:path";
+var DEFAULT_SAMPLE = 1e5;
+function profileScope(doc, tab, src) {
+  const meta = tabView(doc, tab).tab?.source;
+  const from = src.from || meta?.platform;
+  if (!from) throw new Error("This tab was not pulled from a database: say where its tables are with --from databricks|snowflake|postgres --catalog C --schema S.");
+  return { ...src, from, catalog: src.catalog ?? meta?.catalog, schema: src.schema ?? meta?.schema, profile: src.profile ?? (from === meta?.platform ? meta?.profile : void 0) };
+}
+function modelTables(view2, only, platform) {
+  const n = (s2) => platform === "snowflake" ? s2.toUpperCase() : s2;
+  return view2.entities.filter((e) => !only?.length || only.includes(e.name)).map((e) => ({ entity: e.name, table: { schema: view2.tab?.source?.schema, name: n(e.name), columns: e.attributes.filter((a) => a.type !== "REFERENCE_ENTITY" || a.reference).map((a) => ({ name: n(a.name), type: a.type, nullable: !a.required })), primary_key: [], foreign_keys: [] } }));
+}
+async function profileLive(doc, tab, src, log) {
+  const s2 = profileScope(doc, tab, src);
+  const platform = s2.from;
+  const view2 = tabView(doc, tab);
+  const snap = await pullSnapshot({ from: s2.from, catalog: s2.catalog, schema: s2.schema, profile: s2.profile, url: s2.url }, log);
+  const targets = profileTargets(view2, snap, s2.entities);
+  const skipped = view2.entities.filter((e) => (!s2.entities?.length || s2.entities.includes(e.name)) && !targets.some((t) => t.entity === e.name)).map((e) => e.name);
+  const run = platform === "databricks" ? await databricksSql({ profile: s2.profile, warehouse: s2.warehouse }, log) : platform === "snowflake" ? snowflakeSql({ catalog: s2.catalog, schema: s2.schema }) : postgresSql(s2.url);
+  const sample = s2.sample ?? DEFAULT_SAMPLE;
+  log(`Profiling ${targets.length} table(s)${sample ? `, first ${sample.toLocaleString("en-US")} rows each` : ", every row"}\u2026`);
+  const rows = [];
+  const queue = [...targets];
+  let done = 0;
+  await Promise.all(
+    Array.from({ length: platform === "postgres" ? 1 : 4 }, async () => {
+      for (let t = queue.shift(); t; t = queue.shift()) {
+        try {
+          rows.push(...await run(profileQuery(platform, t.table, { catalog: s2.catalog, sample })));
+        } catch (e) {
+          skipped.push(`${t.entity} (${e.message.split("\n")[0].slice(0, 160)})`);
+        }
+        if (++done % 10 === 0) log(`  ${done}/${targets.length}`);
+      }
+    })
+  );
+  const ops = planProfile(view2, targets, fromProfileRows(rows, { sample, platform }));
+  return { ops, profiled: ops.filter((o) => o.op === "update_entity").length, skipped };
+}
+function profileFromCsv(doc, tab, files, sample) {
+  const view2 = tabView(doc, tab);
+  const rows = files.split(",").flatMap((f) => parseResultSets(readFileSync4(resolve2(f.trim()), "utf8")).flat());
+  const ops = planProfile(view2, modelTables(view2), fromProfileRows(rows, { sample, platform: view2.tab?.source?.platform }));
+  return { ops, profiled: ops.filter((o) => o.op === "update_entity").length };
+}
+
+// cli/writeback.ts
+async function writeback(doc, tab, src, log) {
+  const s2 = profileScope(doc, tab, src);
+  const platform = s2.from;
+  const snap = await pullSnapshot({ from: s2.from, catalog: s2.catalog, schema: s2.schema, profile: s2.profile, url: s2.url }, log);
+  let run;
+  const runner = async () => run ??= platform === "databricks" ? await databricksSql({ profile: s2.profile, warehouse: s2.warehouse }, log) : platform === "snowflake" ? snowflakeSql({ catalog: s2.catalog, schema: s2.schema }) : postgresSql(s2.url);
+  if (platform === "databricks" && src.tags !== false && s2.catalog && s2.schema) {
+    try {
+      addColumnTags(snap, await (await runner())(columnTagsQuery(s2.catalog, s2.schema)));
+    } catch (e) {
+      log(`Could not read current tags (${e.message.split("\n")[0].slice(0, 160)}); every model tag is listed.`);
+    }
+  }
+  const statements = writebackPlan(tabView(doc, tab), snap, { catalog: s2.catalog, tags: src.tags });
+  if (!src.apply || !statements.length) return { statements, failed: [] };
+  const exec = await runner();
+  const failed = [];
+  let applied = 0;
+  for (const st of statements) {
+    try {
+      await exec(st.sql);
+      applied++;
+    } catch (e) {
+      failed.push(`${st.what}: ${e.message.split("\n")[0].slice(0, 200)}`);
+    }
+  }
+  return { statements, applied, failed };
+}
+
 // cli/mcp.ts
 var PROTOCOL = "2025-06-18";
-var str = (description) => ({ type: "string", description });
-var MODEL = str("Model id: a folder name under models/ (see list_models).");
-var TAB = str("Tab name or id. Default: the primary tab.");
+var str2 = (description) => ({ type: "string", description });
+var MODEL = str2("Model id: a folder name under models/ (see list_models).");
+var TAB = str2("Tab name or id. Default: the primary tab.");
 var OPS_HELP = `Each op is an object with "op" and optional "tab". Ops:
 add_entity {entity:{name, display_name?, entity_type?: "standard"|"reference", description?, attributes?: Attribute[]}} \u2014 without attributes you get <name>_id (PK) and <name>_name (label)
 update_entity {entity, set:{display_name?, description?, entity_type?, color_code?, area?, dependent_reference?, notes?}}
 rename_entity {entity, to}   delete_entity {entity}
 add_attribute {entity, attribute:{name, type?, label?, description?, is_primary_key?, is_label?, required?, pii?, example?, is_array?, reference?:{entity, output_attribute}, struct_type?}, after?}
 update_attribute {entity, attribute, set:{\u2026}}   rename_attribute {entity, attribute, to}   delete_attribute {entity, attribute}   move_attribute {entity, attribute, after: name|null}
-add_relationship {relationship:{source, target, name?, cardinality?: "1:1"|"1:N"|"N:1"|"N:N", forward_label?, reverse_label?, bidirectional?, foreign_key?, description?}}
-update_relationship {relationship, set:{\u2026}}   rename_relationship {relationship, to}   delete_relationship {relationship}
+add_relationship {relationship:{source, target, name?, cardinality?: "1:1"|"1:N"|"N:1"|"N:N", forward_label?, reverse_label?, bidirectional?, foreign_key?, description?, attributes?: Attribute[]}}
+update_relationship {relationship, set:{\u2026}} \u2014 set.attributes replaces the relationship's own attributes (facts about the link, e.g. an enrollment's grade; simple types only): junction-table columns for N:N, child-table columns otherwise   rename_relationship {relationship, to}   delete_relationship {relationship}
 set_reference_values {entity, values:[{attr: "value"}\u2026], source?}
 add_note {text}   set_hidden {entities:[\u2026], hidden}   update_model {set:{title?, description?, organization?, version?, author?, status?}}
 update_tab {tab, set:{name?, kind?, dialect?, description?}}   make_primary {tab}   delete_tab {tab}
@@ -16904,7 +17298,7 @@ async function runMcp(opts) {
     if (!existsSync3(f)) throw new Error(`Model "${id}" not found. Use list_models.`);
     return f;
   };
-  const load2 = (id) => normalizeModel(JSON.parse(readFileSync4(modelFile(id), "utf8")));
+  const load2 = (id) => normalizeModel(JSON.parse(readFileSync5(modelFile(id), "utf8")));
   const tabOf = (m, ref) => resolveTab(m, ref) || fail2(`Tab "${ref}" not found. Tabs: ${listTabs(m).map((t) => t.name).join(", ")}`);
   const strip2 = (x) => JSON.parse(JSON.stringify(x, (k, v) => k === "ui" ? void 0 : v));
   let applyThisCall = false;
@@ -16912,7 +17306,7 @@ async function runMcp(opts) {
     apply = apply || applyThisCall;
     if (!Array.isArray(ops) || !ops.length) throw new Error("ops must be a non-empty array.");
     const file = modelFile(id);
-    const text2 = readFileSync4(file, "utf8");
+    const text2 = readFileSync5(file, "utf8");
     const doc = normalizeModel(JSON.parse(text2));
     const r = applyOps(doc, ops, { tab });
     if (!r.ok) throw new Error(`${r.error}
@@ -16984,7 +17378,7 @@ ${v.description}` : ""}`, `Tabs: ${listTabs(doc).map((t) => t.name).join(", ")}`
     {
       name: "get_entity",
       description: "One entity as JSON, plus the relationships and references that touch it.",
-      inputSchema: { type: "object", properties: { model: MODEL, entity: str("Entity name."), tab: TAB }, required: ["model", "entity"] },
+      inputSchema: { type: "object", properties: { model: MODEL, entity: str2("Entity name."), tab: TAB }, required: ["model", "entity"] },
       run: ({ model, entity, tab }) => {
         const doc = load2(model);
         const v = tabView(doc, tabOf(doc, tab));
@@ -16997,7 +17391,7 @@ ${v.description}` : ""}`, `Tabs: ${listTabs(doc).map((t) => t.name).join(", ")}`
     {
       name: "search",
       description: "Find entities, attributes and relationships whose name, label or description contains the text (case-insensitive), across all tabs.",
-      inputSchema: { type: "object", properties: { model: MODEL, query: str("Text to look for.") }, required: ["model", "query"] },
+      inputSchema: { type: "object", properties: { model: MODEL, query: str2("Text to look for.") }, required: ["model", "query"] },
       run: ({ model, query }) => {
         const doc = load2(model);
         const q = String(query).toLowerCase();
@@ -17017,7 +17411,7 @@ ${v.description}` : ""}`, `Tabs: ${listTabs(doc).map((t) => t.name).join(", ")}`
     {
       name: "validate",
       description: "Validation issues (errors, warnings, notes) for one tab, or every tab.",
-      inputSchema: { type: "object", properties: { model: MODEL, tab: str("Tab name or id. Default: every tab.") }, required: ["model"] },
+      inputSchema: { type: "object", properties: { model: MODEL, tab: str2("Tab name or id. Default: every tab.") }, required: ["model"] },
       run: ({ model, tab }) => {
         const doc = load2(model);
         const ids = tab ? [tabOf(doc, tab)] : listTabs(doc).map((t) => t.id);
@@ -17038,7 +17432,7 @@ ${v.description}` : ""}`, `Tabs: ${listTabs(doc).map((t) => t.name).join(", ")}`
       run: ({ model, tab, codes }) => {
         const doc = load2(model);
         const id = tabOf(doc, tab);
-        const issues = validateModel(tabView(doc, id)).filter((i) => i.fix && (!codes?.length || codes.includes(i.code)));
+        const issues = validateModel(tabView(doc, id)).filter((i) => i.fix && (codes?.length ? codes.includes(i.code) : !i.suggested));
         const { ops } = applyFixes(JSON.parse(JSON.stringify(doc)), issues, id);
         if (!ops.length) return "Nothing to fix mechanically.";
         return submit(model, `Fix ${ops.length} naming issue(s)`, "Mechanical fixes from the model\u2019s naming standards.", ops, void 0, false);
@@ -17058,7 +17452,7 @@ ${v.description}` : ""}`, `Tabs: ${listTabs(doc).map((t) => t.name).join(", ")}`
     {
       name: "diff_tabs",
       description: "What changed from tab A to tab B (renames are matched through derivation lineage), as Markdown.",
-      inputSchema: { type: "object", properties: { model: MODEL, a: str("From tab."), b: str("To tab.") }, required: ["model", "a", "b"] },
+      inputSchema: { type: "object", properties: { model: MODEL, a: str2("From tab."), b: str2("To tab.") }, required: ["model", "a", "b"] },
       run: ({ model, a, b }) => {
         const doc = load2(model);
         return diffToMarkdown(diffTabs(doc, tabOf(doc, a), tabOf(doc, b)));
@@ -17067,7 +17461,7 @@ ${v.description}` : ""}`, `Tabs: ${listTabs(doc).map((t) => t.name).join(", ")}`
     {
       name: "migration_sql",
       description: "DDL (ALTER/CREATE/DROP) that takes a database built from tab A to tab B.",
-      inputSchema: { type: "object", properties: { model: MODEL, a: str("From tab."), b: str("To tab."), dialect: { type: "string", enum: SQL_DIALECTS.map((d) => d.id) } }, required: ["model", "a", "b"] },
+      inputSchema: { type: "object", properties: { model: MODEL, a: str2("From tab."), b: str2("To tab."), dialect: { type: "string", enum: SQL_DIALECTS.map((d) => d.id) } }, required: ["model", "a", "b"] },
       run: ({ model, a, b, dialect }) => {
         const doc = load2(model);
         const bid = tabOf(doc, b);
@@ -17077,7 +17471,7 @@ ${v.description}` : ""}`, `Tabs: ${listTabs(doc).map((t) => t.name).join(", ")}`
     {
       name: "sync_tabs",
       description: "Propose bringing changes from a source tab into a tab derived from it (new entities, attributes, type changes, relationships), transformed the way the target was derived. Removals are only included when include_removals is true.",
-      inputSchema: { type: "object", properties: { model: MODEL, source: str("Source tab."), target: str("Derived tab to update."), include_removals: { type: "boolean" } }, required: ["model", "source", "target"] },
+      inputSchema: { type: "object", properties: { model: MODEL, source: str2("Source tab."), target: str2("Derived tab to update."), include_removals: { type: "boolean" } }, required: ["model", "source", "target"] },
       run: ({ model, source, target, include_removals }) => {
         const doc = load2(model);
         const a = tabOf(doc, source);
@@ -17091,7 +17485,7 @@ ${v.description}` : ""}`, `Tabs: ${listTabs(doc).map((t) => t.name).join(", ")}`
     {
       name: "get_mappings",
       description: "Source-to-target mappings into a tab: coverage per entity and each mapped attribute with its sources and transform. With entity, also the dbt model SQL the mappings imply.",
-      inputSchema: { type: "object", properties: { model: MODEL, target: str("Target tab."), entity: str("Optional target entity.") }, required: ["model", "target"] },
+      inputSchema: { type: "object", properties: { model: MODEL, target: str2("Target tab."), entity: str2("Optional target entity.") }, required: ["model", "target"] },
       run: ({ model, target, entity }) => {
         const doc = load2(model);
         const t = tabOf(doc, target);
@@ -17106,7 +17500,7 @@ ${v.description}` : ""}`, `Tabs: ${listTabs(doc).map((t) => t.name).join(", ")}`
     {
       name: "auto_map",
       description: "Propose mappings for unmapped target attributes, matched by derivation lineage, then by name. Refine with propose_changes using set_mapping ops.",
-      inputSchema: { type: "object", properties: { model: MODEL, source: str("Source tab."), target: str("Target tab.") }, required: ["model", "source", "target"] },
+      inputSchema: { type: "object", properties: { model: MODEL, source: str2("Source tab."), target: str2("Target tab.") }, required: ["model", "source", "target"] },
       run: ({ model, source, target }) => {
         const doc = load2(model);
         const found = autoMap(doc, tabOf(doc, source), tabOf(doc, target));
@@ -17142,13 +17536,13 @@ ${v.description}` : ""}`, `Tabs: ${listTabs(doc).map((t) => t.name).join(", ")}`
       name: "propose_changes",
       description: `Suggest edits to a model as one reviewable proposal. The ops are checked against the model first; nothing changes until the person accepts. Put every change for one request in a single call.
 ${OPS_HELP}`,
-      inputSchema: { type: "object", properties: { model: MODEL, title: str('Short title, e.g. "Add contract entities".'), rationale: str("Why, in a sentence or two."), tab: str("Default tab for ops without one."), ops: opsSchema }, required: ["model", "title", "ops"] },
+      inputSchema: { type: "object", properties: { model: MODEL, title: str2('Short title, e.g. "Add contract entities".'), rationale: str2("Why, in a sentence or two."), tab: str2("Default tab for ops without one."), ops: opsSchema }, required: ["model", "title", "ops"] },
       run: ({ model, title, rationale, tab, ops }) => submit(model, title, rationale, ops, tab, false)
     },
     {
       name: "import_ddl",
       description: "Propose adding tables from SQL DDL or DBML text to a tab (keys, foreign keys, lookup tables and link tables are recognized). Existing entities are left alone.",
-      inputSchema: { type: "object", properties: { model: MODEL, tab: TAB, text: str("CREATE TABLE statements or DBML.") }, required: ["model", "text"] },
+      inputSchema: { type: "object", properties: { model: MODEL, tab: TAB, text: str2("CREATE TABLE statements or DBML.") }, required: ["model", "text"] },
       run: ({ model, tab, text: text2 }) => {
         const doc = load2(model);
         const tid = tabOf(doc, tab);
@@ -17167,7 +17561,7 @@ ${OPS_HELP}`,
     {
       name: "derive_tab",
       description: 'Propose a new tab derived from another: kind "logical" (from physical: business names, FK columns \u2192 relationships, link tables \u2192 N:N, lookups \u2192 reference data), "physical" (FK columns, junction tables, dialect), "conceptual" (entities and relationships only) or "variant" (copy).',
-      inputSchema: { type: "object", properties: { model: MODEL, from: str("Source tab. Default: primary tab."), kind: { type: "string", enum: ["conceptual", "logical", "physical", "variant"] }, name: str("New tab name."), dialect: { type: "string", enum: SQL_DIALECTS.map((d) => d.id) } }, required: ["model", "kind", "name"] },
+      inputSchema: { type: "object", properties: { model: MODEL, from: str2("Source tab. Default: primary tab."), kind: { type: "string", enum: ["conceptual", "logical", "physical", "variant"] }, name: str2("New tab name."), dialect: { type: "string", enum: SQL_DIALECTS.map((d) => d.id) } }, required: ["model", "kind", "name"] },
       run: ({ model, from, kind, name, dialect }) => {
         const doc = load2(model);
         const report = deriveTab(tabView(doc, tabOf(doc, from || "main")), kind, { physical: { dialect } }).report;
@@ -17186,26 +17580,90 @@ Derivation: ${report.lines.join(" ")}${dropped}`;
         properties: {
           model: MODEL,
           from: { type: "string", enum: ["databricks", "snowflake", "postgres"] },
-          catalog: str("Databricks catalog or Snowflake database."),
-          schema: str("Schema name."),
-          profile: str("Databricks CLI profile (optional)."),
-          url: str("PostgreSQL connection URL (optional; PG* environment variables otherwise)."),
-          name: str("Tab name (optional).")
+          catalog: str2("Databricks catalog or Snowflake database."),
+          schema: str2("Schema name."),
+          profile: str2("Databricks CLI profile (optional)."),
+          url: str2("PostgreSQL connection URL (optional; PG* environment variables otherwise)."),
+          name: str2("Tab name (optional).")
         },
         required: ["model", "from", "schema"]
       },
       run: async ({ model, from, catalog, schema, profile, url, name }) => {
         const notes = [];
         const snap = await pullSnapshot({ from, catalog, schema, profile, url }, (s2) => notes.push(s2));
-        const plan = planPull(load2(model), snap, { name });
+        const plan = planPull(load2(model), snap, { name, profile });
         const report = submit(model, `Pull ${plan.tables} tables into \u201C${plan.tabName}\u201D`, plan.previous ? `New version of the schema pulled into \u201C${plan.previous}\u201D, for comparison.` : void 0, plan.ops, void 0, false);
         return [report, ...plan.warnings.map((w) => `note: ${w}`)].join("\n");
       }
     },
     {
+      name: "profile_data",
+      description: "Propose data profiles for a tab pulled from a database: row counts, nulls, distinct values, min/max for numbers and dates, longest string (never sample values). Runs one query per table where the tab was pulled from (Databricks needs a SQL warehouse). Returns what the data says about the design: keys that repeat or are empty, empty columns, columns that could be required, candidate reference lists.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          model: MODEL,
+          tab: TAB,
+          entities: { type: "array", items: { type: "string" }, description: "Only these entities (default: all that match a table)." },
+          sample: { type: "number", description: "Rows per table (default 100000; 0 reads every row, which can be slow and costly on big tables)." },
+          from: { type: "string", enum: ["databricks", "snowflake", "postgres"], description: "Only when the tab has no recorded source." },
+          catalog: str2("Databricks catalog or Snowflake database (default: the tab\u2019s source)."),
+          schema: str2("Schema (default: the tab\u2019s source)."),
+          profile: str2("Databricks CLI profile (optional)."),
+          warehouse: str2("Databricks SQL warehouse id (optional; default the first running one)."),
+          url: str2("PostgreSQL connection URL (optional).")
+        },
+        required: ["model"]
+      },
+      run: async ({ model, tab, entities, sample, from, catalog, schema, profile, warehouse, url }) => {
+        const doc = load2(model);
+        const id = tabOf(doc, tab);
+        const notes = [];
+        const r = await profileLive(doc, id, { from, catalog, schema, profile, warehouse, url, sample, entities }, (s2) => notes.push(s2));
+        if (!r.ops.length) throw new Error(`No tables profiled.${r.skipped.length ? ` Skipped: ${r.skipped.join("; ")}` : ""}`);
+        const out = submit(model, `Profile ${r.profiled} table(s)`, "Measured from the database; counts and ranges only.", r.ops, id, false).split("\n");
+        const found = profileIssues(tabView(applyOps(doc, r.ops, { tab: id }).doc, id));
+        return [
+          out[0],
+          out[out.length - 1],
+          `Profiled ${r.profiled} table(s).${r.skipped.length ? ` Not profiled: ${r.skipped.join("; ")}` : ""}`,
+          ...notes.map((n) => `note: ${n}`),
+          found.length ? `Findings (${found.length}):
+${found.slice(0, 60).map((f) => `- [${f.level}] ${f.message}`).join("\n")}` : "No findings: the data matches the design."
+        ].join("\n");
+      }
+    },
+    {
+      name: "plan_writeback",
+      description: "The SQL that would put the model\u2019s table and column descriptions (and on Databricks, PII and business_term tags) into the live catalog the tab was pulled from. Compares with the catalog first, so it lists only what differs, and never removes anything. Read-only: show the statements to the person, who runs them with `em writeback <model> --apply`.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          model: MODEL,
+          tab: TAB,
+          tags: { type: "boolean", description: "Include Databricks tags (default true)." },
+          from: { type: "string", enum: ["databricks", "snowflake", "postgres"], description: "Only when the tab has no recorded source." },
+          catalog: str2("Databricks catalog or Snowflake database (default: the tab\u2019s source)."),
+          schema: str2("Schema (default: the tab\u2019s source)."),
+          profile: str2("Databricks CLI profile (optional)."),
+          warehouse: str2("Databricks SQL warehouse id, used to read current tags (optional)."),
+          url: str2("PostgreSQL connection URL (optional).")
+        },
+        required: ["model"]
+      },
+      run: async ({ model, tab, tags, from, catalog, schema, profile, warehouse, url }) => {
+        const doc = load2(model);
+        const notes = [];
+        const r = await writeback(doc, tabOf(doc, tab), { from, catalog, schema, profile, warehouse, url, tags }, (s2) => notes.push(s2));
+        if (!r.statements.length) return "The catalog already has everything the model documents. Nothing to write.";
+        return [`${r.statements.length} statement(s). Nothing was run; the person runs them with \`em writeback ${model}${tab ? ` --tab "${tab}"` : ""} --apply\`.`, ...notes.map((n) => `note: ${n}`), "```sql", ...r.statements.map((s2) => `-- ${s2.what}
+${s2.sql}`), "```"].join("\n");
+      }
+    },
+    {
       name: "list_comments",
       description: "Review comments on a model (open ones by default): what they are about, who said what, and replies. Work through them by proposing changes, then reply_comment.",
-      inputSchema: { type: "object", properties: { model: MODEL, tab: str("Only this tab."), include_resolved: { type: "boolean" } }, required: ["model"] },
+      inputSchema: { type: "object", properties: { model: MODEL, tab: str2("Only this tab."), include_resolved: { type: "boolean" } }, required: ["model"] },
       run: ({ model, tab, include_resolved }) => {
         const doc = load2(model);
         const t = tab ? tabOf(doc, tab) : void 0;
@@ -17217,20 +17675,20 @@ Derivation: ${report.lines.join(" ")}${dropped}`;
     {
       name: "reply_comment",
       description: "Reply to a review comment (written straight to the model: replies are conversation, not design changes). Say what you proposed or why not; resolve only if the person asked you to.",
-      inputSchema: { type: "object", properties: { model: MODEL, id: str("Comment id."), text: str("Reply."), resolve: { type: "boolean" } }, required: ["model", "id", "text"] },
-      run: ({ model, id, text: text2, resolve: resolve3 }) => {
+      inputSchema: { type: "object", properties: { model: MODEL, id: str2("Comment id."), text: str2("Reply."), resolve: { type: "boolean" } }, required: ["model", "id", "text"] },
+      run: ({ model, id, text: text2, resolve: resolve4 }) => {
         const file = modelFile(model);
-        const doc = normalizeModel(JSON.parse(readFileSync4(file, "utf8")));
-        const r = applyOps(doc, [{ op: "reply_comment", id, text: text2, author: opts.author }, ...resolve3 ? [{ op: "resolve_comment", id, resolved: true }] : []]);
+        const doc = normalizeModel(JSON.parse(readFileSync5(file, "utf8")));
+        const r = applyOps(doc, [{ op: "reply_comment", id, text: text2, author: opts.author }, ...resolve4 ? [{ op: "resolve_comment", id, resolved: true }] : []]);
         if (!r.ok) throw new Error(r.error);
         writeFileSync2(file, serializeModel({ ...r.doc, updated_at: (/* @__PURE__ */ new Date()).toISOString() }));
-        return `Replied to ${id}${resolve3 ? " and resolved it" : ""}.`;
+        return `Replied to ${id}${resolve4 ? " and resolved it" : ""}.`;
       }
     },
     {
       name: "search_glossary",
       description: "The shared business glossary (all models): terms with definitions and synonyms, optionally filtered by text. With model, also the names in that model that match a term but are not linked yet.",
-      inputSchema: { type: "object", properties: { query: str("Text to look for."), model: str("Optional model id, for link suggestions."), tab: TAB } },
+      inputSchema: { type: "object", properties: { query: str2("Text to look for."), model: str2("Optional model id, for link suggestions."), tab: TAB } },
       run: ({ query, model, tab }) => {
         const terms = readGlossary(modelsDir).filter((t) => !query || `${t.name} ${t.definition} ${(t.synonyms || []).join(" ")}`.toLowerCase().includes(String(query).toLowerCase()));
         const out = terms.map((t) => `${t.name} [${t.status || "draft"}]${t.synonyms?.length ? ` (aka ${t.synonyms.join(", ")})` : ""}: ${t.definition || "(no definition yet)"}`);
@@ -17279,18 +17737,18 @@ Derivation: ${report.lines.join(" ")}${dropped}`;
     {
       name: "withdraw_proposal",
       description: "Delete one of your pending proposals (e.g. to replace it with a corrected one).",
-      inputSchema: { type: "object", properties: { model: MODEL, id: str("Proposal id.") }, required: ["model", "id"] },
+      inputSchema: { type: "object", properties: { model: MODEL, id: str2("Proposal id.") }, required: ["model", "id"] },
       run: ({ model, id }) => deleteProposal(dirname2(modelFile(model)), id) ? `Withdrew ${id}.` : `No proposal ${id}.`
     }
   ];
   if (opts.allowApply) {
     for (const t of tools)
-      if (["import_ddl", "derive_tab", "auto_map", "fix_issues", "sync_tabs", "pull_schema", "propose_terms"].includes(t.name))
+      if (["import_ddl", "derive_tab", "auto_map", "fix_issues", "sync_tabs", "pull_schema", "profile_data", "propose_terms"].includes(t.name))
         t.inputSchema.properties.apply = { type: "boolean", description: "Apply directly instead of saving a proposal (allowed on this server)." };
     tools.push({
       name: "accept_proposal",
       description: "Apply a pending proposal (by id, see list_proposals) and remove it.",
-      inputSchema: { type: "object", properties: { model: MODEL, id: str("Proposal id.") }, required: ["model", "id"] },
+      inputSchema: { type: "object", properties: { model: MODEL, id: str2("Proposal id.") }, required: ["model", "id"] },
       run: ({ model, id }) => {
         const p = listProposals(dirname2(modelFile(model))).find((x) => x.id === id) || fail2(`No proposal ${id}.`);
         const out = submit(model, p.title, p.rationale, p.ops, p.tab, true);
@@ -17304,7 +17762,7 @@ Derivation: ${report.lines.join(" ")}${dropped}`;
       name: "apply_changes",
       description: `Apply edits to a model directly (no review). Same ops as propose_changes; all-or-nothing.
 ${OPS_HELP}`,
-      inputSchema: { type: "object", properties: { model: MODEL, tab: str("Default tab for ops without one."), ops: opsSchema }, required: ["model", "ops"] },
+      inputSchema: { type: "object", properties: { model: MODEL, tab: str2("Default tab for ops without one."), ops: opsSchema }, required: ["model", "ops"] },
       run: ({ model, tab, ops }) => submit(model, "Direct edit", void 0, ops, tab, true)
     });
   const send = (msg) => process.stdout.write(JSON.stringify(msg) + "\n");
@@ -17412,13 +17870,13 @@ var ROOT = findRoot2();
 var MODELS = join4(ROOT, "models");
 function resolveModelPath(ref) {
   if (!ref) fail3("Missing model name or path. Run `em list` to see models.");
-  const candidates = [resolve2(ref), join4(MODELS, ref), join4(MODELS, ref, MODEL_FILE2), join4(resolve2(ref), MODEL_FILE2)];
+  const candidates = [resolve3(ref), join4(MODELS, ref), join4(MODELS, ref, MODEL_FILE2), join4(resolve3(ref), MODEL_FILE2)];
   for (const c of candidates) if (existsSync4(c) && statSync(c).isFile()) return c;
   fail3(`Model "${ref}" not found (looked in ${MODELS}).`);
   return "";
 }
 function load(path) {
-  return normalizeModel(JSON.parse(readFileSync5(path, "utf8")));
+  return normalizeModel(JSON.parse(readFileSync6(path, "utf8")));
 }
 function save(path, m) {
   m.updated_at = (/* @__PURE__ */ new Date()).toISOString();
@@ -17437,7 +17895,7 @@ var stamp = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
 function pdfAssets() {
   const dir = fileURLToPath(new URL("../src/core/assets/", import.meta.url));
   const out = {};
-  for (const [k, f] of Object.entries(PDF_ASSET_FILES)) if (existsSync4(join4(dir, f))) out[k] = new Uint8Array(readFileSync5(join4(dir, f)));
+  for (const [k, f] of Object.entries(PDF_ASSET_FILES)) if (existsSync4(join4(dir, f))) out[k] = new Uint8Array(readFileSync6(join4(dir, f)));
   if (!out.regular) console.warn(`PDF fonts not found in ${dir}; using Helvetica.`);
   return out;
 }
@@ -17483,7 +17941,7 @@ Put source material (DDL, CSV headers, specs) in ${join4(dir, "inputs")}/`);
       if (fix) {
         let total2 = 0;
         for (const id of TAB2 ? [tabId(m)] : listTabs(m).map((t) => t.id)) {
-          const r = applyFixes(m, validateModel(tabView(m, id)), id);
+          const r = applyFixes(m, validateModel(tabView(m, id)).filter((i) => !i.suggested), id);
           total2 += r.applied;
           for (const o of r.ops) console.log(`${dry ? "would " : ""}${describeOp(o)}`);
         }
@@ -17561,7 +18019,7 @@ ${total.error} error(s), ${total.warning} warning(s), ${total.info} note(s)${mul
       const create = bool("create");
       const title = flag("title");
       if (!ref || !src) fail3("Usage: em import <model> <file.sql|file.dbml> [--create] [--title T]");
-      const text2 = readFileSync5(resolve2(src), "utf8");
+      const text2 = readFileSync6(resolve3(src), "utf8");
       const physicalTarget = !create && view(load(resolveModelPath(ref))).tab?.kind === "physical";
       const r = importModelText(text2, { format: /\.dbml$/i.test(src) ? "dbml" : /\.(sql|ddl)$/i.test(src) ? "sql" : void 0, title: title || basename(src).replace(/\.[^.]+$/, ""), keepJunctions: physicalTarget });
       let p;
@@ -17597,10 +18055,10 @@ ${total.error} error(s), ${total.warning} warning(s), ${total.info} note(s)${mul
       const tables = buildDocTables(m, { sections, entities });
       if (format === "pdf") {
         const diagramFlag = flag("diagram");
-        const diagram = diagramFlag ? resolve2(diagramFlag) : bool("no-diagram") ? void 0 : latestDiagram(p);
+        const diagram = diagramFlag ? resolve3(diagramFlag) : bool("no-diagram") ? void 0 : latestDiagram(p);
         const pageSize = flag("page-size") === "a4" ? "a4" : "letter";
         const file2 = out || join4(exportsDir(p), `${m.name}-data-model-${stamp()}.pdf`);
-        writeFileSync3(file2, buildModelPdf(m, tables, { pageSize, diagramPng: diagram ? new Uint8Array(readFileSync5(diagram)) : void 0, assets: pdfAssets() }));
+        writeFileSync3(file2, buildModelPdf(m, tables, { pageSize, diagramPng: diagram ? new Uint8Array(readFileSync6(diagram)) : void 0, assets: pdfAssets() }));
         console.log(`Wrote ${file2} (${tables.length} tables, ${diagram ? `diagram: ${basename(diagram)}` : "no diagram \u2014 export a PNG from the UI or pass --diagram F.png"})`);
         return;
       }
@@ -17629,7 +18087,7 @@ ${total.error} error(s), ${total.warning} warning(s), ${total.info} note(s)${mul
         return;
       }
       if (!file) fail3("Provide a CSV/TSV file, or --export.");
-      const { values, header, unknown } = rowsToValues(e, parseDelimited(readFileSync5(resolve2(file), "utf8")));
+      const { values, header, unknown } = rowsToValues(e, parseDelimited(readFileSync6(resolve3(file), "utf8")));
       e.reference_values = append ? [...e.reference_values || [], ...values] : values;
       save(p, doc);
       console.log(`${append ? "Appended" : "Loaded"} ${values.length} value(s) into ${e.name}${header ? " (header matched by name)" : " (columns by position)"}${unknown.length ? `; ignored columns: ${unknown.join(", ")}` : ""}. Total: ${e.reference_values.length}`);
@@ -17729,7 +18187,7 @@ ${c.added} added, ${c.removed} removed, ${c.changed} changed`);
       for (const c of plan) console.log(`${chosen.includes(c) ? "[x]" : "[ ]"} ${c.label}`);
       if (propose) {
         const ops = chosen.flatMap((c) => c.ops.map((o) => ({ ...o, tab: o.tab ?? b })));
-        const prop = writeProposal(dirname3(p), { title: `Sync ${chosen.length} change(s) into ${tabLabel(m, b)}`, author: process.env.USER || "cli", base_hash: sha1(readFileSync5(p, "utf8")), ops });
+        const prop = writeProposal(dirname3(p), { title: `Sync ${chosen.length} change(s) into ${tabLabel(m, b)}`, author: process.env.USER || "cli", base_hash: sha1(readFileSync6(p, "utf8")), ops });
         return void console.log(`Saved proposal ${prop.id}.`);
       }
       if (!doApply) return void console.log(`
@@ -17794,7 +18252,7 @@ ${chosen.length} of ${plan.length} would apply. Run with --apply (add --all to i
         ].filter((f) => /^models\/[^/]+\/model\.json$/.test(f) && (!only || only.includes(f.split("/")[1])))
       );
       const read = (ref, f) => {
-        const text3 = ref ? git("show", `${ref}:${f}`) : existsSync4(join4(ROOT, f)) ? readFileSync5(join4(ROOT, f), "utf8") : null;
+        const text3 = ref ? git("show", `${ref}:${f}`) : existsSync4(join4(ROOT, f)) ? readFileSync6(join4(ROOT, f), "utf8") : null;
         return text3 ? normalizeModel(JSON.parse(text3)) : null;
       };
       const reviews = [...changed].sort().map((f) => reviewModels(f, read(base, f), read(headRef || null, f), { dialect }));
@@ -17858,14 +18316,15 @@ ${cov.mapped} of ${cov.total} attributes mapped (${cov.pct}%).`;
       const name = flag("name");
       const propose = bool("propose");
       const saveSnap = flag("save-snapshot");
+      const profile = flag("profile");
       const snap = await pullSnapshot(
-        { from: flag("from"), csv: flag("csv"), snapshot: flag("snapshot"), platform: flag("platform"), catalog: flag("catalog"), schema: flag("schema"), profile: flag("profile"), url: flag("url") },
+        { from: flag("from"), csv: flag("csv"), snapshot: flag("snapshot"), platform: flag("platform"), catalog: flag("catalog"), schema: flag("schema"), profile, url: flag("url") },
         (s2) => console.log(s2)
       );
       if (saveSnap) writeFileSync3(saveSnap, JSON.stringify(snap, null, 2) + "\n");
-      const text2 = readFileSync5(p, "utf8");
+      const text2 = readFileSync6(p, "utf8");
       const doc = normalizeModel(JSON.parse(text2));
-      const plan = planPull(doc, snap, { name });
+      const plan = planPull(doc, snap, { name, profile });
       for (const w of plan.warnings) console.log(`note: ${w}`);
       const r = applyOps(doc, plan.ops);
       if (!r.ok) fail3(r.error);
@@ -17882,6 +18341,60 @@ ${cov.mapped} of ${cov.total} attributes mapped (${cov.pct}%).`;
       }
       return;
     }
+    case "profile": {
+      const p = resolveModelPath(args.shift());
+      const doc = load(p);
+      const id = tabId(doc);
+      const sampleFlag = flag("sample");
+      const sample = sampleFlag === void 0 ? DEFAULT_SAMPLE : Number(sampleFlag);
+      const entities = flag("entities")?.split(",").map((x) => x.trim()).filter(Boolean);
+      const src = { from: flag("from") || flag("platform"), catalog: flag("catalog"), schema: flag("schema"), profile: flag("profile"), warehouse: flag("warehouse"), url: flag("url"), sample, entities };
+      const csv = flag("csv");
+      const propose = bool("propose");
+      if (bool("query")) {
+        const s2 = profileScope(doc, id, src);
+        for (const { table } of modelTables(tabView(doc, id), entities, s2.from)) console.log(profileQuery(s2.from, table, { catalog: s2.catalog, sample }) + "\n");
+        return;
+      }
+      const r = csv ? { ...profileFromCsv(doc, id, csv, sample), skipped: [] } : await profileLive(doc, id, src, (s2) => console.log(s2));
+      if (!r.ops.length) fail3(`No tables profiled.${r.skipped.length ? ` Skipped: ${r.skipped.join("; ")}` : ""}`);
+      const text2 = readFileSync6(p, "utf8");
+      const res = applyOps(doc, r.ops, { tab: id });
+      if (!res.ok) fail3(res.error);
+      if (propose) {
+        const prop = writeProposal(dirname3(p), { title: `Profile ${r.profiled} table(s)`, author: process.env.USER || "cli", tab: id, base_hash: sha1(text2), ops: r.ops });
+        console.log(`Saved proposal ${prop.id}.`);
+      } else save(p, res.doc);
+      if (r.skipped.length) console.log(`Not profiled: ${r.skipped.join("; ")}`);
+      const found = profileIssues(tabView(res.doc, id));
+      console.log(`${propose ? "Proposed profiles for" : "Profiled"} ${r.profiled} table(s). ${found.length} finding(s)${found.length ? ":" : "."}`);
+      for (const i of found.slice(0, 40)) console.log(`  ${i.level.padEnd(7)} ${i.message}`);
+      if (found.length > 40) console.log(`  \u2026 ${found.length - 40} more: em validate ${basename(dirname3(p))} --all`);
+      return;
+    }
+    case "writeback": {
+      const p = resolveModelPath(args.shift());
+      const doc = load(p);
+      const id = tabId(doc);
+      const apply = bool("apply");
+      const out = flag("out");
+      const src = { from: flag("from"), catalog: flag("catalog"), schema: flag("schema"), profile: flag("profile"), warehouse: flag("warehouse"), url: flag("url"), tags: !bool("no-tags"), apply };
+      const r = await writeback(doc, id, src, (s2) => console.log(s2));
+      if (!r.statements.length) return void console.log("The catalog already has everything the model documents. Nothing to write.");
+      const sql = r.statements.map((s2) => `-- ${s2.what}
+${s2.sql}`).join("\n");
+      if (out) writeFileSync3(out, sql + "\n");
+      if (!apply) {
+        if (!out) console.log(sql);
+        console.log(`
+${r.statements.length} statement(s)${out ? ` written to ${out}` : ""}. Nothing was run: review them, then add --apply to run them.`);
+        return;
+      }
+      console.log(`Ran ${r.applied} of ${r.statements.length} statement(s).`);
+      for (const f of r.failed) console.log(`  failed: ${f}`);
+      if (r.failed.length) process.exitCode = 1;
+      return;
+    }
     case "mcp":
       return runMcp({ allowApply: bool("allow-apply"), author: flag("author") || "Claude" });
     case "apply": {
@@ -17889,11 +18402,11 @@ ${cov.mapped} of ${cov.total} attributes mapped (${cov.pct}%).`;
       const src = args.shift();
       const direct = bool("apply");
       if (!src) fail3("Usage: em apply <model> <ops.json | -> [--apply] [--title T] [--rationale R] [--tab T]");
-      const raw = JSON.parse(src === "-" ? readFileSync5(0, "utf8") : readFileSync5(resolve2(src), "utf8"));
+      const raw = JSON.parse(src === "-" ? readFileSync6(0, "utf8") : readFileSync6(resolve3(src), "utf8"));
       const ops = Array.isArray(raw) ? raw : raw.ops;
       const title = flag("title") || raw.title || `${ops.length} change(s)`;
       const rationale = flag("rationale") || raw.rationale;
-      const text2 = readFileSync5(p, "utf8");
+      const text2 = readFileSync6(p, "utf8");
       const r = applyOps(normalizeModel(JSON.parse(text2)), ops, { tab: TAB2 });
       if (!r.ok) fail3(r.error);
       ops.forEach((o, i) => console.log(`${String(i + 1).padStart(3)}. ${describeOp(o)}`));
@@ -17917,7 +18430,7 @@ ${cov.mapped} of ${cov.total} attributes mapped (${cov.pct}%).`;
       const find = (id) => listProposals(dir).find((x) => x.id === id) || fail3(`No proposal ${id}.`);
       if (accept) {
         const prop = find(accept);
-        const text2 = readFileSync5(p, "utf8");
+        const text2 = readFileSync6(p, "utf8");
         if (prop.base_hash && prop.base_hash !== sha1(text2)) console.log("note: the model changed since this proposal was made; applying by name.");
         const r = applyOps(normalizeModel(JSON.parse(text2)), prop.ops, { tab: prop.tab });
         if (!r.ok) fail3(r.error);
@@ -18003,6 +18516,16 @@ Live schemas (credentials from env or the platform CLI profile; never stored)
                                          derived from the previous one (diff/migrate show the drift)
   catalog-query --platform P [--catalog C] [--schema S]
                                          The metadata query to run yourself (then pull --csv)
+  profile <model> [--tab T] [--sample N] [--entities a,b] [--warehouse ID] [--propose]
+                                         Measure the tab's tables (rows, nulls, distinct values, ranges,
+                                         longest string) where it was pulled from, or --from/--catalog/
+                                         --schema; first 100,000 rows per table unless --sample 0.
+                                         Findings show in validate (e.g. a key that repeats)
+  profile <model> --query [--platform P] The statements to run yourself (then profile --csv results.csv)
+  writeback <model> [--tab T] [--out F] [--no-tags] [--apply]
+                                         Put the model's descriptions (and on Databricks, PII and
+                                         glossary tags) into the catalog the tab was pulled from. Prints
+                                         only what differs; --apply runs it. Never removes anything
 
 Agents
   mcp [--allow-apply] [--author NAME]    MCP server on stdio (see .mcp.json); edits become proposals

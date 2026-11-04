@@ -15,7 +15,7 @@ This skill drives the **EntityModel.com** workbench: a folder containing `bin/em
 
 ## Steps
 
-1. Run `node bin/em.mjs validate <id> --all` (or the `validate` MCP tool) and collect the errors, warnings and notes. Every tab is checked; review the tab the person means.
+1. Run `node bin/em.mjs validate <id> --all` (or the `validate` MCP tool) and collect the errors, warnings and notes. Every tab is checked; review the tab the person means. If the tab was pulled from a database and has no profiles yet, offer to run `profile_data` (or `em profile <id>`): its `profile.*` findings show where the data contradicts the design, such as a key that repeats or a column that is always empty. Treat them as evidence, not rules, because a sample can miss rare values.
 2. Run `node bin/em.mjs summary <id>` and read the model file for detail.
 3. Check design quality beyond the validator:
    - **Entity types.** Are the reference lists really controlled code lists? Is anything modeled as a free-text STRING that should be a REFERENCE_ENTITY (country, state, currency, status, type or category codes)?

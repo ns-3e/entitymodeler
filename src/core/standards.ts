@@ -20,7 +20,10 @@ export const STANDARD_PRESETS: Record<TabKind, NamingStandard> = {
 /** Identifier limits per platform, for the physical preset. */
 export const MAX_IDENTIFIER: Record<string, number> = { postgres: 63, mysql: 64, snowflake: 255, databricks: 255 };
 
-const PII_NAME = /(^|_)(e?mail|phone|mobile|fax|ssn|social_security|passport|birth|dob|first_name|last_name|full_name|surname|address|street|postcode|postal_code|zip|ip_address|national_id|tax_id|iban|card_number|salary|gender|ethnicity)(_|$)/i;
+const PII_NAME = /(^|_)(e?mail|phone|mobile|fax|ssn|social_security|soc_sec|passport|birth|dob|first_name|last_name|full_name|surname|address|street|postcode|postal_code|zip|ip_address|national_id|tax_id|iban|card_number|salary|gender|ethnicity)(_|$)/i;
+
+/** Whether a column name looks like personal data (email, phone, SSN, birth date, address…), in snake or camel case. */
+export const looksPersonal = (name: string) => PII_NAME.test(name.replace(/([a-z0-9])([A-Z])/g, '$1_$2'));
 
 const words = (name: string) =>
   name
@@ -88,7 +91,7 @@ export function checkStandards(m: DataModel, std: NamingStandard | undefined = s
       }
       if (std.max_length && a.name.length > std.max_length) push('warning', 'std.length', `${e.display_name}.${a.name}: name is ${a.name.length} characters; the limit is ${std.max_length}.`, ta);
       if (std.require_attribute_description && !a.description?.trim() && !a.is_primary_key) push('info', 'std.attr_desc', `${e.display_name}.${a.name}: needs a description.`, ta);
-      if (std.require_pii_review && !a.pii && PII_NAME.test(a.name)) push('warning', 'std.pii', `${e.display_name}.${a.name}: looks like personal data; mark it PII (or rename it if it isn't).`, ta, [{ op: 'update_attribute', entity: e.name, attribute: a.name, set: { pii: true } }]);
+      if (std.require_pii_review && !a.pii && looksPersonal(a.name)) push('warning', 'std.pii', `${e.display_name}.${a.name}: looks like personal data; mark it PII (or rename it if it isn't).`, ta, [{ op: 'update_attribute', entity: e.name, attribute: a.name, set: { pii: true } }]);
     }
     const pk = e.attributes.filter((a) => a.is_primary_key);
     if (std.pk_suffix && e.entity_type === 'standard' && pk.length === 1 && !pk[0].name.endsWith(std.pk_suffix))
