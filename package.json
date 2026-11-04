@@ -30,7 +30,8 @@
     "ui-audit": "node scripts/ui-audit.mjs",
     "og-images": "node scripts/og-images.mjs",
     "bench": "esbuild scripts/bench.ts --bundle --platform=node --format=esm --log-level=warning --outfile=node_modules/.cache/em-bench.mjs && node node_modules/.cache/em-bench.mjs",
-    "agent-eval": "node scripts/agent-eval.mjs"
+    "agent-eval": "node scripts/agent-eval.mjs",
+    "publish-snapshot": "node scripts/publish-snapshot.mjs"
   },
   "dependencies": {
     "@dagrejs/dagre": "^1.1.4",
