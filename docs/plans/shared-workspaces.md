@@ -2,7 +2,7 @@
 
 Status: decided 2026-11-04 (see Decisions). Architecture: D1 for accounts, one Durable Object per model.
 
-Progress: the Phase 1 backend is in `cloud/` (API, sessions, roles, quotas, versioned saves, live push), tested locally and not deployed. GitHub and Google sign-in are built (cloud/src/auth.ts; setup steps in cloud/README.md). Next: the app's cloud storage adapter; email links after the plan decision.
+Progress: Phase 1 is live on entitymodel.com with GitHub and email sign-in. Account controls are built: download my data, delete my account (`cloud/src/index.ts`) and suspension (`cloud/scripts/suspend.mjs`). Version history is built (`VersionHistoryDialog.tsx`, `history` routes). Presence is built (`cloud/src/room.ts`, `src/ui/presence.ts`), which finishes Phase 2. Next: Phase 3 (merging edits).
 
 ## Where we are
 

@@ -20,6 +20,8 @@ import { useDialogs } from './dialogs';
 import { useAgent } from './agent';
 import { ProposalBanner, ProposalDialog } from './components/ProposalDialog';
 import { WritebackDialog } from './components/WritebackDialog';
+import { VersionHistoryDialog } from './components/VersionHistoryDialog';
+import { usePresenceSync } from './presence';
 import { isCloudId } from './storage/cloud';
 import { AgentPanel } from './components/AgentPanel';
 
@@ -130,6 +132,7 @@ export function Editor() {
   const showInspector = useStore((s) => s.display.showInspector);
   useKeyboard();
   useLiveReload();
+  usePresenceSync();
 
   return (
     <ReactFlowProvider>
@@ -169,6 +172,7 @@ export function Editor() {
       <TabDialogs />
       <ProposalDialog />
       <WritebackDialog />
+      <VersionHistoryDialog />
       <AgentPanel />
       <CommandPalette />
     </ReactFlowProvider>

@@ -812,6 +812,8 @@ a.btn {
   inset: 0;
   background: var(--scrim);
   display: grid;
+  /* A track sized to its content would grow with the dialog's width, and the dialog's max-width would never apply. */
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   z-index: 100;
   padding: 16px;
@@ -4004,6 +4006,140 @@ body.resizing-panel {
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+.ws-going {
+  margin-bottom: 8px;
+}
+.ws-account-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.ws-account-text {
+  margin: 0 0 8px;
+}
+.ws-account-delete {
+  margin-top: 8px;
+}
+
+/* Others on a workspace model: their selection on the canvas, and who is here in the top bar */
+.peer-0 {
+  --peer: var(--accent);
+  --on-peer: var(--on-accent);
+}
+.peer-1 {
+  --peer: var(--accent-2);
+  --on-peer: var(--on-accent-2);
+}
+.peer-2 {
+  --peer: var(--accent-3);
+  --on-peer: var(--on-accent-3);
+}
+/* A ring, not a border, so the node's geometry is unchanged. */
+.entity-node.peer {
+  /* Not combined with --node-shadow: it can be "none", which isn't valid in a list and would drop the whole rule. */
+  box-shadow: 0 0 0 2px var(--peer);
+}
+.entity-node.peer.selected {
+  box-shadow: 0 0 0 1px var(--contour), 0 0 0 4px var(--peer), var(--shadow-plane);
+}
+.en-peer-tag {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  max-width: 100%;
+  padding: 1px 6px;
+  overflow: hidden;
+  background: var(--peer);
+  color: var(--on-peer);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+.presence {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.presence li {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  background: var(--peer, var(--hover));
+  color: var(--on-peer, inherit);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: default;
+}
+
+/* Version history of a workspace model */
+.history {
+  display: grid;
+  grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
+  gap: 16px;
+  min-height: 320px;
+}
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.history-item {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.history-item:hover {
+  background: var(--hover);
+}
+.history-item.active {
+  border-color: var(--border-strong);
+  background: var(--hover);
+}
+.history-item span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.history-detail {
+  min-width: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.history-tab {
+  margin: 12px 0 4px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+}
+.history-tab:first-child {
+  margin-top: 0;
+}
+@media (max-width: 640px) {
+  .history {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .history-list {
+    max-height: 30vh;
+  }
+  .history-note {
+    display: none;
+  }
 }
 
 /* Relationship attributes in the relationship inspector */

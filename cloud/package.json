@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Shared workspaces backend for entitymodel.com (Worker + D1 + one Durable Object per model). Not deployed yet.",
   "scripts": {
+    "suspend": "node scripts/suspend.mjs",
     "dev": "wrangler dev",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",

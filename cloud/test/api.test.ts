@@ -85,11 +85,21 @@ describe('cloud workspaces API', () => {
     expect(res.status).toBe(101);
     const ws = res.webSocket!;
     const messages: any[] = [];
-    const next = () => new Promise<any>((resolve) => ws.addEventListener('message', (e) => resolve(JSON.parse(e.data as string)), { once: true }));
+    // Presence updates arrive on the same connection; this test is about versions.
+    const next = () =>
+      new Promise<any>((resolve) => {
+        const on = (e: MessageEvent) => {
+          const m = JSON.parse(e.data as string);
+          if (m.type === 'presence') return;
+          ws.removeEventListener('message', on);
+          resolve(m);
+        };
+        ws.addEventListener('message', on);
+      });
     ws.accept();
     let pending = next();
     messages.push(await pending);
-    expect(messages[0]).toEqual({ type: 'hello', version: 1 });
+    expect(messages[0]).toMatchObject({ type: 'hello', version: 1 });
     pending = next();
     await ada.req(`models/${id}`, { method: 'PUT', body: model('Pushed'), headers: { 'If-Match': '1' } });
     expect(await pending).toMatchObject({ type: 'version', version: 2, text: model('Pushed') });

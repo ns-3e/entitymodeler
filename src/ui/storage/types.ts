@@ -14,6 +14,10 @@ export interface ModelStorage {
   create(id: string, model: DataModel): Promise<void>;
   /** Browser only — file mode never deletes from disk. */
   remove?(id: string): Promise<void>;
+  /** Workspace models only: earlier saved versions. */
+  versions?: ModelVersions;
+  /** Workspace models only: who else has the open model open. */
+  presence?: ModelPresence;
   /** Files only: keep a copy of an export next to the model. Returns the written path. */
   saveExport?(id: string, filename: string, data: Blob | Uint8Array): Promise<string>;
   /** The editor closed this model: stop listening for its changes (workspace models keep a live connection). */
@@ -32,6 +36,36 @@ export interface ModelStorage {
     put(terms: GlossaryTerm[]): Promise<void>;
     onChange(cb: () => void): () => void;
   };
+}
+
+export interface Peer {
+  user: string;
+  name: string;
+  tab: string | null;
+  entities: string[];
+}
+
+export interface ModelPresence {
+  /** Called with the other people on the open model, and with [] when the connection ends. Returns an unsubscribe. */
+  onPeople(cb: (people: Peer[]) => void): () => void;
+  /** Tell the others what this person has selected in the open model. */
+  select(id: string, tab: string, entities: string[]): void;
+}
+
+export interface SavedVersion {
+  version: number;
+  saved_at: string;
+  /** Who saved it, or null if they're no longer a member. */
+  by: string | null;
+}
+
+export interface ModelVersions {
+  list(id: string): Promise<SavedVersion[]>;
+  text(id: string, version: number): Promise<string>;
+  /** Save an earlier version as the newest one, returning its text. Throws CloudConflict if someone saved meanwhile. */
+  restore(id: string, version: number): Promise<string>;
+  /** Whether this person can restore (not a viewer). Known once the model has been opened. */
+  canRestore(id: string): boolean;
 }
 
 export interface ProfileResult {

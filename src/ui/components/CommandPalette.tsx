@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { BookMarked, Braces, Database, Download, Eye, EyeOff, Gauge, GitCompareArrows, LayoutGrid, Link2, ListChecks, Maximize, Moon, Plus, Search, Table, Columns3, PanelsTopLeft, Send, Sparkles } from '../icons';
+import { BookMarked, Braces, Database, Download, Eye, EyeOff, Gauge, GitCompareArrows, History, LayoutGrid, Link2, ListChecks, Maximize, Moon, Plus, Search, Table, Columns3, PanelsTopLeft, Send, Sparkles } from '../icons';
 import { listTabs } from '../../core';
 import { useStore } from '../store';
 import { useDialogs } from '../dialogs';
 import { useAgent } from '../agent';
 import { storage } from '../storage';
+import { isCloudId } from '../storage/cloud';
 import { installApp, useInstall } from '../install';
 import { addEntityAtCenter, applyFullLayout, focusEntity, hasStructs, profileActiveTab, profileSource, setAllFolded, showAll, writebackSource } from './actions';
 
@@ -65,6 +66,7 @@ function Palette() {
     if (pulled) act('profile', `Profile data in ${pulled}`, <Gauge size={14} />, profileActiveTab, 'rows, empty and distinct values');
     const writeTo = writebackSource();
     if (writeTo) act('writeback', `Write descriptions back to ${writeTo}`, <Send size={14} />, () => useDialogs.getState().open({ writeback: true }), 'preview the SQL');
+    if (isCloudId(useStore.getState().modelId)) act('history', 'Version history…', <History size={14} />, () => useDialogs.getState().open({ history: true }), 'earlier saves of this model');
     if (hidden) act('show-all', `Show all hidden entities (${hidden})`, <Eye size={14} />, showAll, '⇧H');
     if (hasStructs(model)) {
       act('fold-all', 'Fold all struct fields', <Braces size={14} />, () => setAllFolded(true), 'one row per struct');

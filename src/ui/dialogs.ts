@@ -8,8 +8,10 @@ interface Dialogs {
   palette: boolean;
   /** Preview of the SQL that writes descriptions back to the active tab's catalog. */
   writeback: boolean;
-  open(p: Partial<Pick<Dialogs, 'newTab' | 'compare' | 'palette' | 'writeback'>>): void;
-  close(which: 'newTab' | 'compare' | 'palette' | 'writeback'): void;
+  /** Earlier saved versions of a workspace model. */
+  history: boolean;
+  open(p: Partial<Pick<Dialogs, 'newTab' | 'compare' | 'palette' | 'writeback' | 'history'>>): void;
+  close(which: 'newTab' | 'compare' | 'palette' | 'writeback' | 'history'): void;
 }
 
 export const useDialogs = create<Dialogs>((set) => ({
@@ -17,6 +19,7 @@ export const useDialogs = create<Dialogs>((set) => ({
   compare: null,
   palette: false,
   writeback: false,
+  history: false,
   open: (p) => set(p),
-  close: (which) => set({ [which]: which === 'palette' || which === 'writeback' ? false : null } as Partial<Dialogs>),
+  close: (which) => set({ [which]: which === 'palette' || which === 'writeback' || which === 'history' ? false : null } as Partial<Dialogs>),
 }));

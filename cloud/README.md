@@ -30,6 +30,15 @@ EM_CLOUD=http://localhost:8787 npm run dev               # in the repo root: htt
 
 The home page then shows **Shared workspaces**: sign in, create a workspace, copy models into it with **Add a model…**, and manage members. Workspace models open in the normal editor. Others' saves arrive within a second. A save that collides with someone else's shows the "Someone else saved this model" banner, with **Load their version** and **Keep mine**. Without `EM_CLOUD`, and on the live site until the Worker is deployed, the section doesn't appear.
 
+## Suspending an account
+
+```bash
+npm run suspend -- someone@example.com          # signs them out and stops them signing in
+npm run suspend -- someone@example.com --lift   # lets them back in
+```
+
+Add `--local` to try it on the local database. A suspended account's workspaces stay available to their other members. A model it already has open keeps receiving updates until that page closes.
+
 ## Setting up GitHub and Google sign-in
 
 Each provider needs an OAuth app. Its **client ID** goes in `wrangler.jsonc` (it's public). Its **client secret** goes in Cloudflare's secret store, never in a file in this repo. Make one app for production and, for local testing, a second one whose callback points at localhost.

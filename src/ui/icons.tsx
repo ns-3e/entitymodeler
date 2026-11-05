@@ -57,6 +57,7 @@ export const ArrowRightLeft = make('ArrowRightLeft', 'M13.5 5h-11M5.5 2l-3 3 3 3
 export const CornerDownRight = make('CornerDownRight', 'M3.5 2.5v7h10M10.5 6.5l3 3-3 3');
 export const Undo2 = make('Undo2', 'M5 2.5L2.5 5 5 7.5M2.5 5h8l3 3v2.5l-3 3H6');
 export const Redo2 = make('Redo2', 'M11 2.5L13.5 5 11 7.5M13.5 5h-8l-3 3v2.5l3 3H10');
+export const History = make('History', 'M2.5 2.5v4h4M2.5 6.5L6 3h4.5l3 3v4l-3 3H6l-2.5-2.5M8 5.5V8l2 1.5');
 export const RotateCcw = make('RotateCcw', 'M2.5 2.5v4h4M2.5 6.5L6 3h4.5l3 3v4l-3 3H6l-2.5-2.5');
 export const Maximize = make('Maximize', 'M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10');
 export const Focus = make('Focus', 'M2.5 5.5v-3h3M10.5 2.5h3v3M13.5 10.5v3h-3M5.5 13.5h-3v-3M8 6l2 2-2 2-2-2Z');

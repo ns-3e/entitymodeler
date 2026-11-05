@@ -30,6 +30,15 @@ class HttpError extends Error {
   }
 }
 
+class Suspended extends HttpError {
+  constructor() {
+    super(403, 'This account is suspended. Contact support@entitymodel.com.');
+  }
+}
+
+/** Created by migration 0003: takes over created_by on what outlives a deleted account. */
+const DELETED_ACCOUNT = 'deleted-account';
+
 const json = (body: unknown, status = 200, headers: HeadersInit = {}) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...headers } });
 const now = () => new Date().toISOString();
 /** 128-bit random id, URL-safe. */
@@ -98,6 +107,7 @@ export async function signIn(env: Env, provider: string, subject: string, email:
     }
     await env.DB.prepare('INSERT INTO identities (provider, subject, user_id, created_at) VALUES (?, ?, ?, ?)').bind(provider, subject, userId, now()).run();
   }
+  if ((await env.DB.prepare('SELECT suspended_at FROM users WHERE id = ?').bind(userId).first<{ suspended_at: string | null }>())?.suspended_at) throw new Suspended();
   // Fill in a name and picture the account doesn't have yet; never overwrite what the person set.
   await env.DB.prepare("UPDATE users SET name = CASE WHEN name = '' THEN ? ELSE name END, avatar_url = COALESCE(avatar_url, ?) WHERE id = ?").bind(name.slice(0, 100), avatar ?? null, userId).run();
   return userId;
@@ -161,7 +171,7 @@ async function auth(req: Request, env: Env, path: string[]): Promise<Response> {
       userId = await signIn(env, p.id, prof.subject, prof.email, prof.name, prof.avatar);
     } catch (e) {
       console.error('sign-in failed', p.id, (e as Error).message);
-      return fail((e as Error).message.includes('verified email') ? (e as Error).message : `Sign-in with ${p.id === 'github' ? 'GitHub' : 'Google'} failed. Try again.`);
+      return fail(e instanceof Suspended || (e as Error).message.includes('verified email') ? (e as Error).message : `Sign-in with ${p.id === 'github' ? 'GitHub' : 'Google'} failed. Try again.`);
     }
     const headers = new Headers({ Location: safeReturn(decodeURIComponent(back || '')), 'Cache-Control': 'no-store' });
     headers.append('Set-Cookie', await startSession(env, userId));
@@ -177,6 +187,8 @@ async function emailAuth(req: Request, env: Env, step: string | undefined, url: 
     const b = await body<{ email?: string; return?: string }>(req);
     const email = (b.email || '').trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 254) throw new HttpError(400, 'Enter an email address.');
+    // The same answer as for anyone else, so this can't be used to find out who is suspended.
+    if (await env.DB.prepare('SELECT 1 FROM users WHERE email = ? AND suspended_at IS NOT NULL').bind(email).first()) return json({ ok: true });
     const hourAgo = new Date(Date.now() - 3600_000).toISOString();
     const recent = await env.DB.prepare('SELECT COUNT(*) AS n FROM email_links WHERE email = ? AND created_at > ?').bind(email, hourAgo).first<{ n: number }>();
     if ((recent?.n ?? 0) >= LINKS_PER_HOUR) throw new HttpError(429, 'Too many sign-in links for this address. Try again in an hour.');
@@ -217,10 +229,88 @@ async function emailAuth(req: Request, env: Env, step: string | undefined, url: 
       .bind(now(), await sha256(token), now())
       .first<{ email: string; return_path: string }>();
     if (!link) return new Response(null, { status: 303, headers: { Location: `/?signin_error=${encodeURIComponent('That sign-in link has expired or was already used. Ask for a new one.')}` } });
-    const userId = await signIn(env, 'email', link.email, link.email, '');
+    let userId: string;
+    try {
+      userId = await signIn(env, 'email', link.email, link.email, '');
+    } catch (e) {
+      if (e instanceof Suspended) return new Response(null, { status: 303, headers: { Location: `/?signin_error=${encodeURIComponent(e.message)}` } });
+      throw e;
+    }
     return new Response(null, { status: 303, headers: { Location: safeReturn(link.return_path), 'Set-Cookie': await startSession(env, userId), 'Cache-Control': 'no-store' } });
   }
   throw new HttpError(404, 'Not found.');
+}
+
+/** Workspaces whose only owner is the bound user. They can't outlive that user's account. */
+const SOLE_OWNER = `w.id IN (SELECT workspace_id FROM members WHERE user_id = ?1 AND role = 'owner')
+  AND NOT EXISTS (SELECT 1 FROM members o WHERE o.workspace_id = w.id AND o.role = 'owner' AND o.user_id <> ?1)`;
+
+/** End someone's open connections to a workspace's models, so they stop receiving new versions. */
+async function closeConnections(env: Env, user: string, workspace: string) {
+  const { results } = await env.DB.prepare('SELECT id FROM models WHERE workspace_id = ?').bind(workspace).all<{ id: string }>();
+  await Promise.all(results.map((m) => room(env, m.id).disconnect(user)));
+}
+
+/**
+ * Remove the account: its sign-ins, sessions and memberships, and every workspace it alone owns, with those models.
+ * Model contents go first: if that fails, nothing in the database has changed and the person can simply try again.
+ */
+async function deleteAccount(env: Env, user: User) {
+  const doomed = await env.DB.prepare(`SELECT d.id FROM models d JOIN workspaces w ON w.id = d.workspace_id WHERE ${SOLE_OWNER}`).bind(user.id).all<{ id: string }>();
+  await Promise.all(doomed.results.map((m) => room(env, m.id).destroy()));
+  const kept = await env.DB.prepare(`SELECT w.id FROM members m JOIN workspaces w ON w.id = m.workspace_id WHERE m.user_id = ?1 AND NOT (${SOLE_OWNER})`).bind(user.id).all<{ id: string }>();
+  await Promise.all(kept.results.map((w) => closeConnections(env, user.id, w.id)));
+  // One transaction. Members and models of the deleted workspaces, and the account's sign-ins, sessions and memberships, cascade.
+  await env.DB.batch([
+    env.DB.prepare(`DELETE FROM workspaces AS w WHERE ${SOLE_OWNER}`).bind(user.id),
+    env.DB.prepare('UPDATE workspaces SET created_by = ? WHERE created_by = ?').bind(DELETED_ACCOUNT, user.id),
+    env.DB.prepare('UPDATE models SET created_by = ? WHERE created_by = ?').bind(DELETED_ACCOUNT, user.id),
+    env.DB.prepare('UPDATE models SET updated_by = NULL WHERE updated_by = ?').bind(user.id),
+    env.DB.prepare('DELETE FROM email_links WHERE email = ?').bind(user.email),
+    env.DB.prepare('DELETE FROM users WHERE id = ?').bind(user.id),
+  ]);
+}
+
+/**
+ * Everything stored about a person, as one JSON download. It streams, one model at a time, because the models of
+ * several workspaces can be larger than a Worker's memory. A failed read aborts the download rather than truncating it.
+ */
+async function exportAccount(env: Env, user: User): Promise<Response> {
+  const account = await env.DB.prepare('SELECT id, email, name, avatar_url, created_at FROM users WHERE id = ?').bind(user.id).first();
+  const signIns = await env.DB.prepare('SELECT provider, subject, created_at FROM identities WHERE user_id = ? ORDER BY created_at').bind(user.id).all();
+  const workspaces = await env.DB.prepare('SELECT w.id, w.name, w.plan, w.created_at, m.role, m.added_at FROM members m JOIN workspaces w ON w.id = m.workspace_id WHERE m.user_id = ? ORDER BY w.name').bind(user.id).all();
+  const models = await env.DB.prepare('SELECT d.id, d.workspace_id, d.title, d.created_at, d.updated_at FROM models d JOIN members m ON m.workspace_id = d.workspace_id WHERE m.user_id = ? ORDER BY d.workspace_id, d.title').bind(user.id).all<{ id: string }>();
+
+  const encoder = new TextEncoder();
+  let next = 0;
+  let written = 0;
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const head = JSON.stringify({ exported_at: now(), account, sign_ins: signIns.results, workspaces: workspaces.results });
+      controller.enqueue(encoder.encode(`${head.slice(0, -1)},"models":[`));
+    },
+    async pull(controller) {
+      while (next < models.results.length) {
+        const row = models.results[next++];
+        const current = await room(env, row.id).read();
+        if (!current) continue; // deleted since the list was read
+        // The text was checked to be JSON when it was saved, so it goes in as it is.
+        const entry = JSON.stringify({ ...row, version: current.version });
+        controller.enqueue(encoder.encode(`${written++ ? ',' : ''}${entry.slice(0, -1)},"model":${current.text}}`));
+        return;
+      }
+      controller.enqueue(encoder.encode(']}'));
+      controller.close();
+    },
+  });
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Disposition': `attachment; filename="entitymodel-export-${now().slice(0, 10)}.json"`,
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff',
+    },
+  });
 }
 
 async function route(req: Request, env: Env, path: string[]): Promise<Response> {
@@ -245,9 +335,30 @@ async function route(req: Request, env: Env, path: string[]): Promise<Response> 
     return json({ ok: true }, 200, { 'Set-Cookie': `${SESSION_COOKIE}=; Path=/api/cloud; HttpOnly; Secure; SameSite=Lax; Max-Age=0` });
   }
 
-  if (path[0] === 'me' && method === 'GET') {
+  if (path[0] === 'me' && !path[1] && method === 'GET') {
     const { results } = await env.DB.prepare('SELECT w.id, w.name, w.plan, m.role FROM members m JOIN workspaces w ON w.id = m.workspace_id WHERE m.user_id = ? ORDER BY w.name').bind(user.id).all();
     return json({ user, workspaces: results });
+  }
+
+  if (path[0] === 'me' && path[1] === 'export' && method === 'GET') return exportAccount(env, user);
+
+  if (path[0] === 'me' && path[1] === 'deletion' && method === 'GET') {
+    const { results } = await env.DB.prepare(
+      `SELECT w.id, w.name,
+              (SELECT COUNT(*) FROM members m WHERE m.workspace_id = w.id) AS members,
+              (SELECT COUNT(*) FROM models d WHERE d.workspace_id = w.id) AS models
+       FROM workspaces w WHERE ${SOLE_OWNER} ORDER BY w.name`,
+    )
+      .bind(user.id)
+      .all();
+    return json({ workspaces: results });
+  }
+
+  if (path[0] === 'me' && !path[1] && method === 'DELETE') {
+    const b = await body<{ confirm_email?: string }>(req);
+    if ((b.confirm_email || '').trim().toLowerCase() !== user.email.toLowerCase()) throw new HttpError(400, 'Type your email address to confirm.');
+    await deleteAccount(env, user);
+    return json({ ok: true }, 200, { 'Set-Cookie': `${SESSION_COOKIE}=; Path=/api/cloud; HttpOnly; Secure; SameSite=Lax; Max-Age=0` });
   }
 
   if (path[0] === 'workspaces' && !path[1] && method === 'POST') {
@@ -280,7 +391,7 @@ async function route(req: Request, env: Env, path: string[]): Promise<Response> 
       const b = await body<{ email?: string; role?: Role }>(req);
       const role = b.role && RANK[b.role] ? b.role : 'editor';
       // Email invitations arrive with email sign-in; until then a member must have signed in once.
-      const target = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind((b.email || '').trim().toLowerCase()).first<{ id: string }>();
+      const target = await env.DB.prepare('SELECT id FROM users WHERE email = ? AND suspended_at IS NULL').bind((b.email || '').trim().toLowerCase()).first<{ id: string }>();
       if (!target) throw new HttpError(404, 'Nobody with that email has signed in yet.');
       const count = await env.DB.prepare('SELECT COUNT(*) AS n FROM members WHERE workspace_id = ?').bind(ws).first<{ n: number }>();
       const existing = await roleIn(env, ws, target.id);
@@ -296,6 +407,7 @@ async function route(req: Request, env: Env, path: string[]): Promise<Response> 
       const owners = await env.DB.prepare("SELECT user_id FROM members WHERE workspace_id = ? AND role = 'owner'").bind(ws).all<{ user_id: string }>();
       if (owners.results.length === 1 && owners.results[0].user_id === path[3]) throw new HttpError(409, 'A workspace needs an owner: make someone else owner first.');
       await env.DB.prepare('DELETE FROM members WHERE workspace_id = ? AND user_id = ?').bind(ws, path[3]).run();
+      await closeConnections(env, path[3], ws);
       return json({ ok: true });
     }
 
@@ -347,9 +459,41 @@ async function route(req: Request, env: Env, path: string[]): Promise<Response> 
       return json({ ok: true });
     }
 
-    if (path[2] === 'history' && method === 'GET') {
+    if (path[2] === 'history' && !path[3] && method === 'GET') {
+      const a = await modelAccess(env, id, user.id, 'viewer');
+      const [versions, people] = await Promise.all([
+        room(env, id).history(),
+        env.DB.prepare('SELECT u.id, u.email, u.name FROM members m JOIN users u ON u.id = m.user_id WHERE m.workspace_id = ?').bind(a.workspace_id).all<User>(),
+      ]);
+      // Only current members are named: someone who left or deleted their account shows as no one in particular.
+      const names = new Map(people.results.map((p) => [p.id, p.name || p.email]));
+      return json(versions.map(({ saved_by, ...v }) => ({ ...v, by: names.get(saved_by) ?? null })));
+    }
+
+    if (path[2] === 'history' && path[3] && !path[4] && method === 'GET') {
       await modelAccess(env, id, user.id, 'viewer');
-      return json(await room(env, id).history());
+      const text = await room(env, id).readVersion(Number(path[3]));
+      if (text === null) throw new HttpError(404, 'That version is no longer kept.');
+      return json({ version: Number(path[3]), text });
+    }
+
+    // Restoring saves the old text as a new version on top, so it never removes anything and can itself be undone.
+    if (path[2] === 'history' && path[3] && path[4] === 'restore' && method === 'POST') {
+      const a = await modelAccess(env, id, user.id, 'editor');
+      const base = Number((req.headers.get('If-Match') || '').replace(/"/g, ''));
+      if (!Number.isInteger(base) || base < 1) throw new HttpError(428, 'Send If-Match with the version this restore is based on.');
+      const text = await room(env, id).readVersion(Number(path[3]));
+      if (text === null) throw new HttpError(404, 'That version is no longer kept.');
+      const q = quotaFor(a.plan);
+      const title = checkModel(text, q.modelBytes);
+      const r: WriteResult = await room(env, id).write(base, text, user.id, q.savesPerMinute);
+      if (!r.ok) {
+        if (r.reason === 'conflict') throw new HttpError(409, 'Someone else saved a newer version.', { version: r.version, text: r.text });
+        if (r.reason === 'rate') throw new HttpError(429, 'Too many saves for this model; try again in a minute.');
+        throw new HttpError(404, 'Not found.');
+      }
+      await env.DB.prepare('UPDATE models SET title = ?, size = ?, updated_at = ?, updated_by = ? WHERE id = ?').bind(title, text.length, now(), user.id, id).run();
+      return json({ version: r.version, text });
     }
 
     if (path[2] === 'live' && method === 'GET') {

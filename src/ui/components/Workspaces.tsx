@@ -25,6 +25,7 @@ export function WorkspacesSection({ localModels }: { localModels: ModelSummary[]
   const [details, setDetails] = useState<Record<string, WorkspaceDetail>>({});
   const [naming, setNaming] = useState<string | null>(null);
   const [members, setMembers] = useState<string | null>(null);
+  const [account, setAccount] = useState(false);
   const [email, setEmail] = useState('');
   const [linkSentTo, setLinkSentTo] = useState('');
 
@@ -70,6 +71,10 @@ export function WorkspacesSection({ localModels }: { localModels: ModelSummary[]
         {me && (
           <span className="muted small ws-account">
             {me.user.email} ·{' '}
+            <button className="link" onClick={() => setAccount(true)}>
+              Account
+            </button>{' '}
+            ·{' '}
             <button className="link" onClick={() => run('Sign out failed', async () => (await c.logout(), setMe(null)))}>
               Sign out
             </button>
@@ -198,8 +203,98 @@ export function WorkspacesSection({ localModels }: { localModels: ModelSummary[]
         </Modal>
       )}
 
+      {account && me && (
+        <AccountDialog
+          me={me.user}
+          onClose={() => setAccount(false)}
+          onDeleted={() => {
+            setAccount(false);
+            setMe(null);
+            setDetails({});
+            toast('Your account is deleted. Models in this browser are unchanged.', 'success');
+          }}
+        />
+      )}
+
       {members && me && details[members] && <MembersDialog ws={me.workspaces.find((w) => w.id === members)!} detail={details[members]} me={me.user} onClose={() => setMembers(null)} onChanged={load} />}
     </>
+  );
+}
+
+function AccountDialog({ me, onClose, onDeleted }: { me: CloudUser; onClose: () => void; onDeleted: () => void }) {
+  const toast = useStore((s) => s.toast);
+  const c = cloud!;
+  const [going, setGoing] = useState<{ id: string; name: string; members: number; models: number }[] | null>(null);
+  const [typed, setTyped] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    c.deletionPreview()
+      .then((r) => setGoing(r.workspaces))
+      .catch((e: any) => toast(`Account: ${e.message}`, 'error'));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const matches = typed.trim().toLowerCase() === me.email.toLowerCase();
+  const remove = () => {
+    setBusy(true);
+    c.deleteAccount(typed.trim())
+      .then(onDeleted)
+      .catch((e: any) => {
+        setBusy(false);
+        toast(`Could not delete the account: ${e.message}`, 'error');
+      });
+  };
+  return (
+    <Modal
+      title="Your account"
+      onClose={onClose}
+      footer={
+        <>
+          <span className="spacer" />
+          <button className="btn ghost" onClick={onClose}>
+            Close
+          </button>
+        </>
+      }
+    >
+      <div className="stack">
+        <div>
+          <h3 className="ws-account-title">Download your data</h3>
+          <p className="muted small ws-account-text">One JSON file with your account details and the current version of every model in your workspaces.</p>
+          <a className="btn sm" href={c.exportUrl} download>
+            Download my data
+          </a>
+        </div>
+        <div>
+          <h3 className="ws-account-title">Delete your account</h3>
+          <p className="muted small ws-account-text">This removes your sign-in details and your memberships, and can't be undone. Models in this browser aren't affected. Workspaces with another owner carry on, with their models.</p>
+          {going === null ? (
+            <p className="muted small ws-account-text">Checking your workspaces…</p>
+          ) : going.length ? (
+            <>
+              <p className="small ws-account-text">You're the only owner of these workspaces, so they will be deleted, with their models, for everyone in them:</p>
+              <ul className="ws-members ws-going">
+                {going.map((w) => (
+                  <li key={w.id}>
+                    <span>{w.name}</span>
+                    <span className="muted small">
+                      {w.models} model{w.models === 1 ? '' : 's'}, {w.members} member{w.members === 1 ? '' : 's'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="muted small ws-account-text">To keep one, close this and make another member its owner first.</p>
+            </>
+          ) : (
+            <p className="muted small ws-account-text">You aren't the only owner of any workspace, so none will be deleted.</p>
+          )}
+          <Field label={`Type ${me.email} to confirm`}>
+            <TextInput value={typed} onChange={setTyped} placeholder={me.email} />
+          </Field>
+          <button className="btn danger ws-account-delete" disabled={!matches || going === null || busy} onClick={remove}>
+            {busy ? 'Deleting…' : 'Delete my account'}
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 

@@ -12,6 +12,7 @@ export default defineConfig({
     watch: { ignored: ['**/models/**', '**/_archive/**', '**/bin/**', '**/cloud/.wrangler/**'] },
     // Shared workspaces in development: EM_CLOUD=http://localhost:8787 npm run dev, with `wrangler dev` running in cloud/.
     // Same origin for the app, so the session cookie and live connection work as they will on entitymodel.com.
-    proxy: process.env.EM_CLOUD ? { '/api/cloud': { target: process.env.EM_CLOUD, ws: true } } : undefined,
+    // changeOrigin: wrangler dev rewrites an Origin that matches the Host header, and the Worker would then refuse it.
+    proxy: process.env.EM_CLOUD ? { '/api/cloud': { target: process.env.EM_CLOUD, ws: true, changeOrigin: true } } : undefined,
   },
 });

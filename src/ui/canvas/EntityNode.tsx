@@ -4,6 +4,7 @@ import { BookMarked, Braces, ChevronDown, ChevronRight, CornerDownRight, Databas
 import { columnValues, previewList, primaryKey } from '../../core';
 import type { Entity } from '../../core';
 import { useStore, type Detail } from '../store';
+import { peerColor, usePresence } from '../presence';
 import { nodeRows, hasFooter, isFolded, nodeWidth, ROW_H, ROWS_PAD } from './geometry';
 import { toggleFold } from '../components/actions';
 
@@ -68,6 +69,8 @@ function EntityNodeImpl({ data, selected }: NodeProps<EntityNodeType>) {
     return vals.length ? `\nValues: ${previewList(vals, 12)}` : '';
   };
   const far = useFar();
+  // Undefined for nearly every node, so someone's selection re-renders only the entities it touches.
+  const peers = usePresence((s) => s.byEntity.get(e.name));
   const meta = TYPE_META[e.entity_type];
   const rows = nodeRows(e, detail);
   const footer = hasFooter(e);
@@ -78,11 +81,20 @@ function EntityNodeImpl({ data, selected }: NodeProps<EntityNodeType>) {
     dimmed ? 'dimmed' : '',
     highlighted ? 'highlighted' : '',
     pendingSource ? 'pending' : '',
+    peers ? `peer peer-${peerColor(peers[0].user)}` : '',
   ]
     .filter(Boolean)
     .join(' ');
 
   return (
+    <>
+      {/* Outside the node, whose overflow is hidden. */}
+      {peers && (
+        <div className={`en-peer-tag peer-${peerColor(peers[0].user)}`}>
+          {peers[0].name}
+          {peers.length > 1 ? ` +${peers.length - 1}` : ''}
+        </div>
+      )}
     <div className={cls} style={{ width: nodeWidth(e), ['--entity-color' as any]: e.color_code }}>
       <Handle type="target" position={Position.Top} className="hidden-handle" isConnectable={false} />
       <Handle type="source" position={Position.Bottom} className="hidden-handle" isConnectable={false} />
@@ -199,6 +211,7 @@ function EntityNodeImpl({ data, selected }: NodeProps<EntityNodeType>) {
         </div>
       )}
     </div>
+    </>
   );
 }
 

@@ -1,13 +1,15 @@
 import { lazy, Suspense, useState } from 'react';
-import { ArrowLeftRight, BookOpen, ChevronLeft, CircleX, Cloud, CloudOff, Command, Download, Loader2, Moon, PanelLeft, PanelRight, Redo2, Sparkles, Sun, FileInput, Link2, Table, TriangleAlert, Undo2, Workflow, ListChecks } from '../icons';
+import { ArrowLeftRight, BookOpen, ChevronLeft, CircleX, Cloud, CloudOff, Command, Download, History, Loader2, Moon, PanelLeft, PanelRight, Redo2, Sparkles, Sun, FileInput, Link2, Table, TriangleAlert, Undo2, Workflow, ListChecks } from '../icons';
 import { issueCounts } from '../../core';
 import { useStore } from '../store';
 import { storage } from '../storage';
+import { isCloudId } from '../storage/cloud';
 import { useDialogs } from '../dialogs';
 import { useAgent } from '../agent';
 import { ImportDialog } from './ImportDialog';
 import { ShareDialog } from './ShareDialog';
 import { Logo } from './Logo';
+import { PresenceBar } from './PresenceBar';
 // Export code (jsPDF, html-to-image, fonts) loads on first use, not with the app.
 const ExportDialog = lazy(() => import('./ExportDialog').then((m) => ({ default: m.ExportDialog })));
 
@@ -99,6 +101,12 @@ export function Topbar() {
       {storage.agentTools?.canRun && (
         <button className={`btn${agentOpen ? ' active' : ''}`} title="Ask Claude to change this model; you review a proposal (⌘J)" onClick={() => useAgent.getState().togglePanel()}>
           <Sparkles size={16} /> <span className="tb-label tb-act-label">Ask Claude</span>
+        </button>
+      )}
+      <PresenceBar />
+      {isCloudId(useStore.getState().modelId) && (
+        <button className="icon-btn tb-wide" title="Version history: earlier saves of this model" onClick={() => useDialogs.getState().open({ history: true })}>
+          <History size={16} />
         </button>
       )}
       <button className="btn" title="Share a link to a copy of this model (nothing is uploaded)" onClick={() => setSharing(true)}>
