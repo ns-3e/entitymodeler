@@ -12305,7 +12305,7 @@ var require_jspdf_plugin_autotable = __commonJS({
 // cli/em.ts
 import { existsSync as existsSync4, mkdirSync as mkdirSync3, readFileSync as readFileSync6, readdirSync as readdirSync3, statSync, writeFileSync as writeFileSync3 } from "node:fs";
 import { spawnSync as spawnSync2 } from "node:child_process";
-import { basename, dirname as dirname3, join as join4, resolve as resolve3 } from "node:path";
+import { basename, dirname as dirname3, join as join4, resolve as resolve4 } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // src/core/pdf.ts
@@ -12728,6 +12728,10 @@ function relationalPlan(m) {
     if (!child || !parent || !pk) continue;
     let fk = resolveForeignKey(m, r, byName);
     if (!fk) fk = addColumn(child, ends.child === ends.parent ? `parent_${pk.name}` : keyColumnName(parent, pk), pk, `${parent.display_name} (${r.forward_label})`, `relationship ${r.name}`);
+    if (r.required) {
+      const column = child.columns.find((c) => c.name === fk);
+      if (column) column.notNull = true;
+    }
     if (r.cardinality === "1:1" && !child.pk.includes(fk)) child.unique.push(fk);
     for (const ra of r.attributes || []) addRelationshipColumn(child, ra, r, false);
     foreignKeys.push({ name: fkName(`fk_${r.name}`), table: child.name, column: fk, refTable: parent.name, refColumn: pk.name, kind: "relationship", relationship: r.name });
@@ -13223,6 +13227,7 @@ function deriveLogical(src, o) {
       }
       delete r.foreign_key;
       if (!child || !a) continue;
+      if (a.required) r.required = true;
       child.attributes = child.attributes.filter((x) => x !== a);
       rep.droppedColumns.push(`${child.name}.${a.name} (foreign key \u2192 ${r.name})`);
     }
@@ -13387,14 +13392,18 @@ function derivePhysical(src, o) {
         child.attributes.push({ ...rest, name: uniqueName(ra.name, child.attributes.map((a) => a.name)), is_primary_key: false, is_label: false, description: ra.description || `${r.forward_label || r.name}: ${ra.label || ra.name}` });
       }
       if (r.attributes?.length) r.attributes = [];
+      const required = r.required;
+      delete r.required;
       const existing = r.foreign_key && child.attributes.some((a) => a.name === r.foreign_key) ? r.foreign_key : inferForeignKey(m, r);
       if (existing) {
         r.foreign_key = existing;
+        const column = child.attributes.find((a) => a.name === existing);
+        if (required && column) column.required = true;
         continue;
       }
       const name = uniqueName(ends.child === ends.parent ? `parent_${pk.name}` : keyColumnName(parent, pk), child.attributes.map((a) => a.name));
       const at = child.attributes.findIndex((a) => !a.is_primary_key);
-      const col = { name, label: toLabel(name), type: pk.type, description: `${parent.display_name} (${r.forward_label || r.name})` };
+      const col = { name, label: toLabel(name), type: pk.type, ...required ? { required } : {}, description: `${parent.display_name} (${r.forward_label || r.name})` };
       child.attributes.splice(at === -1 ? child.attributes.length : at, 0, col);
       r.foreign_key = name;
       fkAdded++;
@@ -14294,7 +14303,7 @@ function writeGlossary(modelsDir, terms) {
 
 // cli/mcp.ts
 import { existsSync as existsSync3, mkdirSync as mkdirSync2, readFileSync as readFileSync5, readdirSync as readdirSync2, writeFileSync as writeFileSync2 } from "node:fs";
-import { dirname as dirname2, join as join3 } from "node:path";
+import { dirname as dirname2, join as join3, relative, resolve as resolve3 } from "node:path";
 import { createInterface } from "node:readline";
 
 // src/core/operations.ts
@@ -14927,6 +14936,7 @@ function validateModel(m) {
     for (const end of ["source", "target"])
       if (!entityByName.has(r[end])) push("error", "rel.endpoint", `Relationship "${r.name}" ${end} entity "${r[end]}" does not exist.`, t);
     if (!r.forward_label) push("warning", "rel.fwd", `Relationship "${r.name}" has no forward label.`, t);
+    if (r.required && !relationshipEnds(r)) push("warning", "rel.reqnn", `Relationship "${r.name}" is N:N, so "required" is ignored (a junction table is used).`, t);
     if (r.foreign_key) {
       const ends = relationshipEnds(r);
       if (!ends) push("warning", "rel.fknn", `Relationship "${r.name}" is N:N, so its foreign key "${r.foreign_key}" is ignored (a junction table is used).`, t);
@@ -16521,6 +16531,7 @@ function diffViews(A, B, dir, a = { id: "a", name: "Before" }, b = { id: "b", na
     if (relKey(ra, "a") !== relKey(rb, "b")) d.push(`ends ${ra.source} \u2192 ${ra.target} became ${rb.source} \u2192 ${rb.target}`);
     if (ra.cardinality !== rb.cardinality) d.push(`cardinality ${ra.cardinality} \u2192 ${rb.cardinality}`);
     if ((ra.foreign_key || "") !== (rb.foreign_key || "")) d.push(`foreign key ${ra.foreign_key || "(none)"} \u2192 ${rb.foreign_key || "(none)"}`);
+    if (!!ra.required !== !!rb.required) d.push(rb.required ? "optional \u2192 required" : "required \u2192 optional");
     if (ra.forward_label !== rb.forward_label) d.push(`label "${ra.forward_label}" \u2192 "${rb.forward_label}"`);
     const raAttrs = new Map((ra.attributes || []).map((x) => [x.name, x]));
     const rbAttrs = new Map((rb.attributes || []).map((x) => [x.name, x]));
@@ -17002,6 +17013,539 @@ function reviewToMarkdown(reviews, opts = {}) {
   return out.join("\n");
 }
 
+// src/mcp/rpc.ts
+var MODERN_VERSION = "2026-07-28";
+var LEGACY_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
+var SUPPORTED_VERSIONS = [MODERN_VERSION, ...LEGACY_VERSIONS];
+var META_VERSION = "io.modelcontextprotocol/protocolVersion";
+var META_CAPABILITIES = "io.modelcontextprotocol/clientCapabilities";
+var META_SERVER = "io.modelcontextprotocol/serverInfo";
+var INVALID_REQUEST = -32600;
+var METHOD_NOT_FOUND = -32601;
+var INVALID_PARAMS = -32602;
+var UNSUPPORTED_VERSION = -32022;
+var TOOLS_TTL_MS = 36e5;
+var annotations = (t) => ({
+  readOnlyHint: t.needs === "read" && !t.writes,
+  destructiveHint: t.needs === "apply",
+  idempotentHint: t.needs === "read",
+  openWorldHint: !!t.external
+});
+async function handleRpc(server, msg) {
+  if (!msg || typeof msg !== "object" || Array.isArray(msg) || msg.jsonrpc !== "2.0" || typeof msg.method !== "string") {
+    if (msg && typeof msg === "object" && !Array.isArray(msg) && msg.method === void 0 && msg.id !== void 0 && ("result" in msg || "error" in msg)) return { body: null, status: 202 };
+    return { body: { jsonrpc: "2.0", id: msg?.id ?? null, error: { code: INVALID_REQUEST, message: "Invalid request" } }, status: 400 };
+  }
+  if (msg.id === void 0) return { body: null, status: 202 };
+  const meta = msg.params?._meta;
+  const requested = meta?.[META_VERSION];
+  const error = (code, message, status, data) => ({ body: { jsonrpc: "2.0", id: msg.id, error: { code, message, ...data ? { data } : {} } }, status });
+  if (requested !== void 0 && !SUPPORTED_VERSIONS.includes(requested)) return error(UNSUPPORTED_VERSION, "Unsupported protocol version", 400, { supported: SUPPORTED_VERSIONS, requested });
+  const modern = requested === MODERN_VERSION;
+  if (modern && msg.method !== "server/discover" && (typeof meta[META_CAPABILITIES] !== "object" || meta[META_CAPABILITIES] === null)) return error(INVALID_PARAMS, `Missing ${META_CAPABILITIES} in _meta`, 400);
+  const serverInfo = { name: server.name, version: server.version };
+  const reply = (result) => ({
+    body: { jsonrpc: "2.0", id: msg.id, result: modern || msg.method === "server/discover" ? { resultType: "complete", ...result, _meta: { [META_SERVER]: serverInfo } } : result },
+    status: 200
+  });
+  switch (msg.method) {
+    case "server/discover":
+      return reply({ supportedVersions: SUPPORTED_VERSIONS, capabilities: { tools: {} }, instructions: server.instructions, ttlMs: TOOLS_TTL_MS, cacheScope: "public" });
+    case "initialize": {
+      const asked = msg.params?.protocolVersion;
+      return reply({ protocolVersion: LEGACY_VERSIONS.includes(asked) ? asked : LEGACY_VERSIONS[0], capabilities: { tools: {} }, serverInfo, instructions: server.instructions });
+    }
+    case "ping":
+      return reply({});
+    case "tools/list": {
+      const tools = server.tools.map((t) => ({ name: t.name, description: t.description, inputSchema: t.inputSchema, annotations: annotations(t) }));
+      return reply(modern ? { tools, ttlMs: TOOLS_TTL_MS, cacheScope: "private" } : { tools });
+    }
+    case "tools/call": {
+      const tool = server.tools.find((t) => t.name === msg.params?.name);
+      if (!tool) return error(INVALID_PARAMS, `Unknown tool ${msg.params?.name}`, modern ? 400 : 200);
+      const args2 = msg.params?.arguments || {};
+      const apply = server.allowApply && args2.apply === true;
+      try {
+        await server.authorize?.(tool, apply ? "apply" : tool.needs, args2);
+        return reply({ content: [{ type: "text", text: await tool.run(args2, { apply }) }] });
+      } catch (e) {
+        return reply({ content: [{ type: "text", text: server.describeError ? server.describeError(e) : e?.message || String(e) }], isError: true });
+      }
+    }
+    default:
+      return error(METHOD_NOT_FOUND, `Method not found: ${msg.method}`, modern ? 404 : 200);
+  }
+}
+
+// src/mcp/tools.ts
+var str2 = (description) => ({ type: "string", description });
+var OPS_HELP = `Each op is an object with "op" and optional "tab". Ops:
+add_entity {entity:{name, display_name?, entity_type?: "standard"|"reference", description?, attributes?: Attribute[]}} \u2014 without attributes you get <name>_id (PK) and <name>_name (label)
+update_entity {entity, set:{display_name?, description?, entity_type?, color_code?, area?, dependent_reference?, notes?}}
+rename_entity {entity, to}   delete_entity {entity}
+add_attribute {entity, attribute:{name, type?, label?, description?, is_primary_key?, is_label?, required?, pii?, example?, is_array?, reference?:{entity, output_attribute}, struct_type?}, after?}
+update_attribute {entity, attribute, set:{\u2026}}   rename_attribute {entity, attribute, to}   delete_attribute {entity, attribute}   move_attribute {entity, attribute, after: name|null}
+add_relationship {relationship:{source, target, name?, cardinality?: "1:1"|"1:N"|"N:1"|"N:N", forward_label?, reverse_label?, bidirectional?, foreign_key?, required?, description?, attributes?: Attribute[]}}
+update_relationship {relationship, set:{\u2026}} \u2014 set.required: true means the child can't exist without the parent (NOT NULL foreign key); set.attributes replaces the relationship's own attributes (facts about the link, e.g. an enrollment's grade; simple types only): junction-table columns for N:N, child-table columns otherwise   rename_relationship {relationship, to}   delete_relationship {relationship}
+set_reference_values {entity, values:[{attr: "value"}\u2026], source?}
+add_note {text}   set_hidden {entities:[\u2026], hidden}   update_model {set:{title?, description?, organization?, version?, author?, status?}}
+update_tab {tab, set:{name?, kind?, dialect?, description?}}   make_primary {tab}   delete_tab {tab}
+add_tab {name, kind: "conceptual"|"logical"|"physical"|"variant", from?: tab, dialect?} \u2014 with "from", the new tab is derived (physical\u2192logical etc.)
+set_mapping {target:{tab, entity, attribute}, sources:[{tab, entity, attribute}], transform?, notes?, status?: "draft"|"approved"}   delete_mapping {target}
+link_term {entity, attribute?, term:{id, name, definition, synonyms?}|null}   add_comment {target:{kind: "model"|"entity"|"relationship", name?, attribute?}, text, author}
+Types: STRING BIGINT INT SMALLINT TINYINT DECIMAL (with precision, scale) DOUBLE FLOAT BOOLEAN DATE TIMESTAMP STRUCT REFERENCE_ENTITY. Attributes may also set unique: true. Names: ^[a-z][a-z0-9_]*$. Renames and deletes cascade.`;
+var opsSchema = {
+  type: "array",
+  description: OPS_HELP,
+  items: { type: "object", properties: { op: { type: "string" }, tab: { type: "string" } }, required: ["op"], additionalProperties: true }
+};
+var WRITE_ATTEMPTS = 3;
+function fail2(msg) {
+  throw new Error(msg);
+}
+var APPLYABLE = /* @__PURE__ */ new Set(["import_ddl", "derive_tab", "auto_map", "fix_issues", "sync_tabs", "pull_schema", "profile_data", "propose_terms"]);
+function createCatalog(store, opts, extra) {
+  const MODEL = str2(store.modelIdHelp);
+  const TAB2 = str2("Tab name or id. Default: the primary tab.");
+  const load2 = async (id) => normalizeModel(JSON.parse((await store.read(id)).text));
+  const tabOf = (m, ref) => resolveTab(m, ref) || fail2(`Tab "${ref}" not found. Tabs: ${listTabs(m).map((t) => t.name).join(", ")}`);
+  const strip2 = (x) => JSON.parse(JSON.stringify(x, (k, v) => k === "ui" ? void 0 : v));
+  const applyAndSave = async (id, ops, tab) => {
+    for (let attempt = 0; attempt < WRITE_ATTEMPTS; attempt++) {
+      const { text: text2, rev } = await store.read(id);
+      const r = applyOps(normalizeModel(JSON.parse(text2)), ops, { tab });
+      if (!r.ok) throw new Error(`${r.error}
+Nothing was written. Fix that op and call again with the whole batch.`);
+      const saved = await store.write(id, rev, serializeModel({ ...r.doc, updated_at: (/* @__PURE__ */ new Date()).toISOString() }));
+      if (saved.ok) return r.doc;
+    }
+    throw new Error(`Model "${id}" kept changing while saving. Nothing was written; try again.`);
+  };
+  const submit = async (id, title, rationale, ops, tab, apply) => {
+    if (!Array.isArray(ops) || !ops.length) throw new Error("ops must be a non-empty array.");
+    const { text: text2 } = await store.read(id);
+    const r = applyOps(normalizeModel(JSON.parse(text2)), ops, { tab });
+    if (!r.ok) throw new Error(`${r.error}
+Nothing was written. Fix that op and call again with the whole batch.`);
+    if (tab) tabOf(r.doc, tab);
+    const lines = ops.map((o, i) => `${i + 1}. ${describeOp(o)}`).join("\n");
+    const doc = apply ? await applyAndSave(id, ops, tab) : r.doc;
+    const touched = /* @__PURE__ */ new Set([tab ? tabOf(doc, tab) : "main", ...ops.map((o) => o.tab ? resolveTab(doc, o.tab) : void 0).filter(Boolean)]);
+    const checks = [...touched].map((t) => {
+      const c = issueCounts(validateModel(tabView(doc, t)));
+      return `${listTabs(doc).find((x) => x.id === t)?.name}: ${c.error} error(s), ${c.warning} warning(s)`;
+    });
+    if (apply) return `Applied ${ops.length} change(s) to ${id}:
+${lines}
+Validation after: ${checks.join("; ")}`;
+    const p = await store.proposals.add(id, { title, rationale, author: opts.author, tab, base_hash: await store.hash(text2), ops });
+    return `Proposal ${p.id} saved for review (${store.reviewHint(id, p.id)}).
+${lines}
+Validation if accepted: ${checks.join("; ")}`;
+  };
+  const exportText2 = (doc, tab, format, dialect) => {
+    const v = tabView(doc, tabOf(doc, tab));
+    const d = dialect || v.tab?.dialect || "postgres";
+    if (format === "dbml") return toDbml(v);
+    if (format === "mermaid") return toMermaid(v);
+    if (format === "dbt") return toDbt(v, { dialect: d });
+    if (format === "odcs") return toOdcs(v, { dialect: d });
+    if (format === "jsonschema") return toJsonSchema(v);
+    if (format === "avro") return toAvro(v);
+    return toSql(v, { dialect: d });
+  };
+  const glossary = store.glossary?.bind(store);
+  const saveExport = store.saveExport?.bind(store);
+  const dialects = SQL_DIALECTS.map((d) => d.id);
+  const tools = [
+    {
+      name: "list_models",
+      needs: "read",
+      description: "List the models you can reach here.",
+      inputSchema: { type: "object", properties: {} },
+      run: async () => (await store.list()).map((m) => `${m.id}: ${m.title}${m.workspace ? ` [workspace ${m.workspace}]` : ""}${m.tabs ? ` \u2014 ${m.tabs}` : ""}`).join("\n") || "No models yet."
+    },
+    {
+      name: "create_model",
+      needs: "propose",
+      description: "Start a new, empty model. It changes no existing model, so it needs no review. Use propose_changes or import_ddl to fill it in.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          title: str2('Model title, e.g. "Order management".'),
+          id: str2("Short id (lowercase letters, digits, hyphens). Default: made from the title."),
+          organization: str2("Organization (optional)."),
+          ...store.createNeedsWorkspace ? { workspace: str2("Workspace id (see list_workspaces).") } : {}
+        },
+        required: store.createNeedsWorkspace ? ["title", "workspace"] : ["title"]
+      },
+      run: async ({ title, id, organization, workspace }) => {
+        if (!title || typeof title !== "string") throw new Error("A model needs a title.");
+        const name = toInternalName(id || title);
+        const made = await store.create(name.replace(/_/g, "-"), serializeModel(createModel(name, title, { organization: organization || "" })), { workspace });
+        return `Created model ${made}.`;
+      }
+    },
+    {
+      name: "get_model",
+      needs: "read",
+      description: 'Read a model tab. detail "summary" (default) is a compact text view of every entity, attribute and relationship; "full" is the tab as JSON (canvas positions omitted).',
+      inputSchema: { type: "object", properties: { model: MODEL, tab: TAB2, detail: { type: "string", enum: ["summary", "full"] } }, required: ["model"] },
+      run: async ({ model, tab, detail }) => {
+        const doc = await load2(model);
+        const v = tabView(doc, tabOf(doc, tab));
+        if (detail === "full") return JSON.stringify(strip2({ ...v, tabs: listTabs(doc) }), null, 1);
+        const out = [`${v.title} (${model}) \u2014 tab ${v.tab?.name} [${v.tab?.kind}]${v.description ? `
+${v.description}` : ""}`, `Tabs: ${listTabs(doc).map((t) => t.name).join(", ")}`, ""];
+        for (const e of dependencyOrder(v)) {
+          out.push(`[${e.entity_type}] ${e.name} "${e.display_name}"${e.dependent_reference ? ` depends on ${e.dependent_reference.parent}.${e.dependent_reference.linked_column}` : ""}${e.description ? ` \u2014 ${e.description}` : ""}`);
+          for (const a of e.attributes) out.push(`  ${a.is_primary_key ? "PK " : a.is_label ? "LB " : "   "}${a.name} ${typeDisplay(a)}${a.reference ? ` \u2192 ${a.reference.entity}.${a.reference.output_attribute}` : ""}${a.required ? " required" : ""}${a.pii ? " pii" : ""}`);
+          if (e.reference_values?.length) out.push(`  (${e.reference_values.length} values)`);
+        }
+        for (const r of v.relationships) out.push(`rel ${r.name}: ${r.source} -[${r.cardinality} ${r.forward_label}${r.foreign_key ? ` fk ${r.foreign_key}` : ""}]-> ${r.target}`);
+        return out.join("\n");
+      }
+    },
+    {
+      name: "get_entity",
+      needs: "read",
+      description: "One entity as JSON, plus the relationships and references that touch it.",
+      inputSchema: { type: "object", properties: { model: MODEL, entity: str2("Entity name."), tab: TAB2 }, required: ["model", "entity"] },
+      run: async ({ model, entity, tab }) => {
+        const doc = await load2(model);
+        const v = tabView(doc, tabOf(doc, tab));
+        const e = v.entities.find((x) => x.name === entity) || fail2(`Entity "${entity}" not found.`);
+        const rels = v.relationships.filter((r) => r.source === entity || r.target === entity);
+        const usedBy = v.entities.flatMap((x) => x.attributes.filter((a) => a.reference?.entity === entity).map((a) => `${x.name}.${a.name}`));
+        return JSON.stringify(strip2({ entity: e, relationships: rels, referenced_by: usedBy }), null, 1);
+      }
+    },
+    {
+      name: "search",
+      needs: "read",
+      description: "Find entities, attributes and relationships whose name, label or description contains the text (case-insensitive), across all tabs.",
+      inputSchema: { type: "object", properties: { model: MODEL, query: str2("Text to look for.") }, required: ["model", "query"] },
+      run: async ({ model, query }) => {
+        const doc = await load2(model);
+        const q = String(query).toLowerCase();
+        const has = (...xs) => xs.some((x) => x?.toLowerCase().includes(q));
+        const out = [];
+        for (const t of listTabs(doc)) {
+          const v = tabView(doc, t.id);
+          for (const e of v.entities) {
+            if (has(e.name, e.display_name, e.description)) out.push(`[${t.name}] entity ${e.name}`);
+            for (const a of e.attributes) if (has(a.name, a.label, a.description)) out.push(`[${t.name}] attribute ${e.name}.${a.name} ${typeDisplay(a)}`);
+          }
+          for (const r of v.relationships) if (has(r.name, r.forward_label, r.description)) out.push(`[${t.name}] relationship ${r.name}: ${r.source} \u2192 ${r.target}`);
+        }
+        return out.slice(0, 200).join("\n") || "No matches.";
+      }
+    },
+    {
+      name: "validate",
+      needs: "read",
+      description: "Validation issues (errors, warnings, notes) for one tab, or every tab.",
+      inputSchema: { type: "object", properties: { model: MODEL, tab: str2("Tab name or id. Default: every tab.") }, required: ["model"] },
+      run: async ({ model, tab }) => {
+        const doc = await load2(model);
+        const ids = tab ? [tabOf(doc, tab)] : listTabs(doc).map((t) => t.id);
+        const out = validateTabs(doc).map((i) => `${i.level.toUpperCase()} [${i.code}] ${i.message}`);
+        for (const id of ids) {
+          const issues = validateModel(tabView(doc, id));
+          const c = issueCounts(issues);
+          out.push(`== ${listTabs(doc).find((t) => t.id === id)?.name}: ${c.error} error(s), ${c.warning} warning(s), ${c.info} note(s)`);
+          for (const i of issues) out.push(`${i.level.toUpperCase()} [${i.code}] ${i.message}${i.fix ? " [fixable]" : ""}`);
+        }
+        return out.join("\n");
+      }
+    },
+    {
+      name: "fix_issues",
+      needs: "propose",
+      description: 'Propose the mechanical fixes that validation offers (issues marked [fixable]: naming-standard renames, PII flags). Optionally only some issue codes, e.g. ["std.abbrev"].',
+      inputSchema: { type: "object", properties: { model: MODEL, tab: TAB2, codes: { type: "array", items: { type: "string" } } }, required: ["model"] },
+      run: async ({ model, tab, codes }, call) => {
+        const doc = await load2(model);
+        const id = tabOf(doc, tab);
+        const issues = validateModel(tabView(doc, id)).filter((i) => i.fix && (codes?.length ? codes.includes(i.code) : !i.suggested));
+        const { ops } = applyFixes(JSON.parse(JSON.stringify(doc)), issues, id);
+        if (!ops.length) return "Nothing to fix mechanically.";
+        return submit(model, `Fix ${ops.length} naming issue(s)`, "Mechanical fixes from the model\u2019s naming standards.", ops, void 0, call.apply);
+      }
+    },
+    {
+      name: "list_tabs",
+      needs: "read",
+      description: "The diagram tabs of a model: conceptual, logical, physical and variant views, with lineage.",
+      inputSchema: { type: "object", properties: { model: MODEL }, required: ["model"] },
+      run: async ({ model }) => {
+        const tabs = listTabs(await load2(model));
+        const lines = tabs.map((t) => `${t.id}: "${t.name}" ${t.kind}, ${t.entities} entities${t.dialect ? `, ${t.dialect}` : ""}${t.derived_from ? `, derived from ${t.derived_from}` : ""}${t.id === "main" ? " (primary)" : ""}`);
+        if (!tabs[0].entities) lines.push('The primary tab is empty: import into it (tab "main"), rename it with update_tab, or make another tab primary (make_primary) and delete it (delete_tab).');
+        return lines.join("\n");
+      }
+    },
+    {
+      name: "diff_tabs",
+      needs: "read",
+      description: "What changed from tab A to tab B (renames are matched through derivation lineage), as Markdown.",
+      inputSchema: { type: "object", properties: { model: MODEL, a: str2("From tab."), b: str2("To tab.") }, required: ["model", "a", "b"] },
+      run: async ({ model, a, b }) => {
+        const doc = await load2(model);
+        return diffToMarkdown(diffTabs(doc, tabOf(doc, a), tabOf(doc, b)));
+      }
+    },
+    {
+      name: "migration_sql",
+      needs: "read",
+      description: "DDL (ALTER/CREATE/DROP) that takes a database built from tab A to tab B.",
+      inputSchema: { type: "object", properties: { model: MODEL, a: str2("From tab."), b: str2("To tab."), dialect: { type: "string", enum: dialects } }, required: ["model", "a", "b"] },
+      run: async ({ model, a, b, dialect }) => {
+        const doc = await load2(model);
+        const bid = tabOf(doc, b);
+        return migrationSql(doc, tabOf(doc, a), bid, dialect || tabView(doc, bid).tab?.dialect || "postgres");
+      }
+    },
+    {
+      name: "sync_tabs",
+      needs: "propose",
+      description: "Propose bringing changes from a source tab into a tab derived from it (new entities, attributes, type changes, relationships), transformed the way the target was derived. Removals are only included when include_removals is true.",
+      inputSchema: { type: "object", properties: { model: MODEL, source: str2("Source tab."), target: str2("Derived tab to update."), include_removals: { type: "boolean" } }, required: ["model", "source", "target"] },
+      run: async ({ model, source, target, include_removals }, call) => {
+        const doc = await load2(model);
+        const a = tabOf(doc, source);
+        const b = tabOf(doc, target);
+        const plan = syncPlan(doc, a, b).filter((c) => c.suggested || include_removals);
+        if (!plan.length) return "Already in sync.";
+        const ops = plan.flatMap((c) => c.ops.map((o) => ({ ...o, tab: o.tab ?? b })));
+        return submit(model, `Sync ${plan.length} change(s) from ${source}`, plan.map((c) => c.label).join("; ").slice(0, 600), ops, void 0, call.apply);
+      }
+    },
+    {
+      name: "get_mappings",
+      needs: "read",
+      description: "Source-to-target mappings into a tab: coverage per entity and each mapped attribute with its sources and transform. With entity, also the dbt model SQL the mappings imply.",
+      inputSchema: { type: "object", properties: { model: MODEL, target: str2("Target tab."), entity: str2("Optional target entity.") }, required: ["model", "target"] },
+      run: async ({ model, target, entity }) => {
+        const doc = await load2(model);
+        const t = tabOf(doc, target);
+        const cov = mappingCoverage(doc, t);
+        const lines = [`${cov.mapped} of ${cov.total} attributes mapped (${cov.pct}%).`, ...cov.byEntity.map((x) => `${x.entity}: ${x.mapped}/${x.total}`), ""];
+        for (const x of mappingsFor(doc, t).filter((x2) => !entity || x2.target.entity === entity))
+          lines.push(`${x.target.entity}.${x.target.attribute} \u2190 ${x.sources.map((s2) => `${s2.tab}:${s2.entity}.${s2.attribute}`).join(" + ") || "(none)"}${x.transform ? ` as ${x.transform}` : ""} [${x.status || "draft"}]`);
+        if (entity) lines.push("", mappingSql(doc, t, entity));
+        return lines.join("\n");
+      }
+    },
+    {
+      name: "auto_map",
+      needs: "propose",
+      description: "Propose mappings for unmapped target attributes, matched by derivation lineage, then by name. Refine with propose_changes using set_mapping ops.",
+      inputSchema: { type: "object", properties: { model: MODEL, source: str2("Source tab."), target: str2("Target tab.") }, required: ["model", "source", "target"] },
+      run: async ({ model, source, target }, call) => {
+        const doc = await load2(model);
+        const found = autoMap(doc, tabOf(doc, source), tabOf(doc, target));
+        if (!found.length) return "No new matches.";
+        return submit(model, `Map ${found.length} attribute(s) from ${source}`, void 0, found.map((x) => ({ op: "set_mapping", target: x.target, sources: x.sources, status: "draft" })), void 0, call.apply);
+      }
+    },
+    {
+      name: "export",
+      needs: "read",
+      writes: !!saveExport,
+      description: "Generate code for a tab: SQL DDL (per dialect), DBML, Mermaid erDiagram, dbt schema.yml (with data tests), ODCS v3 data contract, JSON Schema or Avro.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          model: MODEL,
+          tab: TAB2,
+          format: { type: "string", enum: ["sql", "dbml", "mermaid", "dbt", "odcs", "jsonschema", "avro"] },
+          dialect: { type: "string", enum: dialects },
+          ...saveExport ? { save: { type: "boolean", description: "Also write it to models/<id>/exports/ and return the path." } } : {}
+        },
+        required: ["model", "format"]
+      },
+      run: async ({ model, tab, format, dialect, save: save2 }) => {
+        const doc = await load2(model);
+        const text2 = exportText2(doc, tab, format, dialect);
+        if (!save2 || !saveExport) return text2;
+        const ext = { sql: "sql", dbml: "dbml", mermaid: "mmd", dbt: "schema.yml", odcs: "odcs.yaml", jsonschema: "schema.json", avro: "avsc" };
+        const tid = tabOf(doc, tab);
+        const file = await saveExport(model, `${doc.name}${tid === "main" ? "" : `-${tid}`}${format === "sql" ? `.${dialect || tabView(doc, tid).tab?.dialect || "postgres"}` : ""}.${ext[format] || "txt"}`, text2);
+        return `Saved ${file} (${text2.length} characters).`;
+      }
+    },
+    {
+      name: "docs",
+      needs: "read",
+      description: `Design-doc tables for a tab as Markdown. Sections: ${DOC_SECTIONS.map((s2) => s2.id).join(", ")}.`,
+      inputSchema: { type: "object", properties: { model: MODEL, tab: TAB2, sections: { type: "array", items: { type: "string" } } }, required: ["model"] },
+      run: async ({ model, tab, sections }) => {
+        const doc = await load2(model);
+        const v = tabView(doc, tabOf(doc, tab));
+        return tablesToMarkdown(v, buildDocTables(v, { sections }));
+      }
+    },
+    {
+      name: "propose_changes",
+      needs: "propose",
+      description: `Suggest edits to a model as one reviewable proposal. The ops are checked against the model first; nothing changes until the person accepts. Put every change for one request in a single call.
+${OPS_HELP}`,
+      inputSchema: { type: "object", properties: { model: MODEL, title: str2('Short title, e.g. "Add contract entities".'), rationale: str2("Why, in a sentence or two."), tab: str2("Default tab for ops without one."), ops: opsSchema }, required: ["model", "title", "ops"] },
+      run: ({ model, title, rationale, tab, ops }) => submit(model, title, rationale, ops, tab, false)
+    },
+    {
+      name: "import_ddl",
+      needs: "propose",
+      description: "Propose adding tables from SQL DDL or DBML text to a tab (keys, foreign keys, lookup tables and link tables are recognized). Existing entities are left alone.",
+      inputSchema: { type: "object", properties: { model: MODEL, tab: TAB2, text: str2("CREATE TABLE statements or DBML.") }, required: ["model", "text"] },
+      run: async ({ model, tab, text: text2 }, call) => {
+        const doc = await load2(model);
+        const tid = tabOf(doc, tab);
+        const r = importModelText(text2, { keepJunctions: tabView(doc, tid).tab?.kind === "physical" });
+        const merged = mergeModels(tabView(doc, tid), r.model);
+        const added = new Set(merged.added);
+        const before = new Set(tabView(doc, tid).relationships.map((x) => x.name));
+        const ops = [
+          ...merged.model.entities.filter((e) => added.has(e.name)).map((e) => ({ op: "add_entity", entity: e })),
+          ...merged.model.relationships.filter((x) => !before.has(x.name)).map((x) => ({ op: "add_relationship", relationship: x }))
+        ];
+        if (!ops.length) return `Nothing to add${merged.skipped.length ? `; already present: ${merged.skipped.join(", ")}` : ""}.`;
+        return submit(model, `Import ${merged.added.length} table(s)`, r.warnings.join(" ") || void 0, ops, tid, call.apply);
+      }
+    },
+    {
+      name: "derive_tab",
+      needs: "propose",
+      description: 'Propose a new tab derived from another: kind "logical" (from physical: business names, FK columns \u2192 relationships, link tables \u2192 N:N, lookups \u2192 reference data), "physical" (FK columns, junction tables, dialect), "conceptual" (entities and relationships only) or "variant" (copy).',
+      inputSchema: { type: "object", properties: { model: MODEL, from: str2("Source tab. Default: primary tab."), kind: { type: "string", enum: ["conceptual", "logical", "physical", "variant"] }, name: str2("New tab name."), dialect: { type: "string", enum: dialects } }, required: ["model", "kind", "name"] },
+      run: async ({ model, from, kind, name, dialect }, call) => {
+        const doc = await load2(model);
+        const report = deriveTab(tabView(doc, tabOf(doc, from || "main")), kind, { physical: { dialect } }).report;
+        const out = await submit(model, `Derive ${kind} tab \u201C${name}\u201D`, report.lines.join(" "), [{ op: "add_tab", name, kind, from: from || "main", dialect }], void 0, call.apply);
+        const dropped = report.droppedColumns.length ? `
+Dropped columns: ${report.droppedColumns.slice(0, 40).join(", ")}${report.droppedColumns.length > 40 ? ", \u2026" : ""}` : "";
+        return `${out}
+Derivation: ${report.lines.join(" ")}${dropped}`;
+      }
+    },
+    {
+      name: "list_comments",
+      needs: "read",
+      description: "Review comments on a model (open ones by default): what they are about, who said what, and replies. Work through them by proposing changes, then reply_comment.",
+      inputSchema: { type: "object", properties: { model: MODEL, tab: str2("Only this tab."), include_resolved: { type: "boolean" } }, required: ["model"] },
+      run: async ({ model, tab, include_resolved }) => {
+        const doc = await load2(model);
+        const t = tab ? tabOf(doc, tab) : void 0;
+        const list = (doc.comments || []).filter((c) => (include_resolved || !c.resolved) && (!t || c.target.tab === t));
+        if (!list.length) return "No open comments.";
+        return list.map((c) => [`[${c.id}] ${c.resolved ? "(resolved) " : ""}${c.target.tab}:${c.target.kind}${c.target.name ? ` ${c.target.name}` : ""}${c.target.attribute ? `.${c.target.attribute}` : ""} \u2014 ${c.author}: ${c.text}`, ...(c.replies || []).map((r) => `    \u21B3 ${r.author}: ${r.text}`)].join("\n")).join("\n");
+      }
+    },
+    {
+      name: "reply_comment",
+      needs: "propose",
+      description: "Reply to a review comment (written straight to the model: replies are conversation, not design changes). Say what you proposed or why not; resolve only if the person asked you to.",
+      inputSchema: { type: "object", properties: { model: MODEL, id: str2("Comment id."), text: str2("Reply."), resolve: { type: "boolean" } }, required: ["model", "id", "text"] },
+      run: async ({ model, id, text: text2, resolve: resolve5 }) => {
+        await applyAndSave(model, [{ op: "reply_comment", id, text: text2, author: opts.author }, ...resolve5 ? [{ op: "resolve_comment", id, resolved: true }] : []]);
+        return `Replied to ${id}${resolve5 ? " and resolved it" : ""}.`;
+      }
+    },
+    {
+      name: "list_proposals",
+      needs: "read",
+      description: "Pending proposals for a model (not yet accepted or rejected).",
+      inputSchema: { type: "object", properties: { model: MODEL }, required: ["model"] },
+      run: async ({ model }) => {
+        const ps = await store.proposals.list(model);
+        return ps.map((p) => `${p.id}: ${p.title} \u2014 ${p.ops.length} change(s) by ${p.author}, ${p.created_at}`).join("\n") || "No pending proposals.";
+      }
+    },
+    {
+      name: "withdraw_proposal",
+      needs: "propose",
+      description: "Delete one of your pending proposals (e.g. to replace it with a corrected one).",
+      inputSchema: { type: "object", properties: { model: MODEL, id: str2("Proposal id.") }, required: ["model", "id"] },
+      run: async ({ model, id }) => await store.proposals.remove(model, id) ? `Withdrew ${id}.` : `No proposal ${id}.`
+    }
+  ];
+  if (glossary)
+    tools.push(
+      {
+        name: "search_glossary",
+        needs: "read",
+        description: "The shared business glossary (all models): terms with definitions and synonyms, optionally filtered by text. With model, also the names in that model that match a term but are not linked yet.",
+        inputSchema: { type: "object", properties: { query: str2("Text to look for."), model: str2("Optional model id, for link suggestions."), tab: TAB2 } },
+        run: async ({ query, model, tab }) => {
+          const shared = await glossary();
+          const terms = shared.filter((t) => !query || `${t.name} ${t.definition} ${(t.synonyms || []).join(" ")}`.toLowerCase().includes(String(query).toLowerCase()));
+          const out = terms.map((t) => `${t.name} [${t.status || "draft"}]${t.synonyms?.length ? ` (aka ${t.synonyms.join(", ")})` : ""}: ${t.definition || "(no definition yet)"}`);
+          if (model) {
+            const doc = await load2(model);
+            const sug = suggestLinks(tabView(doc, tabOf(doc, tab)), shared);
+            if (sug.length) out.push("", "Unlinked names that match a term:", ...sug.map((x) => `  ${x.entity}${x.attribute ? `.${x.attribute}` : ""} \u2192 ${x.term.name}`));
+          }
+          return out.join("\n") || "The glossary is empty.";
+        }
+      },
+      {
+        name: "propose_terms",
+        needs: "propose",
+        description: "Propose business terms and links from entities/attributes to them, as one proposal. Existing terms (same name or synonym) are reused; new ones join the shared glossary when the person accepts.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            model: MODEL,
+            tab: TAB2,
+            terms: { type: "array", items: { type: "object", properties: { name: { type: "string" }, definition: { type: "string" }, synonyms: { type: "array", items: { type: "string" } } }, required: ["name", "definition"] } },
+            links: { type: "array", description: "Which entity/attribute each term names.", items: { type: "object", properties: { entity: { type: "string" }, attribute: { type: "string" }, term: { type: "string", description: "Term name." } }, required: ["entity", "term"] } }
+          },
+          required: ["model", "links"]
+        },
+        run: async ({ model, tab, terms, links }, call) => {
+          const shared = await glossary();
+          const fresh = (terms || []).map((t) => matchTerm(shared, t.name) || newTerm(t.name, t.definition, { synonyms: t.synonyms }));
+          const all = [...fresh, ...shared];
+          const ops = (links || []).map((l) => {
+            const term = all.find((t) => t.name.toLowerCase() === String(l.term).toLowerCase()) || matchTerm(all, l.term);
+            if (!term) throw new Error(`Term "${l.term}" is neither in the glossary nor in terms.`);
+            return { op: "link_term", entity: l.entity, attribute: l.attribute, term };
+          });
+          return submit(model, `Link ${ops.length} name(s) to glossary terms`, fresh.length ? `New terms: ${fresh.filter((t) => !shared.includes(t)).map((t) => t.name).join(", ") || "none"}.` : void 0, ops, tab, call.apply);
+        }
+      }
+    );
+  if (extra) tools.push(...extra({ modelArg: MODEL, tabArg: TAB2, load: load2, tabOf, submit }));
+  if (opts.allowApply) {
+    for (const t of tools) if (APPLYABLE.has(t.name)) t.inputSchema.properties.apply = { type: "boolean", description: "Apply directly instead of saving a proposal (allowed on this server)." };
+    tools.push(
+      {
+        name: "accept_proposal",
+        needs: "apply",
+        description: "Apply a pending proposal (by id, see list_proposals) and remove it.",
+        inputSchema: { type: "object", properties: { model: MODEL, id: str2("Proposal id.") }, required: ["model", "id"] },
+        run: async ({ model, id }) => {
+          const p = (await store.proposals.list(model)).find((x) => x.id === id) || fail2(`No proposal ${id}.`);
+          const out = await submit(model, p.title, p.rationale, p.ops, p.tab, true);
+          await store.proposals.remove(model, id);
+          return out;
+        }
+      },
+      {
+        name: "apply_changes",
+        needs: "apply",
+        description: `Apply edits to a model directly (no review). Same ops as propose_changes; all-or-nothing.
+${OPS_HELP}`,
+        inputSchema: { type: "object", properties: { model: MODEL, tab: str2("Default tab for ops without one."), ops: opsSchema }, required: ["model", "ops"] },
+        run: ({ model, tab, ops }) => submit(model, "Direct edit", void 0, ops, tab, true)
+      }
+    );
+  }
+  return tools;
+}
+
 // cli/pull.ts
 import { readFileSync as readFileSync3 } from "node:fs";
 import { resolve } from "node:path";
@@ -17265,315 +17809,71 @@ async function writeback(doc, tab, src, log) {
 }
 
 // cli/mcp.ts
-var PROTOCOL = "2025-06-18";
-var str2 = (description) => ({ type: "string", description });
-var MODEL = str2("Model id: a folder name under models/ (see list_models).");
-var TAB = str2("Tab name or id. Default: the primary tab.");
-var OPS_HELP = `Each op is an object with "op" and optional "tab". Ops:
-add_entity {entity:{name, display_name?, entity_type?: "standard"|"reference", description?, attributes?: Attribute[]}} \u2014 without attributes you get <name>_id (PK) and <name>_name (label)
-update_entity {entity, set:{display_name?, description?, entity_type?, color_code?, area?, dependent_reference?, notes?}}
-rename_entity {entity, to}   delete_entity {entity}
-add_attribute {entity, attribute:{name, type?, label?, description?, is_primary_key?, is_label?, required?, pii?, example?, is_array?, reference?:{entity, output_attribute}, struct_type?}, after?}
-update_attribute {entity, attribute, set:{\u2026}}   rename_attribute {entity, attribute, to}   delete_attribute {entity, attribute}   move_attribute {entity, attribute, after: name|null}
-add_relationship {relationship:{source, target, name?, cardinality?: "1:1"|"1:N"|"N:1"|"N:N", forward_label?, reverse_label?, bidirectional?, foreign_key?, description?, attributes?: Attribute[]}}
-update_relationship {relationship, set:{\u2026}} \u2014 set.attributes replaces the relationship's own attributes (facts about the link, e.g. an enrollment's grade; simple types only): junction-table columns for N:N, child-table columns otherwise   rename_relationship {relationship, to}   delete_relationship {relationship}
-set_reference_values {entity, values:[{attr: "value"}\u2026], source?}
-add_note {text}   set_hidden {entities:[\u2026], hidden}   update_model {set:{title?, description?, organization?, version?, author?, status?}}
-update_tab {tab, set:{name?, kind?, dialect?, description?}}   make_primary {tab}   delete_tab {tab}
-add_tab {name, kind: "conceptual"|"logical"|"physical"|"variant", from?: tab, dialect?} \u2014 with "from", the new tab is derived (physical\u2192logical etc.)
-set_mapping {target:{tab, entity, attribute}, sources:[{tab, entity, attribute}], transform?, notes?, status?: "draft"|"approved"}   delete_mapping {target}
-link_term {entity, attribute?, term:{id, name, definition, synonyms?}|null}   add_comment {target:{kind: "model"|"entity"|"relationship", name?, attribute?}, text, author}
-Types: STRING BIGINT INT SMALLINT TINYINT DECIMAL (with precision, scale) DOUBLE FLOAT BOOLEAN DATE TIMESTAMP STRUCT REFERENCE_ENTITY. Attributes may also set unique: true. Names: ^[a-z][a-z0-9_]*$. Renames and deletes cascade.`;
-var opsSchema = {
-  type: "array",
-  description: OPS_HELP,
-  items: { type: "object", properties: { op: { type: "string" }, tab: { type: "string" } }, required: ["op"], additionalProperties: true }
-};
-async function runMcp(opts) {
-  const root = findRoot();
-  const modelsDir = join3(root, "models");
-  const modelFile = (id) => {
-    if (!id || !/^[a-z0-9][a-z0-9_-]{0,80}$/.test(id)) throw new Error(`Invalid model id "${id}".`);
-    const f = join3(modelsDir, id, MODEL_FILE);
+var ID_RE = /^[a-z0-9][a-z0-9_-]{0,80}$/;
+var INSTRUCTIONS = "EntityModel.com data models (models/<id>/model.json). Read with get_model/get_entity/search, check with validate (fix_issues proposes the mechanical fixes), and change models only through propose_changes (or derive_tab / import_ddl / pull_schema / sync_tabs / auto_map / propose_terms), batching one request into one proposal. Start a new model with create_model. Review comments: list_comments, then propose fixes and reply_comment. The business glossary is shared across models: search_glossary. The person reviews proposals in the EntityModel.com UI.";
+function resolveModelsDir(flag2) {
+  const chosen = flag2 || process.env.EM_MODELS_DIR;
+  return chosen ? resolve3(chosen) : join3(findRoot(), "models");
+}
+function fileStore(modelsDir) {
+  const dirOf = (id) => {
+    if (!id || !ID_RE.test(id)) throw new Error(`Invalid model id "${id}".`);
+    return join3(modelsDir, id);
+  };
+  const fileOf = (id) => {
+    const f = join3(dirOf(id), MODEL_FILE);
     if (!existsSync3(f)) throw new Error(`Model "${id}" not found. Use list_models.`);
     return f;
   };
-  const load2 = (id) => normalizeModel(JSON.parse(readFileSync5(modelFile(id), "utf8")));
-  const tabOf = (m, ref) => resolveTab(m, ref) || fail2(`Tab "${ref}" not found. Tabs: ${listTabs(m).map((t) => t.name).join(", ")}`);
-  const strip2 = (x) => JSON.parse(JSON.stringify(x, (k, v) => k === "ui" ? void 0 : v));
-  let applyThisCall = false;
-  const submit = (id, title, rationale, ops, tab, apply) => {
-    apply = apply || applyThisCall;
-    if (!Array.isArray(ops) || !ops.length) throw new Error("ops must be a non-empty array.");
-    const file = modelFile(id);
-    const text2 = readFileSync5(file, "utf8");
-    const doc = normalizeModel(JSON.parse(text2));
-    const r = applyOps(doc, ops, { tab });
-    if (!r.ok) throw new Error(`${r.error}
-Nothing was written. Fix that op and call again with the whole batch.`);
-    const touched = /* @__PURE__ */ new Set([tab ? tabOf(r.doc, tab) : "main", ...ops.map((o) => o.tab ? resolveTab(r.doc, o.tab) : void 0).filter(Boolean)]);
-    const checks = [...touched].map((t) => {
-      const c = issueCounts(validateModel(tabView(r.doc, t)));
-      return `${listTabs(r.doc).find((x) => x.id === t)?.name}: ${c.error} error(s), ${c.warning} warning(s)`;
-    });
-    const lines = ops.map((o, i) => `${i + 1}. ${describeOp(o)}`).join("\n");
-    if (apply) {
-      writeFileSync2(file, serializeModel({ ...r.doc, updated_at: (/* @__PURE__ */ new Date()).toISOString() }));
-      return `Applied ${ops.length} change(s) to ${id}:
-${lines}
-Validation after: ${checks.join("; ")}`;
+  return {
+    modelIdHelp: "Model id: a folder name under models/ (see list_models).",
+    async list() {
+      if (!existsSync3(modelsDir)) return [];
+      return readdirSync2(modelsDir).filter((d) => existsSync3(join3(modelsDir, d, MODEL_FILE))).map((d) => {
+        const m = normalizeModel(JSON.parse(readFileSync5(join3(modelsDir, d, MODEL_FILE), "utf8")));
+        return { id: d, title: m.title, tabs: listTabs(m).map((t) => `${t.name} [${t.kind}, ${t.entities} entities]`).join(", ") };
+      });
+    },
+    async read(id) {
+      const text2 = readFileSync5(fileOf(id), "utf8");
+      return { text: text2, rev: sha1(text2) };
+    },
+    async write(id, rev, text2) {
+      const f = fileOf(id);
+      if (sha1(readFileSync5(f, "utf8")) !== rev) return { ok: false, reason: "conflict" };
+      writeFileSync2(f, text2);
+      return { ok: true };
+    },
+    async create(id, text2) {
+      const dir = dirOf(id);
+      if (existsSync3(join3(dir, MODEL_FILE))) throw new Error(`Model "${id}" already exists.`);
+      mkdirSync2(join3(dir, "inputs"), { recursive: true });
+      writeFileSync2(join3(dir, MODEL_FILE), text2);
+      return id;
+    },
+    hash: sha1,
+    reviewHint: (model, proposal) => `the person accepts or rejects it in EntityModel.com, or with \`em proposals ${model} --accept ${proposal}\``,
+    proposals: {
+      list: async (model) => listProposals(dirname2(fileOf(model))),
+      add: async (model, p) => writeProposal(dirname2(fileOf(model)), p),
+      remove: async (model, id) => deleteProposal(dirname2(fileOf(model)), id)
+    },
+    glossary: async () => readGlossary(modelsDir),
+    async saveExport(model, file, text2) {
+      const dir = join3(dirname2(fileOf(model)), "exports");
+      mkdirSync2(dir, { recursive: true });
+      writeFileSync2(join3(dir, file), text2);
+      return join3(relative(process.cwd(), modelsDir) || ".", model, "exports", file);
     }
-    const p = writeProposal(dirname2(file), { title, rationale, author: opts.author, tab, base_hash: sha1(text2), ops });
-    return `Proposal ${p.id} saved for review (the person accepts or rejects it in EntityModel.com, or with \`em proposals ${id} --accept ${p.id}\`).
-${lines}
-Validation if accepted: ${checks.join("; ")}`;
   };
-  const exportText2 = (model, tab, format, dialect) => {
-    const doc = load2(model);
-    const v = tabView(doc, tabOf(doc, tab));
-    const d = dialect || v.tab?.dialect || "postgres";
-    if (format === "dbml") return toDbml(v);
-    if (format === "mermaid") return toMermaid(v);
-    if (format === "dbt") return toDbt(v, { dialect: d });
-    if (format === "odcs") return toOdcs(v, { dialect: d });
-    if (format === "jsonschema") return toJsonSchema(v);
-    if (format === "avro") return toAvro(v);
-    return toSql(v, { dialect: d });
-  };
-  const saveExport = (model, file, text2) => {
-    const dir = join3(dirname2(modelFile(model)), "exports");
-    mkdirSync2(dir, { recursive: true });
-    writeFileSync2(join3(dir, file), text2);
-    return join3("models", model, "exports", file);
-  };
-  const tools = [
-    {
-      name: "list_models",
-      description: "List the models in this EntityModel.com workbench, with tabs and size.",
-      inputSchema: { type: "object", properties: {} },
-      run: () => readdirSync2(modelsDir).filter((d) => existsSync3(join3(modelsDir, d, MODEL_FILE))).map((d) => {
-        const m = load2(d);
-        return `${d}: ${m.title} \u2014 ${listTabs(m).map((t) => `${t.name} [${t.kind}, ${t.entities} entities]`).join(", ")}`;
-      }).join("\n") || "No models yet."
-    },
-    {
-      name: "get_model",
-      description: 'Read a model tab. detail "summary" (default) is a compact text view of every entity, attribute and relationship; "full" is the tab as JSON (canvas positions omitted).',
-      inputSchema: { type: "object", properties: { model: MODEL, tab: TAB, detail: { type: "string", enum: ["summary", "full"] } }, required: ["model"] },
-      run: ({ model, tab, detail }) => {
-        const doc = load2(model);
-        const v = tabView(doc, tabOf(doc, tab));
-        if (detail === "full") return JSON.stringify(strip2({ ...v, tabs: listTabs(doc) }), null, 1);
-        const out = [`${v.title} (${model}) \u2014 tab ${v.tab?.name} [${v.tab?.kind}]${v.description ? `
-${v.description}` : ""}`, `Tabs: ${listTabs(doc).map((t) => t.name).join(", ")}`, ""];
-        for (const e of dependencyOrder(v)) {
-          out.push(`[${e.entity_type}] ${e.name} "${e.display_name}"${e.dependent_reference ? ` depends on ${e.dependent_reference.parent}.${e.dependent_reference.linked_column}` : ""}${e.description ? ` \u2014 ${e.description}` : ""}`);
-          for (const a of e.attributes) out.push(`  ${a.is_primary_key ? "PK " : a.is_label ? "LB " : "   "}${a.name} ${typeDisplay(a)}${a.reference ? ` \u2192 ${a.reference.entity}.${a.reference.output_attribute}` : ""}${a.required ? " required" : ""}${a.pii ? " pii" : ""}`);
-          if (e.reference_values?.length) out.push(`  (${e.reference_values.length} values)`);
-        }
-        for (const r of v.relationships) out.push(`rel ${r.name}: ${r.source} -[${r.cardinality} ${r.forward_label}${r.foreign_key ? ` fk ${r.foreign_key}` : ""}]-> ${r.target}`);
-        return out.join("\n");
-      }
-    },
-    {
-      name: "get_entity",
-      description: "One entity as JSON, plus the relationships and references that touch it.",
-      inputSchema: { type: "object", properties: { model: MODEL, entity: str2("Entity name."), tab: TAB }, required: ["model", "entity"] },
-      run: ({ model, entity, tab }) => {
-        const doc = load2(model);
-        const v = tabView(doc, tabOf(doc, tab));
-        const e = v.entities.find((x) => x.name === entity) || fail2(`Entity "${entity}" not found.`);
-        const rels = v.relationships.filter((r) => r.source === entity || r.target === entity);
-        const usedBy = v.entities.flatMap((x) => x.attributes.filter((a) => a.reference?.entity === entity).map((a) => `${x.name}.${a.name}`));
-        return JSON.stringify(strip2({ entity: e, relationships: rels, referenced_by: usedBy }), null, 1);
-      }
-    },
-    {
-      name: "search",
-      description: "Find entities, attributes and relationships whose name, label or description contains the text (case-insensitive), across all tabs.",
-      inputSchema: { type: "object", properties: { model: MODEL, query: str2("Text to look for.") }, required: ["model", "query"] },
-      run: ({ model, query }) => {
-        const doc = load2(model);
-        const q = String(query).toLowerCase();
-        const has = (...xs) => xs.some((x) => x?.toLowerCase().includes(q));
-        const out = [];
-        for (const t of listTabs(doc)) {
-          const v = tabView(doc, t.id);
-          for (const e of v.entities) {
-            if (has(e.name, e.display_name, e.description)) out.push(`[${t.name}] entity ${e.name}`);
-            for (const a of e.attributes) if (has(a.name, a.label, a.description)) out.push(`[${t.name}] attribute ${e.name}.${a.name} ${typeDisplay(a)}`);
-          }
-          for (const r of v.relationships) if (has(r.name, r.forward_label, r.description)) out.push(`[${t.name}] relationship ${r.name}: ${r.source} \u2192 ${r.target}`);
-        }
-        return out.slice(0, 200).join("\n") || "No matches.";
-      }
-    },
-    {
-      name: "validate",
-      description: "Validation issues (errors, warnings, notes) for one tab, or every tab.",
-      inputSchema: { type: "object", properties: { model: MODEL, tab: str2("Tab name or id. Default: every tab.") }, required: ["model"] },
-      run: ({ model, tab }) => {
-        const doc = load2(model);
-        const ids = tab ? [tabOf(doc, tab)] : listTabs(doc).map((t) => t.id);
-        const out = validateTabs(doc).map((i) => `${i.level.toUpperCase()} [${i.code}] ${i.message}`);
-        for (const id of ids) {
-          const issues = validateModel(tabView(doc, id));
-          const c = issueCounts(issues);
-          out.push(`== ${listTabs(doc).find((t) => t.id === id)?.name}: ${c.error} error(s), ${c.warning} warning(s), ${c.info} note(s)`);
-          for (const i of issues) out.push(`${i.level.toUpperCase()} [${i.code}] ${i.message}${i.fix ? " [fixable]" : ""}`);
-        }
-        return out.join("\n");
-      }
-    },
-    {
-      name: "fix_issues",
-      description: 'Propose the mechanical fixes that validation offers (issues marked [fixable]: naming-standard renames, PII flags). Optionally only some issue codes, e.g. ["std.abbrev"].',
-      inputSchema: { type: "object", properties: { model: MODEL, tab: TAB, codes: { type: "array", items: { type: "string" } } }, required: ["model"] },
-      run: ({ model, tab, codes }) => {
-        const doc = load2(model);
-        const id = tabOf(doc, tab);
-        const issues = validateModel(tabView(doc, id)).filter((i) => i.fix && (codes?.length ? codes.includes(i.code) : !i.suggested));
-        const { ops } = applyFixes(JSON.parse(JSON.stringify(doc)), issues, id);
-        if (!ops.length) return "Nothing to fix mechanically.";
-        return submit(model, `Fix ${ops.length} naming issue(s)`, "Mechanical fixes from the model\u2019s naming standards.", ops, void 0, false);
-      }
-    },
-    {
-      name: "list_tabs",
-      description: "The diagram tabs of a model: conceptual, logical, physical and variant views, with lineage.",
-      inputSchema: { type: "object", properties: { model: MODEL }, required: ["model"] },
-      run: ({ model }) => {
-        const tabs = listTabs(load2(model));
-        const lines = tabs.map((t) => `${t.id}: "${t.name}" ${t.kind}, ${t.entities} entities${t.dialect ? `, ${t.dialect}` : ""}${t.derived_from ? `, derived from ${t.derived_from}` : ""}${t.id === "main" ? " (primary)" : ""}`);
-        if (!tabs[0].entities) lines.push('The primary tab is empty: import into it (tab "main"), rename it with update_tab, or make another tab primary (make_primary) and delete it (delete_tab).');
-        return lines.join("\n");
-      }
-    },
-    {
-      name: "diff_tabs",
-      description: "What changed from tab A to tab B (renames are matched through derivation lineage), as Markdown.",
-      inputSchema: { type: "object", properties: { model: MODEL, a: str2("From tab."), b: str2("To tab.") }, required: ["model", "a", "b"] },
-      run: ({ model, a, b }) => {
-        const doc = load2(model);
-        return diffToMarkdown(diffTabs(doc, tabOf(doc, a), tabOf(doc, b)));
-      }
-    },
-    {
-      name: "migration_sql",
-      description: "DDL (ALTER/CREATE/DROP) that takes a database built from tab A to tab B.",
-      inputSchema: { type: "object", properties: { model: MODEL, a: str2("From tab."), b: str2("To tab."), dialect: { type: "string", enum: SQL_DIALECTS.map((d) => d.id) } }, required: ["model", "a", "b"] },
-      run: ({ model, a, b, dialect }) => {
-        const doc = load2(model);
-        const bid = tabOf(doc, b);
-        return migrationSql(doc, tabOf(doc, a), bid, dialect || tabView(doc, bid).tab?.dialect || "postgres");
-      }
-    },
-    {
-      name: "sync_tabs",
-      description: "Propose bringing changes from a source tab into a tab derived from it (new entities, attributes, type changes, relationships), transformed the way the target was derived. Removals are only included when include_removals is true.",
-      inputSchema: { type: "object", properties: { model: MODEL, source: str2("Source tab."), target: str2("Derived tab to update."), include_removals: { type: "boolean" } }, required: ["model", "source", "target"] },
-      run: ({ model, source, target, include_removals }) => {
-        const doc = load2(model);
-        const a = tabOf(doc, source);
-        const b = tabOf(doc, target);
-        const plan = syncPlan(doc, a, b).filter((c) => c.suggested || include_removals);
-        if (!plan.length) return "Already in sync.";
-        const ops = plan.flatMap((c) => c.ops.map((o) => ({ ...o, tab: o.tab ?? b })));
-        return submit(model, `Sync ${plan.length} change(s) from ${source}`, plan.map((c) => c.label).join("; ").slice(0, 600), ops, void 0, false);
-      }
-    },
-    {
-      name: "get_mappings",
-      description: "Source-to-target mappings into a tab: coverage per entity and each mapped attribute with its sources and transform. With entity, also the dbt model SQL the mappings imply.",
-      inputSchema: { type: "object", properties: { model: MODEL, target: str2("Target tab."), entity: str2("Optional target entity.") }, required: ["model", "target"] },
-      run: ({ model, target, entity }) => {
-        const doc = load2(model);
-        const t = tabOf(doc, target);
-        const cov = mappingCoverage(doc, t);
-        const lines = [`${cov.mapped} of ${cov.total} attributes mapped (${cov.pct}%).`, ...cov.byEntity.map((x) => `${x.entity}: ${x.mapped}/${x.total}`), ""];
-        for (const x of mappingsFor(doc, t).filter((x2) => !entity || x2.target.entity === entity))
-          lines.push(`${x.target.entity}.${x.target.attribute} \u2190 ${x.sources.map((s2) => `${s2.tab}:${s2.entity}.${s2.attribute}`).join(" + ") || "(none)"}${x.transform ? ` as ${x.transform}` : ""} [${x.status || "draft"}]`);
-        if (entity) lines.push("", mappingSql(doc, t, entity));
-        return lines.join("\n");
-      }
-    },
-    {
-      name: "auto_map",
-      description: "Propose mappings for unmapped target attributes, matched by derivation lineage, then by name. Refine with propose_changes using set_mapping ops.",
-      inputSchema: { type: "object", properties: { model: MODEL, source: str2("Source tab."), target: str2("Target tab.") }, required: ["model", "source", "target"] },
-      run: ({ model, source, target }) => {
-        const doc = load2(model);
-        const found = autoMap(doc, tabOf(doc, source), tabOf(doc, target));
-        if (!found.length) return "No new matches.";
-        return submit(model, `Map ${found.length} attribute(s) from ${source}`, void 0, found.map((x) => ({ op: "set_mapping", target: x.target, sources: x.sources, status: "draft" })), void 0, false);
-      }
-    },
-    {
-      name: "export",
-      description: "Generate code for a tab: SQL DDL (per dialect), DBML, Mermaid erDiagram, dbt schema.yml (with data tests), ODCS v3 data contract, JSON Schema or Avro.",
-      inputSchema: { type: "object", properties: { model: MODEL, tab: TAB, format: { type: "string", enum: ["sql", "dbml", "mermaid", "dbt", "odcs", "jsonschema", "avro"] }, dialect: { type: "string", enum: SQL_DIALECTS.map((d) => d.id) }, save: { type: "boolean", description: "Also write it to models/<id>/exports/ and return the path." } }, required: ["model", "format"] },
-      run: ({ model, tab, format, dialect, save: save2 }) => {
-        const text2 = exportText2(model, tab, format, dialect);
-        if (!save2) return text2;
-        const ext = { sql: "sql", dbml: "dbml", mermaid: "mmd", dbt: "schema.yml", odcs: "odcs.yaml", jsonschema: "schema.json", avro: "avsc" };
-        const doc = load2(model);
-        const tid = tabOf(doc, tab);
-        const file = saveExport(model, `${doc.name}${tid === "main" ? "" : `-${tid}`}${format === "sql" ? `.${dialect || tabView(doc, tid).tab?.dialect || "postgres"}` : ""}.${ext[format] || "txt"}`, text2);
-        return `Saved ${file} (${text2.length} characters).`;
-      }
-    },
-    {
-      name: "docs",
-      description: `Design-doc tables for a tab as Markdown. Sections: ${DOC_SECTIONS.map((s2) => s2.id).join(", ")}.`,
-      inputSchema: { type: "object", properties: { model: MODEL, tab: TAB, sections: { type: "array", items: { type: "string" } } }, required: ["model"] },
-      run: ({ model, tab, sections }) => {
-        const doc = load2(model);
-        const v = tabView(doc, tabOf(doc, tab));
-        return tablesToMarkdown(v, buildDocTables(v, { sections }));
-      }
-    },
-    {
-      name: "propose_changes",
-      description: `Suggest edits to a model as one reviewable proposal. The ops are checked against the model first; nothing changes until the person accepts. Put every change for one request in a single call.
-${OPS_HELP}`,
-      inputSchema: { type: "object", properties: { model: MODEL, title: str2('Short title, e.g. "Add contract entities".'), rationale: str2("Why, in a sentence or two."), tab: str2("Default tab for ops without one."), ops: opsSchema }, required: ["model", "title", "ops"] },
-      run: ({ model, title, rationale, tab, ops }) => submit(model, title, rationale, ops, tab, false)
-    },
-    {
-      name: "import_ddl",
-      description: "Propose adding tables from SQL DDL or DBML text to a tab (keys, foreign keys, lookup tables and link tables are recognized). Existing entities are left alone.",
-      inputSchema: { type: "object", properties: { model: MODEL, tab: TAB, text: str2("CREATE TABLE statements or DBML.") }, required: ["model", "text"] },
-      run: ({ model, tab, text: text2 }) => {
-        const doc = load2(model);
-        const tid = tabOf(doc, tab);
-        const r = importModelText(text2, { keepJunctions: tabView(doc, tid).tab?.kind === "physical" });
-        const merged = mergeModels(tabView(doc, tid), r.model);
-        const added = new Set(merged.added);
-        const before = new Set(tabView(doc, tid).relationships.map((x) => x.name));
-        const ops = [
-          ...merged.model.entities.filter((e) => added.has(e.name)).map((e) => ({ op: "add_entity", entity: e })),
-          ...merged.model.relationships.filter((x) => !before.has(x.name)).map((x) => ({ op: "add_relationship", relationship: x }))
-        ];
-        if (!ops.length) return `Nothing to add${merged.skipped.length ? `; already present: ${merged.skipped.join(", ")}` : ""}.`;
-        return submit(model, `Import ${merged.added.length} table(s)`, r.warnings.join(" ") || void 0, ops, tid, false);
-      }
-    },
-    {
-      name: "derive_tab",
-      description: 'Propose a new tab derived from another: kind "logical" (from physical: business names, FK columns \u2192 relationships, link tables \u2192 N:N, lookups \u2192 reference data), "physical" (FK columns, junction tables, dialect), "conceptual" (entities and relationships only) or "variant" (copy).',
-      inputSchema: { type: "object", properties: { model: MODEL, from: str2("Source tab. Default: primary tab."), kind: { type: "string", enum: ["conceptual", "logical", "physical", "variant"] }, name: str2("New tab name."), dialect: { type: "string", enum: SQL_DIALECTS.map((d) => d.id) } }, required: ["model", "kind", "name"] },
-      run: ({ model, from, kind, name, dialect }) => {
-        const doc = load2(model);
-        const report = deriveTab(tabView(doc, tabOf(doc, from || "main")), kind, { physical: { dialect } }).report;
-        const out = submit(model, `Derive ${kind} tab \u201C${name}\u201D`, report.lines.join(" "), [{ op: "add_tab", name, kind, from: from || "main", dialect }], void 0, false);
-        const dropped = report.droppedColumns.length ? `
-Dropped columns: ${report.droppedColumns.slice(0, 40).join(", ")}${report.droppedColumns.length > 40 ? ", \u2026" : ""}` : "";
-        return `${out}
-Derivation: ${report.lines.join(" ")}${dropped}`;
-      }
-    },
+}
+async function runMcp(opts) {
+  const store = fileStore(resolveModelsDir(opts.modelsDir));
+  const tools = createCatalog(store, opts, ({ modelArg: MODEL, tabArg: TAB2, load: load2, tabOf, submit }) => [
     {
       name: "pull_schema",
+      needs: "propose",
+      external: true,
       description: "Propose a tab with the live schema of a database (tables, columns, comments, primary and foreign keys). The first pull of a source becomes a Physical tab; later pulls a dated version tab derived from the previous one, so diff_tabs and migration_sql show the drift. Credentials come from the environment or the platform CLI profile on this machine.",
       inputSchema: {
         type: "object",
@@ -17588,22 +17888,24 @@ Derivation: ${report.lines.join(" ")}${dropped}`;
         },
         required: ["model", "from", "schema"]
       },
-      run: async ({ model, from, catalog, schema, profile, url, name }) => {
+      run: async ({ model, from, catalog, schema, profile, url, name }, call) => {
         const notes = [];
         const snap = await pullSnapshot({ from, catalog, schema, profile, url }, (s2) => notes.push(s2));
-        const plan = planPull(load2(model), snap, { name, profile });
-        const report = submit(model, `Pull ${plan.tables} tables into \u201C${plan.tabName}\u201D`, plan.previous ? `New version of the schema pulled into \u201C${plan.previous}\u201D, for comparison.` : void 0, plan.ops, void 0, false);
+        const plan = planPull(await load2(model), snap, { name, profile });
+        const report = await submit(model, `Pull ${plan.tables} tables into \u201C${plan.tabName}\u201D`, plan.previous ? `New version of the schema pulled into \u201C${plan.previous}\u201D, for comparison.` : void 0, plan.ops, void 0, call.apply);
         return [report, ...plan.warnings.map((w) => `note: ${w}`)].join("\n");
       }
     },
     {
       name: "profile_data",
+      needs: "propose",
+      external: true,
       description: "Propose data profiles for a tab pulled from a database: row counts, nulls, distinct values, min/max for numbers and dates, longest string (never sample values). Runs one query per table where the tab was pulled from (Databricks needs a SQL warehouse). Returns what the data says about the design: keys that repeat or are empty, empty columns, columns that could be required, candidate reference lists.",
       inputSchema: {
         type: "object",
         properties: {
           model: MODEL,
-          tab: TAB,
+          tab: TAB2,
           entities: { type: "array", items: { type: "string" }, description: "Only these entities (default: all that match a table)." },
           sample: { type: "number", description: "Rows per table (default 100000; 0 reads every row, which can be slow and costly on big tables)." },
           from: { type: "string", enum: ["databricks", "snowflake", "postgres"], description: "Only when the tab has no recorded source." },
@@ -17615,13 +17917,13 @@ Derivation: ${report.lines.join(" ")}${dropped}`;
         },
         required: ["model"]
       },
-      run: async ({ model, tab, entities, sample, from, catalog, schema, profile, warehouse, url }) => {
-        const doc = load2(model);
+      run: async ({ model, tab, entities, sample, from, catalog, schema, profile, warehouse, url }, call) => {
+        const doc = await load2(model);
         const id = tabOf(doc, tab);
         const notes = [];
         const r = await profileLive(doc, id, { from, catalog, schema, profile, warehouse, url, sample, entities }, (s2) => notes.push(s2));
         if (!r.ops.length) throw new Error(`No tables profiled.${r.skipped.length ? ` Skipped: ${r.skipped.join("; ")}` : ""}`);
-        const out = submit(model, `Profile ${r.profiled} table(s)`, "Measured from the database; counts and ranges only.", r.ops, id, false).split("\n");
+        const out = (await submit(model, `Profile ${r.profiled} table(s)`, "Measured from the database; counts and ranges only.", r.ops, id, call.apply)).split("\n");
         const found = profileIssues(tabView(applyOps(doc, r.ops, { tab: id }).doc, id));
         return [
           out[0],
@@ -17635,12 +17937,14 @@ ${found.slice(0, 60).map((f) => `- [${f.level}] ${f.message}`).join("\n")}` : "N
     },
     {
       name: "plan_writeback",
+      needs: "read",
+      external: true,
       description: "The SQL that would put the model\u2019s table and column descriptions (and on Databricks, PII and business_term tags) into the live catalog the tab was pulled from. Compares with the catalog first, so it lists only what differs, and never removes anything. Read-only: show the statements to the person, who runs them with `em writeback <model> --apply`.",
       inputSchema: {
         type: "object",
         properties: {
           model: MODEL,
-          tab: TAB,
+          tab: TAB2,
           tags: { type: "boolean", description: "Include Databricks tags (default true)." },
           from: { type: "string", enum: ["databricks", "snowflake", "postgres"], description: "Only when the tab has no recorded source." },
           catalog: str2("Databricks catalog or Snowflake database (default: the tab\u2019s source)."),
@@ -17652,119 +17956,16 @@ ${found.slice(0, 60).map((f) => `- [${f.level}] ${f.message}`).join("\n")}` : "N
         required: ["model"]
       },
       run: async ({ model, tab, tags, from, catalog, schema, profile, warehouse, url }) => {
-        const doc = load2(model);
+        const doc = await load2(model);
         const notes = [];
         const r = await writeback(doc, tabOf(doc, tab), { from, catalog, schema, profile, warehouse, url, tags }, (s2) => notes.push(s2));
         if (!r.statements.length) return "The catalog already has everything the model documents. Nothing to write.";
         return [`${r.statements.length} statement(s). Nothing was run; the person runs them with \`em writeback ${model}${tab ? ` --tab "${tab}"` : ""} --apply\`.`, ...notes.map((n) => `note: ${n}`), "```sql", ...r.statements.map((s2) => `-- ${s2.what}
 ${s2.sql}`), "```"].join("\n");
       }
-    },
-    {
-      name: "list_comments",
-      description: "Review comments on a model (open ones by default): what they are about, who said what, and replies. Work through them by proposing changes, then reply_comment.",
-      inputSchema: { type: "object", properties: { model: MODEL, tab: str2("Only this tab."), include_resolved: { type: "boolean" } }, required: ["model"] },
-      run: ({ model, tab, include_resolved }) => {
-        const doc = load2(model);
-        const t = tab ? tabOf(doc, tab) : void 0;
-        const list = (doc.comments || []).filter((c) => (include_resolved || !c.resolved) && (!t || c.target.tab === t));
-        if (!list.length) return "No open comments.";
-        return list.map((c) => [`[${c.id}] ${c.resolved ? "(resolved) " : ""}${c.target.tab}:${c.target.kind}${c.target.name ? ` ${c.target.name}` : ""}${c.target.attribute ? `.${c.target.attribute}` : ""} \u2014 ${c.author}: ${c.text}`, ...(c.replies || []).map((r) => `    \u21B3 ${r.author}: ${r.text}`)].join("\n")).join("\n");
-      }
-    },
-    {
-      name: "reply_comment",
-      description: "Reply to a review comment (written straight to the model: replies are conversation, not design changes). Say what you proposed or why not; resolve only if the person asked you to.",
-      inputSchema: { type: "object", properties: { model: MODEL, id: str2("Comment id."), text: str2("Reply."), resolve: { type: "boolean" } }, required: ["model", "id", "text"] },
-      run: ({ model, id, text: text2, resolve: resolve4 }) => {
-        const file = modelFile(model);
-        const doc = normalizeModel(JSON.parse(readFileSync5(file, "utf8")));
-        const r = applyOps(doc, [{ op: "reply_comment", id, text: text2, author: opts.author }, ...resolve4 ? [{ op: "resolve_comment", id, resolved: true }] : []]);
-        if (!r.ok) throw new Error(r.error);
-        writeFileSync2(file, serializeModel({ ...r.doc, updated_at: (/* @__PURE__ */ new Date()).toISOString() }));
-        return `Replied to ${id}${resolve4 ? " and resolved it" : ""}.`;
-      }
-    },
-    {
-      name: "search_glossary",
-      description: "The shared business glossary (all models): terms with definitions and synonyms, optionally filtered by text. With model, also the names in that model that match a term but are not linked yet.",
-      inputSchema: { type: "object", properties: { query: str2("Text to look for."), model: str2("Optional model id, for link suggestions."), tab: TAB } },
-      run: ({ query, model, tab }) => {
-        const terms = readGlossary(modelsDir).filter((t) => !query || `${t.name} ${t.definition} ${(t.synonyms || []).join(" ")}`.toLowerCase().includes(String(query).toLowerCase()));
-        const out = terms.map((t) => `${t.name} [${t.status || "draft"}]${t.synonyms?.length ? ` (aka ${t.synonyms.join(", ")})` : ""}: ${t.definition || "(no definition yet)"}`);
-        if (model) {
-          const doc = load2(model);
-          const sug = suggestLinks(tabView(doc, tabOf(doc, tab)), readGlossary(modelsDir));
-          if (sug.length) out.push("", "Unlinked names that match a term:", ...sug.map((x) => `  ${x.entity}${x.attribute ? `.${x.attribute}` : ""} \u2192 ${x.term.name}`));
-        }
-        return out.join("\n") || "The glossary is empty.";
-      }
-    },
-    {
-      name: "propose_terms",
-      description: "Propose business terms and links from entities/attributes to them, as one proposal. Existing terms (same name or synonym) are reused; new ones join the shared glossary when the person accepts.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          model: MODEL,
-          tab: TAB,
-          terms: { type: "array", items: { type: "object", properties: { name: { type: "string" }, definition: { type: "string" }, synonyms: { type: "array", items: { type: "string" } } }, required: ["name", "definition"] } },
-          links: { type: "array", description: "Which entity/attribute each term names.", items: { type: "object", properties: { entity: { type: "string" }, attribute: { type: "string" }, term: { type: "string", description: "Term name." } }, required: ["entity", "term"] } }
-        },
-        required: ["model", "links"]
-      },
-      run: ({ model, tab, terms, links }) => {
-        const shared = readGlossary(modelsDir);
-        const fresh = (terms || []).map((t) => matchTerm(shared, t.name) || newTerm(t.name, t.definition, { synonyms: t.synonyms }));
-        const all = [...fresh, ...shared];
-        const ops = (links || []).map((l) => {
-          const term = all.find((t) => t.name.toLowerCase() === String(l.term).toLowerCase()) || matchTerm(all, l.term);
-          if (!term) throw new Error(`Term "${l.term}" is neither in the glossary nor in terms.`);
-          return { op: "link_term", entity: l.entity, attribute: l.attribute, term };
-        });
-        return submit(model, `Link ${ops.length} name(s) to glossary terms`, fresh.length ? `New terms: ${fresh.filter((t) => !shared.includes(t)).map((t) => t.name).join(", ") || "none"}.` : void 0, ops, tab, false);
-      }
-    },
-    {
-      name: "list_proposals",
-      description: "Pending proposals for a model (not yet accepted or rejected).",
-      inputSchema: { type: "object", properties: { model: MODEL }, required: ["model"] },
-      run: ({ model }) => {
-        const ps = listProposals(dirname2(modelFile(model)));
-        return ps.map((p) => `${p.id}: ${p.title} \u2014 ${p.ops.length} change(s) by ${p.author}, ${p.created_at}`).join("\n") || "No pending proposals.";
-      }
-    },
-    {
-      name: "withdraw_proposal",
-      description: "Delete one of your pending proposals (e.g. to replace it with a corrected one).",
-      inputSchema: { type: "object", properties: { model: MODEL, id: str2("Proposal id.") }, required: ["model", "id"] },
-      run: ({ model, id }) => deleteProposal(dirname2(modelFile(model)), id) ? `Withdrew ${id}.` : `No proposal ${id}.`
     }
-  ];
-  if (opts.allowApply) {
-    for (const t of tools)
-      if (["import_ddl", "derive_tab", "auto_map", "fix_issues", "sync_tabs", "pull_schema", "profile_data", "propose_terms"].includes(t.name))
-        t.inputSchema.properties.apply = { type: "boolean", description: "Apply directly instead of saving a proposal (allowed on this server)." };
-    tools.push({
-      name: "accept_proposal",
-      description: "Apply a pending proposal (by id, see list_proposals) and remove it.",
-      inputSchema: { type: "object", properties: { model: MODEL, id: str2("Proposal id.") }, required: ["model", "id"] },
-      run: ({ model, id }) => {
-        const p = listProposals(dirname2(modelFile(model))).find((x) => x.id === id) || fail2(`No proposal ${id}.`);
-        const out = submit(model, p.title, p.rationale, p.ops, p.tab, true);
-        deleteProposal(dirname2(modelFile(model)), id);
-        return out;
-      }
-    });
-  }
-  if (opts.allowApply)
-    tools.push({
-      name: "apply_changes",
-      description: `Apply edits to a model directly (no review). Same ops as propose_changes; all-or-nothing.
-${OPS_HELP}`,
-      inputSchema: { type: "object", properties: { model: MODEL, tab: str2("Default tab for ops without one."), ops: opsSchema }, required: ["model", "ops"] },
-      run: ({ model, tab, ops }) => submit(model, "Direct edit", void 0, ops, tab, true)
-    });
+  ]);
+  const server = { name: "entity-modeler", version: "0.3.0", instructions: INSTRUCTIONS, tools, allowApply: opts.allowApply };
   const send = (msg) => process.stdout.write(JSON.stringify(msg) + "\n");
   const rl = createInterface({ input: process.stdin });
   for await (const line of rl) {
@@ -17776,44 +17977,9 @@ ${OPS_HELP}`,
       send({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } });
       continue;
     }
-    if (msg.id === void 0) continue;
-    const reply = (result) => send({ jsonrpc: "2.0", id: msg.id, result });
-    switch (msg.method) {
-      case "initialize":
-        reply({
-          protocolVersion: msg.params?.protocolVersion || PROTOCOL,
-          capabilities: { tools: {} },
-          serverInfo: { name: "entity-modeler", version: "0.2.0" },
-          instructions: "EntityModel.com data models (models/<id>/model.json). Read with get_model/get_entity/search, check with validate (fix_issues proposes the mechanical fixes), and change models only through propose_changes (or derive_tab / import_ddl / pull_schema / sync_tabs / auto_map / propose_terms), batching one request into one proposal. Review comments: list_comments, then propose fixes and reply_comment. The business glossary is shared across models: search_glossary. The person reviews proposals in the EntityModel.com UI."
-        });
-        break;
-      case "ping":
-        reply({});
-        break;
-      case "tools/list":
-        reply({ tools: tools.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })) });
-        break;
-      case "tools/call": {
-        const tool = tools.find((t) => t.name === msg.params?.name);
-        if (!tool) {
-          send({ jsonrpc: "2.0", id: msg.id, error: { code: -32602, message: `Unknown tool ${msg.params?.name}` } });
-          break;
-        }
-        try {
-          applyThisCall = opts.allowApply && msg.params?.arguments?.apply === true;
-          reply({ content: [{ type: "text", text: await tool.run(msg.params?.arguments || {}) }] });
-        } catch (e) {
-          reply({ content: [{ type: "text", text: e?.message || String(e) }], isError: true });
-        }
-        break;
-      }
-      default:
-        send({ jsonrpc: "2.0", id: msg.id, error: { code: -32601, message: `Method not found: ${msg.method}` } });
-    }
+    const { body } = await handleRpc(server, msg);
+    if (body) send(body);
   }
-}
-function fail2(msg) {
-  throw new Error(msg);
 }
 
 // cli/em.ts
@@ -17833,8 +17999,8 @@ function bool(name) {
   args.splice(i, 1);
   return true;
 }
-var TAB2 = flag("tab");
-function tabId(m, ref = TAB2) {
+var TAB = flag("tab");
+function tabId(m, ref = TAB) {
   const id = resolveTab(m, ref);
   if (!id) fail3(`Tab "${ref}" not found. Tabs: ${listTabs(m).map((t) => t.name).join(", ")}`);
   return id;
@@ -17870,7 +18036,7 @@ var ROOT = findRoot2();
 var MODELS = join4(ROOT, "models");
 function resolveModelPath(ref) {
   if (!ref) fail3("Missing model name or path. Run `em list` to see models.");
-  const candidates = [resolve3(ref), join4(MODELS, ref), join4(MODELS, ref, MODEL_FILE2), join4(resolve3(ref), MODEL_FILE2)];
+  const candidates = [resolve4(ref), join4(MODELS, ref), join4(MODELS, ref, MODEL_FILE2), join4(resolve4(ref), MODEL_FILE2)];
   for (const c of candidates) if (existsSync4(c) && statSync(c).isFile()) return c;
   fail3(`Model "${ref}" not found (looked in ${MODELS}).`);
   return "";
@@ -17940,7 +18106,7 @@ Put source material (DDL, CSV headers, specs) in ${join4(dir, "inputs")}/`);
       const dry = bool("dry-run");
       if (fix) {
         let total2 = 0;
-        for (const id of TAB2 ? [tabId(m)] : listTabs(m).map((t) => t.id)) {
+        for (const id of TAB ? [tabId(m)] : listTabs(m).map((t) => t.id)) {
           const r = applyFixes(m, validateModel(tabView(m, id)).filter((i) => !i.suggested), id);
           total2 += r.applied;
           for (const o of r.ops) console.log(`${dry ? "would " : ""}${describeOp(o)}`);
@@ -17949,7 +18115,7 @@ Put source material (DDL, CSV headers, specs) in ${join4(dir, "inputs")}/`);
         console.log(`${dry ? "Would apply" : "Applied"} ${total2} fix(es).${dry ? "" : " Re-run validate to see what is left."}`);
         return;
       }
-      const ids = TAB2 ? [tabId(m)] : listTabs(m).map((t) => t.id);
+      const ids = TAB ? [tabId(m)] : listTabs(m).map((t) => t.id);
       const multi = listTabs(m).length > 1;
       let total = { error: 0, warning: 0, info: 0 };
       const tabIssues = validateTabs(m);
@@ -17966,7 +18132,7 @@ Put source material (DDL, CSV headers, specs) in ${join4(dir, "inputs")}/`);
       total.error += tc.error;
       total.warning += tc.warning;
       console.log(`
-${total.error} error(s), ${total.warning} warning(s), ${total.info} note(s)${multi && !TAB2 ? ` across ${ids.length} tabs` : ""}${showInfo ? "" : " (use --all to list notes)"}`);
+${total.error} error(s), ${total.warning} warning(s), ${total.info} note(s)${multi && !TAB ? ` across ${ids.length} tabs` : ""}${showInfo ? "" : " (use --all to list notes)"}`);
       if (total.error) process.exit(2);
       return;
     }
@@ -18007,7 +18173,7 @@ ${total.error} error(s), ${total.warning} warning(s), ${total.info} note(s)${mul
       if (format === "sql" && !SQL_DIALECTS.some((d) => d.id === dialect)) fail3(`--dialect must be one of ${SQL_DIALECTS.map((d) => d.id).join(", ")}.`);
       const text2 = exportText(m, format, dialect, !noValues);
       if (toStdout) return void process.stdout.write(text2);
-      const suffix = TAB2 ? `-${tabId(load(p))}` : "";
+      const suffix = TAB ? `-${tabId(load(p))}` : "";
       const file = out || join4(exportsDir(p), `${m.name}${suffix}${format === "sql" ? `.${dialect}` : ""}.${EXPORT_EXT[format]}`);
       writeFileSync3(file, text2);
       console.log(`Wrote ${file}`);
@@ -18019,7 +18185,7 @@ ${total.error} error(s), ${total.warning} warning(s), ${total.info} note(s)${mul
       const create = bool("create");
       const title = flag("title");
       if (!ref || !src) fail3("Usage: em import <model> <file.sql|file.dbml> [--create] [--title T]");
-      const text2 = readFileSync6(resolve3(src), "utf8");
+      const text2 = readFileSync6(resolve4(src), "utf8");
       const physicalTarget = !create && view(load(resolveModelPath(ref))).tab?.kind === "physical";
       const r = importModelText(text2, { format: /\.dbml$/i.test(src) ? "dbml" : /\.(sql|ddl)$/i.test(src) ? "sql" : void 0, title: title || basename(src).replace(/\.[^.]+$/, ""), keepJunctions: physicalTarget });
       let p;
@@ -18055,7 +18221,7 @@ ${total.error} error(s), ${total.warning} warning(s), ${total.info} note(s)${mul
       const tables = buildDocTables(m, { sections, entities });
       if (format === "pdf") {
         const diagramFlag = flag("diagram");
-        const diagram = diagramFlag ? resolve3(diagramFlag) : bool("no-diagram") ? void 0 : latestDiagram(p);
+        const diagram = diagramFlag ? resolve4(diagramFlag) : bool("no-diagram") ? void 0 : latestDiagram(p);
         const pageSize = flag("page-size") === "a4" ? "a4" : "letter";
         const file2 = out || join4(exportsDir(p), `${m.name}-data-model-${stamp()}.pdf`);
         writeFileSync3(file2, buildModelPdf(m, tables, { pageSize, diagramPng: diagram ? new Uint8Array(readFileSync6(diagram)) : void 0, assets: pdfAssets() }));
@@ -18087,7 +18253,7 @@ ${total.error} error(s), ${total.warning} warning(s), ${total.info} note(s)${mul
         return;
       }
       if (!file) fail3("Provide a CSV/TSV file, or --export.");
-      const { values, header, unknown } = rowsToValues(e, parseDelimited(readFileSync6(resolve3(file), "utf8")));
+      const { values, header, unknown } = rowsToValues(e, parseDelimited(readFileSync6(resolve4(file), "utf8")));
       e.reference_values = append ? [...e.reference_values || [], ...values] : values;
       save(p, doc);
       console.log(`${append ? "Appended" : "Loaded"} ${values.length} value(s) into ${e.name}${header ? " (header matched by name)" : " (columns by position)"}${unknown.length ? `; ignored columns: ${unknown.join(", ")}` : ""}. Total: ${e.reference_values.length}`);
@@ -18137,7 +18303,7 @@ ${total.error} error(s), ${total.warning} warning(s), ${total.info} note(s)${mul
       const m = load(p);
       const kind = flag("kind") || "logical";
       if (!TAB_KINDS.some((k) => k.id === kind)) fail3(`--kind must be one of ${TAB_KINDS.map((k) => k.id).join(", ")}.`);
-      const from = tabId(m, flag("from") || TAB2);
+      const from = tabId(m, flag("from") || TAB);
       const name = flag("name");
       const dialect = flag("dialect");
       const dry = bool("dry-run");
@@ -18265,7 +18431,7 @@ ${chosen.length} of ${plan.length} would apply. Run with --apply (add --all to i
     case "mappings": {
       const p = resolveModelPath(args.shift());
       const m = load(p);
-      const target = tabId(m, flag("target") || TAB2);
+      const target = tabId(m, flag("target") || TAB);
       const source = flag("source");
       const format = flag("format") || "summary";
       const out = flag("out");
@@ -18396,25 +18562,25 @@ ${r.statements.length} statement(s)${out ? ` written to ${out}` : ""}. Nothing w
       return;
     }
     case "mcp":
-      return runMcp({ allowApply: bool("allow-apply"), author: flag("author") || "Claude" });
+      return runMcp({ allowApply: bool("allow-apply"), author: flag("author") || "Claude", modelsDir: flag("models-dir") });
     case "apply": {
       const p = resolveModelPath(args.shift());
       const src = args.shift();
       const direct = bool("apply");
       if (!src) fail3("Usage: em apply <model> <ops.json | -> [--apply] [--title T] [--rationale R] [--tab T]");
-      const raw = JSON.parse(src === "-" ? readFileSync6(0, "utf8") : readFileSync6(resolve3(src), "utf8"));
+      const raw = JSON.parse(src === "-" ? readFileSync6(0, "utf8") : readFileSync6(resolve4(src), "utf8"));
       const ops = Array.isArray(raw) ? raw : raw.ops;
       const title = flag("title") || raw.title || `${ops.length} change(s)`;
       const rationale = flag("rationale") || raw.rationale;
       const text2 = readFileSync6(p, "utf8");
-      const r = applyOps(normalizeModel(JSON.parse(text2)), ops, { tab: TAB2 });
+      const r = applyOps(normalizeModel(JSON.parse(text2)), ops, { tab: TAB });
       if (!r.ok) fail3(r.error);
       ops.forEach((o, i) => console.log(`${String(i + 1).padStart(3)}. ${describeOp(o)}`));
       if (direct) {
         save(p, r.doc);
         console.log(`Applied ${ops.length} change(s).`);
       } else {
-        const prop = writeProposal(dirname3(p), { title, rationale, author: flag("author") || process.env.USER || "cli", tab: TAB2, base_hash: sha1(text2), ops });
+        const prop = writeProposal(dirname3(p), { title, rationale, author: flag("author") || process.env.USER || "cli", tab: TAB, base_hash: sha1(text2), ops });
         console.log(`Saved proposal ${prop.id}. Review it in the UI, or: em proposals ${basename(dirname3(p))} --accept ${prop.id}`);
       }
       const c = issueCounts(validateModel(view(r.doc)));
@@ -18528,7 +18694,7 @@ Live schemas (credentials from env or the platform CLI profile; never stored)
                                          only what differs; --apply runs it. Never removes anything
 
 Agents
-  mcp [--allow-apply] [--author NAME]    MCP server on stdio (see .mcp.json); edits become proposals
+  mcp [--allow-apply] [--author NAME] [--models-dir DIR]    MCP server on stdio (see .mcp.json); edits become proposals
   apply <model> <ops.json|-> [--apply] [--title T] [--tab T]
                                          Typed operations as a proposal (default) or applied directly
   proposals <model> [--show ID | --accept ID | --reject ID]

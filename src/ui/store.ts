@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { produce } from 'immer';
 import { MAIN_TAB, hasTab, normalizeModel, serializeModel, tabView, validateModel, validateTabs, withTab, type DataModel, type Issue } from '../core';
 import { storage } from './storage';
-import { CloudConflict } from './storage/cloud';
+import { CloudConflict, isCloudId } from './storage/cloud';
 import { placeUnpositioned } from './canvas/layout';
 
 export type Selection =
@@ -364,7 +364,7 @@ export const useStore = create<State>((set, get) => ({
     }
     const d = derive(m, activeTab);
     set({ ...d, past: [...get().past, doc], future: [], savedText: serializeModel(m) });
-    get().toast(`Model updated ${storage.kind === 'files' ? 'on disk' : 'in another tab'} — reloaded. Undo to revert.`, 'info');
+    get().toast(`Model updated ${isCloudId(get().modelId) ? 'by someone else' : storage.kind === 'files' ? 'on disk' : 'in another tab'} — reloaded. Undo to revert.`, 'info');
     if (d.model.entities.some((e) => !e.ui)) set({ layoutRequest: get().layoutRequest + 1 });
   },
   acceptExternal() {

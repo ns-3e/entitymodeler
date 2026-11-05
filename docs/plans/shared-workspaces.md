@@ -2,7 +2,7 @@
 
 Status: decided 2026-11-04 (see Decisions). Architecture: D1 for accounts, one Durable Object per model.
 
-Progress: Phase 1 is live on entitymodel.com with GitHub and email sign-in. Account controls are built: download my data, delete my account (`cloud/src/index.ts`) and suspension (`cloud/scripts/suspend.mjs`). Version history is built (`VersionHistoryDialog.tsx`, `history` routes). Presence is built (`cloud/src/room.ts`, `src/ui/presence.ts`), which finishes Phase 2. Next: Phase 3 (merging edits).
+Progress: Phase 1 is live on entitymodel.com with GitHub and email sign-in. Account controls are built: download my data, delete my account (`cloud/src/index.ts`) and suspension (`cloud/scripts/suspend.mjs`). Version history is built (`VersionHistoryDialog.tsx`, `history` routes). Presence is built (`cloud/src/room.ts`, `src/ui/presence.ts`), which finishes Phase 2. Phase 4's agent access is built as a hosted MCP server with OAuth rather than API tokens (`cloud/src/mcp.ts`, `cloud/src/oauth.ts`); `em` against workspaces is not built. Next: Phase 3 (merging edits).
 
 ## Where we are
 

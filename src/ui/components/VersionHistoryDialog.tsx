@@ -154,6 +154,7 @@ function HistoryBody() {
                   <span>{when(x.saved_at)}</span>
                   <span className="muted small">
                     {x.by ?? 'Former member'}
+                    {x.via ? ` via ${x.via}` : ''}
                     {x.version === latest ? ' · current' : ''}
                   </span>
                 </button>

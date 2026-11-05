@@ -93,7 +93,7 @@ See [Import from a database](/docs/import-from-database/).
 ## Agents and proposals
 
 ```bash
-node bin/em.mjs mcp [--allow-apply]                         # MCP server over stdio
+node bin/em.mjs mcp [--allow-apply] [--models-dir DIR]      # MCP server over stdio; see /docs/mcp-server/
 node bin/em.mjs proposals <id> [--accept|--reject|--show <pid>]
 node bin/em.mjs apply <id> ops.json [--apply]
 ```

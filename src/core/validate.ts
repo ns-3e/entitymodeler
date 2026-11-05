@@ -47,6 +47,7 @@ export function validateModel(m: DataModel): Issue[] {
     for (const end of ['source', 'target'] as const)
       if (!entityByName.has(r[end])) push('error', 'rel.endpoint', `Relationship "${r.name}" ${end} entity "${r[end]}" does not exist.`, t);
     if (!r.forward_label) push('warning', 'rel.fwd', `Relationship "${r.name}" has no forward label.`, t);
+    if (r.required && !relationshipEnds(r)) push('warning', 'rel.reqnn', `Relationship "${r.name}" is N:N, so "required" is ignored (a junction table is used).`, t);
     if (r.foreign_key) {
       const ends = relationshipEnds(r);
       if (!ends) push('warning', 'rel.fknn', `Relationship "${r.name}" is N:N, so its foreign key "${r.foreign_key}" is ignored (a junction table is used).`, t);

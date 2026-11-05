@@ -36,17 +36,17 @@ When you [run EntityModel.com locally](/docs/getting-started/#run-it-locally) an
 
 ## MCP server for any agent
 
-`node bin/em.mjs mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server. The repository's `.mcp.json` registers it for Claude Code; any MCP client can use it.
+Any [Model Context Protocol](https://modelcontextprotocol.io) agent can work on your models. Connect it to `https://entitymodel.com/mcp` for [shared workspace](/docs/shared-workspaces/) models, or run `npx entitymodeler mcp` for model files on your computer. See [MCP server](/docs/mcp-server/) for setup, permissions and every tool. In a clone of the repository, `.mcp.json` already registers the local server for Claude Code.
 
 | Purpose | Tools |
 | --- | --- |
-| Read and check | `get_model`, `get_entity`, `search`, `validate`, `list_tabs` |
+| Read and check | `list_models`, `get_model`, `get_entity`, `search`, `validate`, `list_tabs` |
 | Transform and generate | `diff_tabs`, `migration_sql`, `export`, `docs`, `derive_tab`, `import_ddl`, `pull_schema`, `profile_data`, `plan_writeback`, `sync_tabs`, `auto_map` |
-| Change | `propose_changes`, `fix_issues`, `propose_terms` |
+| Change | `create_model`, `propose_changes`, `fix_issues`, `propose_terms` |
 | Review | `list_comments`, `reply_comment`, `list_proposals`, `withdraw_proposal` |
 | Glossary | `search_glossary` |
 
-Changes become proposals in `models/<id>/proposals/`. A banner in the app offers them for review, or handle them from the terminal:
+On the local server, changes become proposals in `models/<id>/proposals/`. A banner in the app offers them for review, or handle them from the terminal:
 
 ```bash
 node bin/em.mjs proposals sales                    # list pending proposals

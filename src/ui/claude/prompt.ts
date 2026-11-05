@@ -13,7 +13,7 @@ const RULES = `- Return the **complete** updated model as a single \`\`\`json co
 - Each entity has exactly one \`is_primary_key\` attribute (its business key) and one \`is_label\` attribute (its display name).
 - Use \`entity_type: "reference"\` for controlled code lists (country, currency, status, type codes) and point at them with \`REFERENCE_ENTITY\` attributes (\`reference.entity\` must be a reference entity; \`reference.output_attribute\` must be one of its attributes). Everything else is \`"standard"\`.
 - \`STRUCT\` attributes need a matching entry in that entity's \`struct_types\`; struct fields are scalars or REFERENCE_ENTITY only.
-- Relationship endpoints must be existing entities; a bidirectional relationship needs a reverse label that differs from the forward label. Set a relationship's \`foreign_key\` to the child attribute holding the parent's key (the source for N:1/1:1, the target for 1:N) when it isn't simply named after the parent's primary key.
+- Relationship endpoints must be existing entities; a bidirectional relationship needs a reverse label that differs from the forward label. Set a relationship's \`required\` to true when the child can't exist without the parent. Set a relationship's \`foreign_key\` to the child attribute holding the parent's key (the source for N:1/1:1, the target for 1:N) when it isn't simply named after the parent's primary key.
 - Write short, plain \`description\`s of business meaning. Use realistic but fictional \`example\` values; never invent facts about real systems or data.
 - Ignore the CLI commands mentioned in the format reference — the user applies your JSON in the app.`;
 

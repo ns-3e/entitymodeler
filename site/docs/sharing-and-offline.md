@@ -41,7 +41,7 @@ On phones, the side panels become drawers over the diagram; tap an entity to see
 
 ## Privacy
 
-Your models never leave your browser unless you export them, share a link, or add them to a [shared workspace](/docs/shared-workspaces/), whose models are stored on the server for the workspace's members. Signing in, which only workspaces need, stores your email address. entitymodel.com counts visits with Cloudflare Web Analytics, which uses no cookies and no personal data. Self-hosted copies and local runs send nothing.
+Your models never leave your browser unless you export them, share a link, or add them to a [shared workspace](/docs/shared-workspaces/), whose models are stored on the server for the workspace's members. [AI agents](/docs/mcp-server/) reach only workspace models, and only when a member connects one to their account. Signing in, which only workspaces need, stores your email address. entitymodel.com counts visits with Cloudflare Web Analytics, which uses no cookies and no personal data. Self-hosted copies and local runs send nothing.
 
 ## Frequently asked questions
 

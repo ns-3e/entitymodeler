@@ -140,6 +140,10 @@ export function relationalPlan(m: DataModel): RelPlan {
     if (!child || !parent || !pk) continue;
     let fk = resolveForeignKey(m, r, byName);
     if (!fk) fk = addColumn(child, ends.child === ends.parent ? `parent_${pk.name}` : keyColumnName(parent, pk), pk, `${parent.display_name} (${r.forward_label})`, `relationship ${r.name}`);
+    if (r.required) {
+      const column = child.columns.find((c) => c.name === fk);
+      if (column) column.notNull = true;
+    }
     if (r.cardinality === '1:1' && !child.pk.includes(fk)) child.unique.push(fk);
     for (const ra of r.attributes || []) addRelationshipColumn(child, ra, r, false);
     foreignKeys.push({ name: fkName(`fk_${r.name}`), table: child.name, column: fk, refTable: parent.name, refColumn: pk.name, kind: 'relationship', relationship: r.name });

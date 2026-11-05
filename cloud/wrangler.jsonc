@@ -6,9 +6,24 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-11-02",
   "workers_dev": false,
-  "routes": [{ "pattern": "entitymodel.com/api/cloud/*", "zone_name": "entitymodel.com" }],
+  // CIMD: fetching an MCP client's metadata document must not reach anything but the public internet.
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "routes": [
+    { "pattern": "entitymodel.com/api/cloud/*", "zone_name": "entitymodel.com" },
+    // The hosted MCP server, and the OAuth discovery documents its clients look for at these fixed addresses.
+    { "pattern": "entitymodel.com/mcp", "zone_name": "entitymodel.com" },
+    { "pattern": "entitymodel.com/.well-known/oauth-*", "zone_name": "entitymodel.com" }
+  ],
   "d1_databases": [
     { "binding": "DB", "database_name": "entitymodel-cloud", "database_id": "99248fdf-0e58-4fdb-9fb0-2bd95644b922", "migrations_dir": "migrations" }
+  ],
+  // OAuth grants and tokens for MCP clients (@cloudflare/workers-oauth-provider stores them here, hashed).
+  // Created with `npx wrangler kv namespace create entitymodel-oauth`; put its id here before deploying.
+  "kv_namespaces": [{ "binding": "OAUTH_KV", "id": "a6a06d0a410f4258889d95d3af18c367" }],
+  "ratelimits": [
+    // MCP requests per person, and client registrations per IP address.
+    { "name": "MCP_LIMITER", "namespace_id": "1001", "simple": { "limit": 120, "period": 60 } },
+    { "name": "REGISTER_LIMITER", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } }
   ],
   "durable_objects": {
     "bindings": [{ "name": "MODEL", "class_name": "ModelRoom" }]

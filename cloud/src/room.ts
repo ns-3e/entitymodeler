@@ -22,6 +22,12 @@ const MAX_SELECTED = 8;
 const MAX_NAME = 60;
 /** Selection changes closer together than this are ignored. The app sends at most one every 300 ms. */
 const MIN_SELECT_MS = 100;
+/** Proposals waiting for review on one model, and how many can arrive per minute. Agents can loop; people review slowly. */
+const MAX_PROPOSALS = 50;
+const PROPOSALS_PER_MINUTE = 30;
+
+/** A change suggested by an agent, as stored: `data` is a Proposal (src/core/operations.ts) as JSON. */
+export type ProposalResult = { ok: true } | { ok: false; reason: 'full' | 'rate' | 'missing' };
 
 export type WriteResult = { ok: true; version: number } | { ok: false; reason: 'conflict'; version: number; text: string } | { ok: false; reason: 'rate' | 'missing' };
 
@@ -50,6 +56,7 @@ export class ModelRoom extends DurableObject<Env> {
   private sql: SqlStorage;
   /** Save times in the last minute, for the per-model rate limit. In memory: it resets if the object is evicted. */
   private recent: number[] = [];
+  private recentProposals: number[] = [];
   /** deleteAll() drops the tables, but this instance can live on and take more calls: they should find no model. */
   private destroyed = false;
 
@@ -58,6 +65,10 @@ export class ModelRoom extends DurableObject<Env> {
     this.sql = ctx.storage.sql;
     this.sql.exec(`CREATE TABLE IF NOT EXISTS chunks (version INTEGER NOT NULL, idx INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY (version, idx))`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS versions (version INTEGER PRIMARY KEY, saved_by TEXT NOT NULL, saved_at TEXT NOT NULL, size INTEGER NOT NULL)`);
+    // Added after launch, so rooms created earlier need the column too. Set when an agent made the save: "Ada via Claude".
+    if (!this.sql.exec<{ name: string }>('PRAGMA table_info(versions)').toArray().some((c) => c.name === 'via')) this.sql.exec('ALTER TABLE versions ADD COLUMN via TEXT');
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS proposals (id TEXT PRIMARY KEY, created_at TEXT NOT NULL)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS proposal_chunks (id TEXT NOT NULL, idx INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY (id, idx))`);
   }
 
   private current(): number {
@@ -65,9 +76,9 @@ export class ModelRoom extends DurableObject<Env> {
     return this.sql.exec<{ v: number | null }>('SELECT MAX(version) AS v FROM versions').one().v ?? 0;
   }
 
-  private store(version: number, text: string, by: string) {
+  private store(version: number, text: string, by: string, via?: string) {
     for (let i = 0, idx = 0; i < text.length || idx === 0; i += CHUNK, idx++) this.sql.exec('INSERT INTO chunks (version, idx, data) VALUES (?, ?, ?)', version, idx, text.slice(i, i + CHUNK));
-    this.sql.exec('INSERT INTO versions (version, saved_by, saved_at, size) VALUES (?, ?, ?, ?)', version, by, new Date().toISOString(), text.length);
+    this.sql.exec('INSERT INTO versions (version, saved_by, saved_at, size, via) VALUES (?, ?, ?, ?, ?)', version, by, new Date().toISOString(), text.length, via ?? null);
     this.sql.exec(
       'DELETE FROM versions WHERE version <= ? AND version NOT IN (SELECT MAX(version) AS v FROM versions GROUP BY substr(saved_at, 1, 13) ORDER BY v DESC LIMIT ?)',
       version - KEEP,
@@ -85,9 +96,9 @@ export class ModelRoom extends DurableObject<Env> {
   }
 
   /** First version of a new model. Refuses if the model already exists. */
-  async create(text: string, by: string): Promise<{ version: number }> {
+  async create(text: string, by: string, via?: string): Promise<{ version: number }> {
     if (this.current()) throw new Error('Model already exists.');
-    this.store(1, text, by);
+    this.store(1, text, by, via);
     return { version: 1 };
   }
 
@@ -96,8 +107,8 @@ export class ModelRoom extends DurableObject<Env> {
     return version ? { version, text: this.textOf(version) } : null;
   }
 
-  async history(): Promise<{ version: number; saved_by: string; saved_at: string; size: number }[]> {
-    return this.sql.exec<{ version: number; saved_by: string; saved_at: string; size: number }>('SELECT version, saved_by, saved_at, size FROM versions ORDER BY version DESC').toArray();
+  async history(): Promise<{ version: number; saved_by: string; saved_at: string; size: number; via: string | null }[]> {
+    return this.sql.exec<{ version: number; saved_by: string; saved_at: string; size: number; via: string | null }>('SELECT version, saved_by, saved_at, size, via FROM versions ORDER BY version DESC').toArray();
   }
 
   /** The text of a version still kept, or null. */
@@ -106,7 +117,7 @@ export class ModelRoom extends DurableObject<Env> {
     return this.textOf(version);
   }
 
-  async write(base: number, text: string, by: string, savesPerMinute: number): Promise<WriteResult> {
+  async write(base: number, text: string, by: string, savesPerMinute: number, via?: string): Promise<WriteResult> {
     const version = this.current();
     if (!version) return { ok: false, reason: 'missing' };
     if (base !== version) return { ok: false, reason: 'conflict', version, text: this.textOf(version) };
@@ -115,9 +126,45 @@ export class ModelRoom extends DurableObject<Env> {
     if (this.recent.length >= savesPerMinute) return { ok: false, reason: 'rate' };
     this.recent.push(now);
     const next = version + 1;
-    this.store(next, text, by);
+    this.store(next, text, by, via);
     this.broadcast({ type: 'version', version: next, by, ...(text.length <= PUSH_TEXT ? { text } : {}) });
     return { ok: true, version: next };
+  }
+
+  /** Proposals waiting for review, newest first, each as its JSON text. */
+  async proposals(): Promise<string[]> {
+    if (this.destroyed || !this.current()) return [];
+    const ids = this.sql.exec<{ id: string }>('SELECT id FROM proposals ORDER BY created_at DESC, id DESC').toArray();
+    return ids.map(({ id }) =>
+      this.sql
+        .exec<{ data: string }>('SELECT data FROM proposal_chunks WHERE id = ? ORDER BY idx', id)
+        .toArray()
+        .map((r) => r.data)
+        .join(''),
+    );
+  }
+
+  /** Keep a proposal for review and tell everyone who has the model open. The Worker has checked its size. */
+  async addProposal(id: string, createdAt: string, text: string): Promise<ProposalResult> {
+    if (this.destroyed || !this.current()) return { ok: false, reason: 'missing' };
+    if (this.sql.exec<{ n: number }>('SELECT COUNT(*) AS n FROM proposals').one().n >= MAX_PROPOSALS) return { ok: false, reason: 'full' };
+    const now = Date.now();
+    this.recentProposals = this.recentProposals.filter((t) => now - t < 60_000);
+    if (this.recentProposals.length >= PROPOSALS_PER_MINUTE) return { ok: false, reason: 'rate' };
+    this.recentProposals.push(now);
+    this.sql.exec('INSERT INTO proposals (id, created_at) VALUES (?, ?)', id, createdAt);
+    for (let i = 0, idx = 0; i < text.length || idx === 0; i += CHUNK, idx++) this.sql.exec('INSERT INTO proposal_chunks (id, idx, data) VALUES (?, ?, ?)', id, idx, text.slice(i, i + CHUNK));
+    this.broadcast({ type: 'proposals' });
+    return { ok: true };
+  }
+
+  /** Whether there was such a proposal. Accepting and rejecting both end here. */
+  async removeProposal(id: string): Promise<boolean> {
+    if (this.destroyed || !this.sql.exec('SELECT 1 FROM proposals WHERE id = ?', id).toArray().length) return false;
+    this.sql.exec('DELETE FROM proposal_chunks WHERE id = ?', id);
+    this.sql.exec('DELETE FROM proposals WHERE id = ?', id);
+    this.broadcast({ type: 'proposals' });
+    return true;
   }
 
   /** Delete everything: storage and live connections. */

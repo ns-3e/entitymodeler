@@ -267,6 +267,11 @@ function RelationshipInspector({ name }: { name: string }) {
           />
         </Field>
         <ForeignKeyField name={name} />
+        {relationshipEnds(r) && (
+          <Field label="Required" hint="The foreign key is NOT NULL in SQL exports.">
+            <Toggle checked={!!r.required} onChange={(v) => set((x) => void (v ? (x.required = true) : delete x.required))} label="The child must have a parent" />
+          </Field>
+        )}
         <div className="grid2">
           <Field label="Forward label">
             <TextInput value={r.forward_label} onChange={(v) => set((x) => void (x.forward_label = v), 'fwd')} placeholder="Subsidiary Of" />

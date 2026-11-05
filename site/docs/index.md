@@ -28,6 +28,7 @@ order: 0
 | Manage code lists (country, currency, status) | [Reference data](/docs/reference-data/) |
 | Review model changes in pull requests | [Data models in Git](/docs/data-models-in-git/) |
 | Design and change models with Claude or another AI agent | [AI data modeling](/docs/ai-data-modeling/) |
+| Connect an agent to your models over MCP | [MCP server](/docs/mcp-server/) |
 
 ## Why EntityModel.com
 

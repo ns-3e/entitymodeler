@@ -52,6 +52,7 @@ The person reviews the proposal in the UI. Edit `model.json` by hand only when t
    - Read cardinality from the *source* side: N:1 means many sources per target.
    - Use a forward label, plus a reverse label when the relationship is bidirectional (the two must differ).
    - Use relationship `attributes` for facts that belong to the link itself.
+   - Set `required: true` when the child can't exist without the parent (its foreign key is NOT NULL).
    - Set `foreign_key` to the child attribute that holds the parent's key (the source for N:1, the target for 1:N) whenever the name isn't simply the parent's PK name. SQL and DBML export use it.
 7. **Hierarchies** are built from relationships. Levels run contiguously from 2, and `forward` means the relationship's source is the child.
 8. **Validate.** Run `node bin/em.mjs validate <id>` and fix every error. Address or justify every warning.

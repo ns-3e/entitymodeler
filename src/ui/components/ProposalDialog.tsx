@@ -3,8 +3,15 @@ import { Bot, CircleX, GitCompareArrows, ListChecks, TriangleAlert } from '../ic
 import { MAIN_TAB, applyOps, applyOpsInPlace, describeOp, diffViews, issueCounts, listTabs, resolveTab, tabView, validateModel, type Proposal } from '../../core';
 import { useStore } from '../store';
 import { useAgent } from '../agent';
+import { storage } from '../storage';
 import { DiffList } from './DiffList';
 import { Modal, Segmented } from './forms';
+
+/** Viewers of a workspace model see proposals, but accepting or rejecting one takes an editor. */
+const canReview = () => {
+  const id = useStore.getState().modelId;
+  return !id || storage.agentTools?.canReview?.(id) !== false;
+};
 
 async function sha1(text: string) {
   const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(text));
@@ -27,9 +34,11 @@ export function ProposalBanner() {
       <button className="btn sm primary" onClick={() => review(p.id)}>
         Review
       </button>
-      <button className="btn sm ghost" onClick={() => dismiss(p.id)}>
-        Dismiss
-      </button>
+      {canReview() && (
+        <button className="btn sm ghost" onClick={() => dismiss(p.id)}>
+          Dismiss
+        </button>
+      )}
     </div>
   );
 }
@@ -50,6 +59,7 @@ function Review({ p }: { p: Proposal }) {
   const [stale, setStale] = useState(false);
   const close = () => review(null);
   const selected = p.ops.filter((_, i) => checked[i]);
+  const reviewer = canReview();
 
   useEffect(() => {
     if (p.base_hash) sha1(savedText).then((h) => setStale(h !== p.base_hash));
@@ -76,6 +86,14 @@ function Review({ p }: { p: Proposal }) {
       useStore.getState().toast(e.message || String(e), 'error');
       return;
     }
+    // Save first: on a workspace model the save can be refused, and then the proposal must still be there to accept.
+    await useStore.getState().saveNow();
+    const saved = useStore.getState();
+    if (saved.saveState === 'error' || saved.externalModel) {
+      close();
+      saved.toast('These changes aren’t saved yet, so the proposal stays open. Resolve the save, then review it again.', 'error');
+      return;
+    }
     await dismiss(p.id);
     const s = useStore.getState();
     if (s.model?.entities.some((e) => !e.ui)) s.requestLayout();
@@ -95,15 +113,17 @@ function Review({ p }: { p: Proposal }) {
       width={720}
       footer={
         <>
-          <button
-            className="btn ghost"
-            onClick={() => {
-              dismiss(p.id);
-              useStore.getState().toast('Proposal rejected.');
-            }}
-          >
-            Reject
-          </button>
+          {reviewer && (
+            <button
+              className="btn ghost"
+              onClick={() => {
+                dismiss(p.id);
+                useStore.getState().toast('Proposal rejected.');
+              }}
+            >
+              Reject
+            </button>
+          )}
           <span className="spacer" />
           {counts && (
             <span className={`muted small${counts.now.error > counts.before.error ? ' warn-text' : ''}`}>
@@ -113,9 +133,13 @@ function Review({ p }: { p: Proposal }) {
           <button className="btn" onClick={close}>
             Later
           </button>
-          <button className="btn primary" disabled={!selected.length || !result.ok} title={!selected.length ? 'Pick at least one change.' : !result.ok ? 'These changes don’t apply cleanly to the current model.' : undefined} onClick={accept}>
-            Accept {selected.length === p.ops.length ? 'all' : `${selected.length} of ${p.ops.length}`}
-          </button>
+          {reviewer ? (
+            <button className="btn primary" disabled={!selected.length || !result.ok} title={!selected.length ? 'Pick at least one change.' : !result.ok ? 'These changes don’t apply cleanly to the current model.' : undefined} onClick={accept}>
+              Accept {selected.length === p.ops.length ? 'all' : `${selected.length} of ${p.ops.length}`}
+            </button>
+          ) : (
+            <span className="muted small">Accepting changes takes the editor role.</span>
+          )}
         </>
       }
     >

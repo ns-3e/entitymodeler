@@ -1,6 +1,6 @@
 # EntityModel.com cloud (shared workspaces)
 
-The backend for shared workspaces: a Cloudflare Worker with a D1 database (accounts, workspaces, members) and one Durable Object per model. The plan and its decisions are in [`docs/plans/shared-workspaces.md`](../docs/plans/shared-workspaces.md). It runs on `entitymodel.com/api/cloud/*` (a Worker route, which takes precedence over the site's custom domain for those paths). This folder has its own `wrangler.jsonc`, separate from the site's: merging to `main` deploys only the static site, and this Worker is deployed with `npx wrangler deploy` from `cloud/`.
+The backend for shared workspaces: a Cloudflare Worker with a D1 database (accounts, workspaces, members) and one Durable Object per model. The plan and its decisions are in [`docs/plans/shared-workspaces.md`](../docs/plans/shared-workspaces.md). It runs on `entitymodel.com/api/cloud/*`, and serves the hosted MCP server at `entitymodel.com/mcp` with its OAuth discovery documents at `/.well-known/oauth-*` (Worker routes, which take precedence over the site's custom domain for those paths). This folder has its own `wrangler.jsonc`, separate from the site's: merging to `main` deploys only the static site, and this Worker is deployed with `npx wrangler deploy` from `cloud/`.
 
 ```bash
 cd cloud
@@ -106,11 +106,26 @@ The flow:
 
 Sending to any address needs Workers Paid (3,000 emails a month included). New accounts start with a daily quota (200 a day at setup), which Cloudflare raises as the sending reputation builds.
 
+## The MCP server
+
+`src/mcp.ts` serves the shared tool catalog (`src/mcp/` in the repo root) over HTTP. `@cloudflare/workers-oauth-provider` wraps the whole Worker: it handles tokens, client registration and discovery, and checks the token on `/mcp`. `src/oauth.ts` is the sign-in and consent page. Tokens and grants live in the `OAUTH_KV` namespace. Each call re-reads the person's role and suspension from D1, so those take effect at once.
+
+To try it locally, have the discovery documents name your local address:
+
+```bash
+# --local-upstream: otherwise wrangler rewrites requests to the route's host, and the OAuth addresses stop matching.
+npx wrangler dev --local-upstream localhost:8787 --var DEV_LOGIN:1 --var PUBLIC_URL:http://localhost:8787 --var ALLOWED_ORIGINS:http://localhost:8787
+npx @modelcontextprotocol/inspector   # connect it to http://localhost:8787/mcp
+```
+
+Self-hosters change the `routes` and `PUBLIC_URL`, and the server advertises its own address.
+
 ## Deploying
 
 The D1 database `entitymodel-cloud` exists (its id is in `wrangler.jsonc`). From `cloud/`, after `npx wrangler login`:
 
 ```bash
+npx wrangler kv namespace create entitymodel-oauth           # once; put its id in wrangler.jsonc (OAUTH_KV)
 npx wrangler d1 migrations apply entitymodel-cloud --remote   # new migrations only
 npx wrangler deploy
 npx wrangler secret put GITHUB_CLIENT_SECRET                  # once; Google's when its app exists

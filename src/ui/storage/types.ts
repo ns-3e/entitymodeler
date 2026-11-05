@@ -28,7 +28,7 @@ export interface ModelStorage {
   profile?(id: string, req: { tab: string; sample?: number }): Promise<ProfileResult>;
   /** Files only: the SQL that would write the tab's descriptions (and Databricks tags) to its catalog, as `em writeback`. Never runs it. */
   writebackPlan?(id: string, req: { tab: string; tags?: boolean }): Promise<{ statements: WritebackStatement[]; notes: string[] }>;
-  /** Files only: changes proposed by agents or `em apply`, waiting for review. */
+  /** Changes proposed by agents or `em apply`, waiting for review. Files and workspace models; not browser models. */
   agentTools?: AgentTools;
   /** The shared business glossary: models/_glossary.json, or this browser. */
   glossary: {
@@ -57,6 +57,8 @@ export interface SavedVersion {
   saved_at: string;
   /** Who saved it, or null if they're no longer a member. */
   by: string | null;
+  /** The agent that made this save on their behalf, if one did. */
+  via?: string | null;
 }
 
 export interface ModelVersions {
@@ -94,6 +96,8 @@ export interface AgentTools {
   proposals(id: string): Promise<Proposal[]>;
   dismissProposal(id: string, proposalId: string): Promise<void>;
   onProposals(cb: (id: string) => void): () => void;
+  /** Whether this person can accept or reject the model's proposals. Assumed yes when absent. */
+  canReview?(id: string): boolean;
   /** Whether the in-app agent can run (the claude CLI is installed). */
   canRun: boolean;
   run(id: string, req: AgentRequest): Promise<string>;

@@ -128,6 +128,7 @@ export function diffViews(A: DataModel, B: DataModel, dir: LineageDir, a: TabDif
     if (relKey(ra, 'a') !== relKey(rb, 'b')) d.push(`ends ${ra.source} → ${ra.target} became ${rb.source} → ${rb.target}`);
     if (ra.cardinality !== rb.cardinality) d.push(`cardinality ${ra.cardinality} → ${rb.cardinality}`);
     if ((ra.foreign_key || '') !== (rb.foreign_key || '')) d.push(`foreign key ${ra.foreign_key || '(none)'} → ${rb.foreign_key || '(none)'}`);
+    if (!!ra.required !== !!rb.required) d.push(rb.required ? 'optional → required' : 'required → optional');
     if (ra.forward_label !== rb.forward_label) d.push(`label "${ra.forward_label}" → "${rb.forward_label}"`);
     // The relationship's own attributes (by name: they have no lineage of their own).
     const raAttrs = new Map((ra.attributes || []).map((x) => [x.name, x]));

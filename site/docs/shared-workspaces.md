@@ -61,13 +61,13 @@ Each account can create 3 workspaces. Each workspace holds up to 50 models and 1
 
 ## Privacy
 
-Workspace models are stored on Cloudflare's network, on servers run for entitymodel.com, and only workspace members can open them. Your account holds your email address and, if you sign in with GitHub or Google, your name, and other members of a workspace can see these. Models you don't add to a workspace never leave your browser. See [Sharing, storage and offline use](/docs/sharing-and-offline/).
+Workspace models are stored on Cloudflare's network, on servers run for entitymodel.com, and only workspace members can open them, along with any [AI agent](/docs/mcp-server/) a member connects to their own account. Your account holds your email address and, if you sign in with GitHub or Google, your name, and other members of a workspace can see these. Models you don't add to a workspace never leave your browser. See [Sharing, storage and offline use](/docs/sharing-and-offline/).
 
 ## Download your data or delete your account
 
 Choose **Account** next to your email address under **Shared workspaces**.
 
-**Download my data** gives you one JSON file with your account details, your sign-in methods, your workspaces, and the current version of every model in them.
+**Download my data** gives you one JSON file with your account details, your sign-in methods, your [connected agents](/docs/mcp-server/#disconnect-an-app), your workspaces, and the current version of every model in them, with its pending proposals.
 
 **Delete my account** asks you to type your email address, then removes your account, sign-in methods, sessions and memberships straight away. This can't be undone.
 

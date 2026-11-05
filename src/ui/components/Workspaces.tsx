@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Cloud, Plus, Trash2, Users } from '../icons';
 import type { ModelSummary } from '../../core';
 import { cloud, storage } from '../storage';
-import { CLOUD_PREFIX, type CloudUser, type Role, type WorkspaceDetail, type WorkspaceRef } from '../storage/cloud';
+import { CLOUD_PREFIX, type CloudClient, type CloudUser, type ConnectedAgent, type Role, type WorkspaceDetail, type WorkspaceRef } from '../storage/cloud';
 import { useStore } from '../store';
 import { Field, Modal, Select, TextInput } from './forms';
 
@@ -256,9 +256,10 @@ function AccountDialog({ me, onClose, onDeleted }: { me: CloudUser; onClose: () 
       }
     >
       <div className="stack">
+        <ConnectedAgents c={c} />
         <div>
           <h3 className="ws-account-title">Download your data</h3>
-          <p className="muted small ws-account-text">One JSON file with your account details and the current version of every model in your workspaces.</p>
+          <p className="muted small ws-account-text">One JSON file with your account details, your connected agents, and the current version of every model in your workspaces, with its pending proposals.</p>
           <a className="btn sm" href={c.exportUrl} download>
             Download my data
           </a>
@@ -355,5 +356,49 @@ function MembersDialog({ ws, detail, me, onClose, onChanged }: { ws: WorkspaceRe
         )}
       </div>
     </Modal>
+  );
+}
+
+const ACCESS: Record<string, string> = { 'models:apply': 'can change models directly', 'models:propose': 'can suggest changes', 'models:read': 'can read models' };
+
+/** Apps connected through the hosted MCP server. Disconnecting ends their access at once. */
+function ConnectedAgents({ c }: { c: CloudClient }) {
+  const toast = useStore((s) => s.toast);
+  const [agents, setAgents] = useState<ConnectedAgent[] | null>(null);
+  useEffect(() => {
+    c.agents()
+      .then(setAgents)
+      // A Worker older than this page has no such route: show none rather than an error.
+      .catch(() => setAgents([]));
+  }, [c]);
+  const disconnect = (a: ConnectedAgent) =>
+    c
+      .revokeAgent(a.id)
+      .then(() => setAgents((list) => (list || []).filter((x) => x.id !== a.id)))
+      .catch((e: any) => toast(`Could not disconnect ${a.name}: ${e.message}`, 'error'));
+  return (
+    <div>
+      <h3 className="ws-account-title">Connected agents</h3>
+      <p className="muted small ws-account-text">
+        Apps you connected at <code>entitymodel.com/mcp</code>. They act as you in your workspaces. <a href="/docs/mcp-server/">How this works</a>
+      </p>
+      {agents === null ? (
+        <p className="muted small ws-account-text">Loading…</p>
+      ) : agents.length ? (
+        <ul className="ws-members">
+          {agents.map((a) => (
+            <li key={a.id}>
+              <span>{a.name}</span>
+              <span className="muted small">{ACCESS[['models:apply', 'models:propose', 'models:read'].find((s) => a.scope.includes(s)) || 'models:read']}</span>
+              <button className="btn sm ghost" onClick={() => disconnect(a)}>
+                Disconnect
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="muted small ws-account-text">None.</p>
+      )}
+    </div>
   );
 }

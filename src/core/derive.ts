@@ -243,6 +243,8 @@ function deriveLogical(src: DataModel, o: LogicalOptions): { content: ModelConte
       }
       delete r.foreign_key;
       if (!child || !a) continue;
+      // The column goes, so the relationship has to remember that the link is mandatory.
+      if (a.required) r.required = true;
       child.attributes = child.attributes.filter((x) => x !== a);
       rep.droppedColumns.push(`${child.name}.${a.name} (foreign key → ${r.name})`);
     }
@@ -426,14 +428,19 @@ function derivePhysical(src: DataModel, o: PhysicalOptions): { content: ModelCon
         child.attributes.push({ ...rest, name: uniqueName(ra.name, child.attributes.map((a) => a.name)), is_primary_key: false, is_label: false, description: ra.description || `${r.forward_label || r.name}: ${ra.label || ra.name}` });
       }
       if (r.attributes?.length) r.attributes = [];
+      // A physical tab has the column, which then says it alone: one place to change, as in the database.
+      const required = r.required;
+      delete r.required;
       const existing = r.foreign_key && child.attributes.some((a) => a.name === r.foreign_key) ? r.foreign_key : inferForeignKey(m, r);
       if (existing) {
         r.foreign_key = existing;
+        const column = child.attributes.find((a) => a.name === existing);
+        if (required && column) column.required = true;
         continue;
       }
       const name = uniqueName(ends.child === ends.parent ? `parent_${pk.name}` : keyColumnName(parent, pk), child.attributes.map((a) => a.name));
       const at = child.attributes.findIndex((a) => !a.is_primary_key);
-      const col: Attribute = { name, label: toLabel(name), type: pk.type, description: `${parent.display_name} (${r.forward_label || r.name})` };
+      const col: Attribute = { name, label: toLabel(name), type: pk.type, ...(required ? { required } : {}), description: `${parent.display_name} (${r.forward_label || r.name})` };
       child.attributes.splice(at === -1 ? child.attributes.length : at, 0, col);
       r.foreign_key = name;
       fkAdded++;

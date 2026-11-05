@@ -121,6 +121,7 @@ Fields are scalars or REFERENCE_ENTITY only; structs cannot nest. For repeating 
   "forward_label": "Placed By", "reverse_label": "Placed", "bidirectional": true,
   "description": "",
   "foreign_key": "customer_id",       // optional: child attribute holding the parent's key (see below)
+  "required": true,                   // optional: the child can't exist without the parent (see below)
   "attributes": [ { "name": "channel", "label": "Channel", "type": "STRING" } ] }
 ```
 
@@ -128,6 +129,8 @@ Fields are scalars or REFERENCE_ENTITY only; structs cannot nest. For repeating 
 - **N:1 and 1:1:** the child is the source.
 - **1:N:** the child is the target.
 - **N:N:** there is no foreign key; export writes a junction table named after the relationship.
+
+`required` means every child row must have a parent, so the foreign key is `NOT NULL` in exports. It's how a logical tab, which has no foreign-key column, keeps that rule. Deriving a logical tab moves `NOT NULL` from a dropped column to its relationship, and deriving a physical tab moves it back to the column. N:N relationships ignore it.
 
 `attributes` describe the relationship itself (an enrollment's `grade`), with the same shape as entity attributes but simple types only (no `STRUCT` or `REFERENCE_ENTITY`). Exports make them columns of the junction table for N:N (`required` → NOT NULL) and of the child table otherwise (always nullable there). Deriving a physical tab moves them onto those tables. Validation flags duplicate or invalid names (`rel.attr_duplicate`, `rel.attr_name`), complex types (`rel.attr_type`) and a name already used by a column of the child entity (`rel.attr_clash`).
 

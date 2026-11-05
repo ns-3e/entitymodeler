@@ -3,7 +3,8 @@
 // Each save names the version it was based on; a newer version saved by someone else comes back as CloudConflict,
 // which the editor shows with the "changed elsewhere" banner. The open model has a live connection, so others'
 // saves arrive within a second and reload through the same path as a file changed on disk.
-import type { ModelStorage, Peer } from './types';
+import type { Proposal } from '../../core';
+import type { AgentTools, ModelStorage, Peer } from './types';
 
 export const CLOUD_PREFIX = 'cloud:';
 export const isCloudId = (id: string | null | undefined) => !!id && id.startsWith(CLOUD_PREFIX);
@@ -45,6 +46,14 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 const send = (method: string, body?: unknown) => ({ method, headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
 
+/** An app connected through the hosted MCP server, as the account dialog lists it. */
+export interface ConnectedAgent {
+  id: string;
+  name: string;
+  scope: string[];
+  created_at: string;
+}
+
 export interface CloudClient {
   providers: string[];
   dev: boolean;
@@ -59,6 +68,8 @@ export interface CloudClient {
   /** The workspaces this account alone owns, which go with it. */
   deletionPreview(): Promise<{ workspaces: { id: string; name: string; members: number; models: number }[] }>;
   deleteAccount(confirmEmail: string): Promise<void>;
+  agents(): Promise<ConnectedAgent[]>;
+  revokeAgent(id: string): Promise<void>;
   createWorkspace(name: string): Promise<WorkspaceRef>;
   workspace(id: string): Promise<WorkspaceDetail>;
   addMember(ws: string, email: string, role: Role): Promise<void>;
@@ -95,6 +106,8 @@ export async function connectCloud(): Promise<CloudClient | null> {
     exportUrl: `${API}/me/export`,
     deletionPreview: () => call('me/deletion'),
     deleteAccount: (confirmEmail) => call('me', send('DELETE', { confirm_email: confirmEmail })),
+    agents: () => call('me/agents'),
+    revokeAgent: (id) => call(`me/agents/${encodeURIComponent(id)}`, send('DELETE')),
     createWorkspace: (name) => call('workspaces', send('POST', { name })),
     workspace: (id) => call(`workspaces/${encodeURIComponent(id)}`),
     addMember: (ws, email, role) => call(`workspaces/${encodeURIComponent(ws)}/members`, send('POST', { email, role })),
@@ -114,6 +127,7 @@ export function withCloud(base: ModelStorage): ModelStorage {
   const saving = new Map<string, Promise<unknown>>();
   const listeners = new Set<(id: string) => void>();
   const peerListeners = new Set<(people: Peer[]) => void>();
+  const proposalListeners = new Set<(id: string) => void>();
   let peers: Peer[] = [];
   const showPeers = (people: Peer[]) => {
     peers = people;
@@ -154,7 +168,8 @@ export function withCloud(base: ModelStorage): ModelStorage {
         try {
           const m = JSON.parse(String(e.data)) as { type: string; version?: number; you?: string; people?: Peer[] };
           if (m.type === 'hello') state.you = m.you;
-          if (m.type === 'presence') showPeers(others(m.people || [], state.you));
+          if (m.type === 'proposals') proposalListeners.forEach((cb) => cb(id));
+          else if (m.type === 'presence') showPeers(others(m.people || [], state.you));
           // "hello" after a reconnect, and "pong", may carry a version saved while we were away.
           else if ((m.type === 'version' || m.type === 'hello' || m.type === 'pong') && m.version) void changed(id, m.version);
         } catch {
@@ -181,8 +196,47 @@ export function withCloud(base: ModelStorage): ModelStorage {
     ws?.close(1000);
   };
 
+  // Agents reach workspace models through the hosted MCP server, and their proposals are reviewed here. The Ask panel
+  // needs a local Claude, so it stays with local models.
+  const local = base.agentTools;
+  const agentTools: AgentTools = {
+    canRun: local?.canRun ?? false,
+    async proposals(id) {
+      if (!isCloudId(id)) return local ? local.proposals(id) : [];
+      try {
+        return await call<Proposal[]>(`models/${encodeURIComponent(bare(id))}/proposals`);
+      } catch (e: any) {
+        // The site and the Worker deploy separately: a Worker without this route simply has no proposals.
+        if (e.status === 404) return [];
+        throw e;
+      }
+    },
+    async dismissProposal(id, pid) {
+      if (!isCloudId(id)) return local?.dismissProposal(id, pid);
+      try {
+        await call(`models/${encodeURIComponent(bare(id))}/proposals/${encodeURIComponent(pid)}`, send('DELETE'));
+      } catch (e: any) {
+        // Someone else reviewed it first.
+        if (e.status !== 404) throw e;
+      }
+    },
+    onProposals(cb) {
+      proposalListeners.add(cb);
+      const off = local?.onProposals(cb);
+      return () => {
+        proposalListeners.delete(cb);
+        off?.();
+      };
+    },
+    canReview: (id) => !isCloudId(id) || roles.get(id) !== 'viewer',
+    run: (id, req) => (!isCloudId(id) && local ? local.run(id, req) : Promise.reject(new Error('Ask Claude works on local models. Connect your agent to entitymodel.com/mcp to work on workspace models.'))),
+    cancel: (runId) => local?.cancel(runId) ?? Promise.resolve(),
+    onAgent: (cb) => local?.onAgent(cb) ?? (() => {}),
+  };
+
   return {
     ...base,
+    agentTools,
     async get(id) {
       if (!isCloudId(id)) return base.get(id);
       const r = await call<{ version: number; text: string; role: Role }>(`models/${encodeURIComponent(bare(id))}`);
@@ -264,7 +318,7 @@ export function withCloud(base: ModelStorage): ModelStorage {
         off();
       };
     },
-    // Local-only features (exports to models/, profiling, agents) don't apply to workspace models.
+    // Local-only features (exports to models/, profiling, the Ask panel) don't apply to workspace models.
     saveExport: base.saveExport && ((id, f, d) => (isCloudId(id) ? Promise.reject(new Error('Not for workspace models.')) : base.saveExport!(id, f, d))),
   };
 }

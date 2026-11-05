@@ -676,7 +676,7 @@ async function main() {
     }
     case 'mcp':
       // stdout is the protocol channel: nothing else may print to it.
-      return runMcp({ allowApply: bool('allow-apply'), author: flag('author') || 'Claude' });
+      return runMcp({ allowApply: bool('allow-apply'), author: flag('author') || 'Claude', modelsDir: flag('models-dir') });
     case 'apply': {
       const p = resolveModelPath(args.shift());
       const src = args.shift();
@@ -807,7 +807,7 @@ Live schemas (credentials from env or the platform CLI profile; never stored)
                                          only what differs; --apply runs it. Never removes anything
 
 Agents
-  mcp [--allow-apply] [--author NAME]    MCP server on stdio (see .mcp.json); edits become proposals
+  mcp [--allow-apply] [--author NAME] [--models-dir DIR]    MCP server on stdio (see .mcp.json); edits become proposals
   apply <model> <ops.json|-> [--apply] [--title T] [--tab T]
                                          Typed operations as a proposal (default) or applied directly
   proposals <model> [--show ID | --accept ID | --reject ID]

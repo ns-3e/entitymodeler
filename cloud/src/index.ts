@@ -4,31 +4,15 @@
 // (email.ts), and a development login that is off unless DEV_LOGIN is "1".
 import { PROVIDERS, pkceChallenge, randomToken, safeReturn } from './auth';
 import { LINKS_PER_HOUR, LINK_MINUTES, confirmPage, mailer } from './email';
+import { OAuthProvider } from '@cloudflare/workers-oauth-provider';
+import { HttpError, RANK, SESSION_COOKIE, addModel, commit, cookie, json, modelAccess, need, newId, now, roleIn, room, sessionUser, sha256, type Role, type User } from './common';
+import { mcpHandler } from './mcp';
+import { SCOPES, authorize, listAgents, revokeAgent, revokeAllAgents } from './oauth';
 import { quotaFor } from './quotas';
-import type { WriteResult } from './room';
 
 export { ModelRoom } from './room';
 
-type Role = 'owner' | 'editor' | 'viewer';
-const RANK: Record<Role, number> = { viewer: 1, editor: 2, owner: 3 };
-const SESSION_COOKIE = 'em_session';
 const SESSION_DAYS = 30;
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
-
-class HttpError extends Error {
-  constructor(
-    public status: number,
-    message: string,
-    public body?: object,
-  ) {
-    super(message);
-  }
-}
 
 class Suspended extends HttpError {
   constructor() {
@@ -39,23 +23,6 @@ class Suspended extends HttpError {
 /** Created by migration 0003: takes over created_by on what outlives a deleted account. */
 const DELETED_ACCOUNT = 'deleted-account';
 
-const json = (body: unknown, status = 200, headers: HeadersInit = {}) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...headers } });
-const now = () => new Date().toISOString();
-/** 128-bit random id, URL-safe. */
-const newId = () => [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(36).padStart(2, '0')).join('').slice(0, 22);
-
-async function sha256(s: string): Promise<string> {
-  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-  return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-function cookie(req: Request, name: string): string | undefined {
-  for (const part of (req.headers.get('Cookie') || '').split(';')) {
-    const [k, ...v] = part.trim().split('=');
-    if (k === name) return v.join('=');
-  }
-}
-
 async function body<T>(req: Request, max = 10_000): Promise<T> {
   const text = await req.text();
   if (text.length > max) throw new HttpError(413, 'Request too large.');
@@ -64,27 +31,6 @@ async function body<T>(req: Request, max = 10_000): Promise<T> {
   } catch {
     throw new HttpError(400, 'Expected JSON.');
   }
-}
-
-/** A model file: JSON with an entities list. Returns its title. */
-function checkModel(text: string, maxBytes: number): string {
-  if (new TextEncoder().encode(text).length > maxBytes) throw new HttpError(413, `Models are limited to ${Math.round(maxBytes / 1e6)} MB.`);
-  let m: { title?: unknown; entities?: unknown };
-  try {
-    m = JSON.parse(text);
-  } catch {
-    throw new HttpError(400, 'The model is not valid JSON.');
-  }
-  if (!m || typeof m !== 'object' || !Array.isArray(m.entities)) throw new HttpError(400, 'Not a model file: it has no entities list.');
-  return typeof m.title === 'string' && m.title.trim() ? m.title.trim().slice(0, 200) : 'Untitled model';
-}
-
-async function sessionUser(req: Request, env: Env): Promise<User | null> {
-  const token = cookie(req, SESSION_COOKIE);
-  if (!token) return null;
-  return env.DB.prepare('SELECT u.id, u.email, u.name FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ? AND u.suspended_at IS NULL')
-    .bind(await sha256(token), now())
-    .first<User>();
 }
 
 async function startSession(env: Env, userId: string): Promise<string> {
@@ -113,25 +59,6 @@ export async function signIn(env: Env, provider: string, subject: string, email:
   return userId;
 }
 
-async function roleIn(env: Env, workspace: string, user: string): Promise<{ role: Role; plan: string } | null> {
-  return env.DB.prepare('SELECT m.role, w.plan FROM members m JOIN workspaces w ON w.id = m.workspace_id WHERE m.workspace_id = ? AND m.user_id = ?').bind(workspace, user).first<{ role: Role; plan: string }>();
-}
-
-async function need(env: Env, workspace: string, user: string, min: Role) {
-  const r = await roleIn(env, workspace, user);
-  // Not a member looks the same as not existing, so ids can't be probed.
-  if (!r) throw new HttpError(404, 'Not found.');
-  if (RANK[r.role] < RANK[min]) throw new HttpError(403, `This needs the ${min} role.`);
-  return r;
-}
-
-async function modelAccess(env: Env, model: string, user: string, min: Role) {
-  const row = await env.DB.prepare('SELECT workspace_id, title FROM models WHERE id = ?').bind(model).first<{ workspace_id: string; title: string }>();
-  if (!row) throw new HttpError(404, 'Not found.');
-  return { ...row, ...(await need(env, row.workspace_id, user, min)) };
-}
-
-const room = (env: Env, model: string) => env.MODEL.get(env.MODEL.idFromName(model));
 
 const OAUTH_COOKIE = 'em_oauth';
 
@@ -256,6 +183,7 @@ async function closeConnections(env: Env, user: string, workspace: string) {
  * Model contents go first: if that fails, nothing in the database has changed and the person can simply try again.
  */
 async function deleteAccount(env: Env, user: User) {
+  await revokeAllAgents(env, user.id);
   const doomed = await env.DB.prepare(`SELECT d.id FROM models d JOIN workspaces w ON w.id = d.workspace_id WHERE ${SOLE_OWNER}`).bind(user.id).all<{ id: string }>();
   await Promise.all(doomed.results.map((m) => room(env, m.id).destroy()));
   const kept = await env.DB.prepare(`SELECT w.id FROM members m JOIN workspaces w ON w.id = m.workspace_id WHERE m.user_id = ?1 AND NOT (${SOLE_OWNER})`).bind(user.id).all<{ id: string }>();
@@ -281,12 +209,14 @@ async function exportAccount(env: Env, user: User): Promise<Response> {
   const workspaces = await env.DB.prepare('SELECT w.id, w.name, w.plan, w.created_at, m.role, m.added_at FROM members m JOIN workspaces w ON w.id = m.workspace_id WHERE m.user_id = ? ORDER BY w.name').bind(user.id).all();
   const models = await env.DB.prepare('SELECT d.id, d.workspace_id, d.title, d.created_at, d.updated_at FROM models d JOIN members m ON m.workspace_id = d.workspace_id WHERE m.user_id = ? ORDER BY d.workspace_id, d.title').bind(user.id).all<{ id: string }>();
 
+  const agents = await listAgents(env, user.id);
+
   const encoder = new TextEncoder();
   let next = 0;
   let written = 0;
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      const head = JSON.stringify({ exported_at: now(), account, sign_ins: signIns.results, workspaces: workspaces.results });
+      const head = JSON.stringify({ exported_at: now(), account, sign_ins: signIns.results, connected_agents: agents, workspaces: workspaces.results });
       controller.enqueue(encoder.encode(`${head.slice(0, -1)},"models":[`));
     },
     async pull(controller) {
@@ -296,7 +226,8 @@ async function exportAccount(env: Env, user: User): Promise<Response> {
         if (!current) continue; // deleted since the list was read
         // The text was checked to be JSON when it was saved, so it goes in as it is.
         const entry = JSON.stringify({ ...row, version: current.version });
-        controller.enqueue(encoder.encode(`${written++ ? ',' : ''}${entry.slice(0, -1)},"model":${current.text}}`));
+        const proposals = await room(env, row.id).proposals();
+        controller.enqueue(encoder.encode(`${written++ ? ',' : ''}${entry.slice(0, -1)},"proposals":[${proposals.join(',')}],"model":${current.text}}`));
         return;
       }
       controller.enqueue(encoder.encode(']}'));
@@ -326,6 +257,7 @@ async function route(req: Request, env: Env, path: string[]): Promise<Response> 
   }
 
   if (path[0] === 'auth') return auth(req, env, path);
+  if (path[0] === 'oauth' && path[1] === 'authorize' && !path[2]) return authorize(req, env);
 
   const user = await sessionUser(req, env);
   if (!user) throw new HttpError(401, 'Sign in first.');
@@ -341,6 +273,13 @@ async function route(req: Request, env: Env, path: string[]): Promise<Response> 
   }
 
   if (path[0] === 'me' && path[1] === 'export' && method === 'GET') return exportAccount(env, user);
+
+  if (path[0] === 'me' && path[1] === 'agents' && !path[2] && method === 'GET') return json(await listAgents(env, user.id));
+
+  if (path[0] === 'me' && path[1] === 'agents' && path[2] && !path[3] && method === 'DELETE') {
+    await revokeAgent(env, user.id, path[2]);
+    return json({ ok: true });
+  }
 
   if (path[0] === 'me' && path[1] === 'deletion' && method === 'GET') {
     const { results } = await env.DB.prepare(
@@ -413,14 +352,7 @@ async function route(req: Request, env: Env, path: string[]): Promise<Response> 
 
     if (path[2] === 'models' && !path[3] && method === 'POST') {
       const { plan } = await need(env, ws, user.id, 'editor');
-      const q = quotaFor(plan);
-      const text = await req.text();
-      const title = checkModel(text, q.modelBytes);
-      const count = await env.DB.prepare('SELECT COUNT(*) AS n FROM models WHERE workspace_id = ?').bind(ws).first<{ n: number }>();
-      if ((count?.n ?? 0) >= q.modelsPerWorkspace) throw new HttpError(403, `Workspaces are limited to ${q.modelsPerWorkspace} models.`);
-      const id = newId();
-      await room(env, id).create(text, user.id);
-      await env.DB.prepare('INSERT INTO models (id, workspace_id, title, size, created_by, created_at, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(id, ws, title, text.length, user.id, now(), now(), user.id).run();
+      const { id, title } = await addModel(env, ws, plan, await req.text(), user.id);
       return json({ id, title, version: 1 }, 201);
     }
   }
@@ -439,16 +371,8 @@ async function route(req: Request, env: Env, path: string[]): Promise<Response> 
       const a = await modelAccess(env, id, user.id, 'editor');
       const base = Number((req.headers.get('If-Match') || '').replace(/"/g, ''));
       if (!Number.isInteger(base) || base < 1) throw new HttpError(428, 'Send If-Match with the version this save is based on.');
-      const q = quotaFor(a.plan);
-      const text = await req.text();
-      const title = checkModel(text, q.modelBytes);
-      const r: WriteResult = await room(env, id).write(base, text, user.id, q.savesPerMinute);
-      if (!r.ok) {
-        if (r.reason === 'conflict') throw new HttpError(409, 'Someone else saved a newer version.', { version: r.version, text: r.text });
-        if (r.reason === 'rate') throw new HttpError(429, 'Too many saves for this model; try again in a minute.');
-        throw new HttpError(404, 'Not found.');
-      }
-      await env.DB.prepare('UPDATE models SET title = ?, size = ?, updated_at = ?, updated_by = ? WHERE id = ?').bind(title, text.length, now(), user.id, id).run();
+      const r = await commit(env, id, a.plan, base, await req.text(), user.id);
+      if (!r.ok) throw new HttpError(409, 'Someone else saved a newer version.', { version: r.version, text: r.text });
       return json({ version: r.version }, 200, { ETag: `"${r.version}"` });
     }
 
@@ -467,7 +391,7 @@ async function route(req: Request, env: Env, path: string[]): Promise<Response> 
       ]);
       // Only current members are named: someone who left or deleted their account shows as no one in particular.
       const names = new Map(people.results.map((p) => [p.id, p.name || p.email]));
-      return json(versions.map(({ saved_by, ...v }) => ({ ...v, by: names.get(saved_by) ?? null })));
+      return json(versions.map(({ saved_by, via, ...v }) => ({ ...v, by: names.get(saved_by) ?? null, via })));
     }
 
     if (path[2] === 'history' && path[3] && !path[4] && method === 'GET') {
@@ -484,16 +408,21 @@ async function route(req: Request, env: Env, path: string[]): Promise<Response> 
       if (!Number.isInteger(base) || base < 1) throw new HttpError(428, 'Send If-Match with the version this restore is based on.');
       const text = await room(env, id).readVersion(Number(path[3]));
       if (text === null) throw new HttpError(404, 'That version is no longer kept.');
-      const q = quotaFor(a.plan);
-      const title = checkModel(text, q.modelBytes);
-      const r: WriteResult = await room(env, id).write(base, text, user.id, q.savesPerMinute);
-      if (!r.ok) {
-        if (r.reason === 'conflict') throw new HttpError(409, 'Someone else saved a newer version.', { version: r.version, text: r.text });
-        if (r.reason === 'rate') throw new HttpError(429, 'Too many saves for this model; try again in a minute.');
-        throw new HttpError(404, 'Not found.');
-      }
-      await env.DB.prepare('UPDATE models SET title = ?, size = ?, updated_at = ?, updated_by = ? WHERE id = ?').bind(title, text.length, now(), user.id, id).run();
+      const r = await commit(env, id, a.plan, base, text, user.id);
+      if (!r.ok) throw new HttpError(409, 'Someone else saved a newer version.', { version: r.version, text: r.text });
       return json({ version: r.version, text });
+    }
+
+    if (path[2] === 'proposals' && !path[3] && method === 'GET') {
+      await modelAccess(env, id, user.id, 'viewer');
+      return json((await room(env, id).proposals()).map((p) => JSON.parse(p)));
+    }
+
+    // Accepting saves the model through the usual PUT, then removes the proposal here. Rejecting only removes it.
+    if (path[2] === 'proposals' && path[3] && !path[4] && method === 'DELETE') {
+      await modelAccess(env, id, user.id, 'editor');
+      if (!(await room(env, id).removeProposal(path[3]))) throw new HttpError(404, 'Not found.');
+      return json({ ok: true });
     }
 
     if (path[2] === 'live' && method === 'GET') {
@@ -507,7 +436,8 @@ async function route(req: Request, env: Env, path: string[]): Promise<Response> 
   throw new HttpError(404, 'Not found.');
 }
 
-export default {
+/** The site's own API, and what OAuthProvider hands everything to except /mcp and the token endpoints. */
+const api = {
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
     if (!url.pathname.startsWith('/api/cloud/')) return json({ error: 'Not found.' }, 404);
@@ -526,3 +456,33 @@ export default {
     }
   },
 } satisfies ExportedHandler<Env>;
+
+const REGISTER_PATH = '/api/cloud/oauth/register';
+
+/** Built on first use because the addresses come from env, so a self-hosted copy advertises its own. */
+let provider: OAuthProvider<Env> | undefined;
+const oauthProvider = (env: Env) =>
+  (provider ??= new OAuthProvider<Env>({
+    apiRoute: '/mcp',
+    apiHandler: mcpHandler as never,
+    defaultHandler: api,
+    authorizeEndpoint: '/api/cloud/oauth/authorize',
+    tokenEndpoint: '/api/cloud/oauth/token',
+    clientRegistrationEndpoint: REGISTER_PATH,
+    scopesSupported: [...SCOPES, 'offline_access'],
+    // The baseline only: clients request what a 401 names, and the consent page offers the rest.
+    requiredScopes: ['models:read'],
+    resourceMetadata: { resource: `${env.PUBLIC_URL}/mcp`, authorization_servers: [env.PUBLIC_URL], resource_name: 'EntityModel.com', bearer_methods_supported: ['header'] },
+    clientIdMetadataDocumentEnabled: true,
+  }));
+
+export default {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    // Anyone can register a client without signing in, so this is the one route with no account to limit by.
+    if (req.method === 'POST' && new URL(req.url).pathname === REGISTER_PATH) {
+      const { success } = await env.REGISTER_LIMITER.limit({ key: req.headers.get('CF-Connecting-IP') || 'unknown' });
+      if (!success) return json({ error: 'too_many_requests', error_description: 'Too many client registrations. Try again in a minute.' }, 429);
+    }
+    return oauthProvider(env).fetch(req, env, ctx);
+  },
+};

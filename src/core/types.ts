@@ -155,6 +155,11 @@ export interface Relationship {
    * for N:1 and 1:1, the target for 1:N; N:N has none (a junction table is generated). Unset = inferred.
    */
   foreign_key?: string;
+  /**
+   * The child can't exist without the parent: its foreign key is NOT NULL. For tabs with no foreign-key column to
+   * mark, such as logical ones. On a column that exists, either this or the column's own `required` is enough.
+   */
+  required?: boolean;
   attributes?: Attribute[];
 }
 
