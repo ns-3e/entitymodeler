@@ -16284,6 +16284,8 @@ function toDbt(m, opts = {}) {
       name: t.name,
       description: t.description || void 0,
       config: t.pk.length > 1 ? { meta: { primary_key: t.pk } } : void 0,
+      // dbt's own unique test only looks at one column. Without this, a composite key allows duplicate rows.
+      data_tests: t.pk.length > 1 ? [{ "dbt_utils.unique_combination_of_columns": { combination_of_columns: t.pk } }] : void 0,
       columns: t.columns.map((c) => {
         const tests = [];
         if (c.notNull) tests.push("not_null");
@@ -16301,8 +16303,9 @@ function toDbt(m, opts = {}) {
       })
     };
   });
+  const needsUtils = plan.tables.some((t) => t.pk.length > 1) ? "\nComposite keys use the dbt_utils package: add dbt-labs/dbt_utils to packages.yml." : "";
   return toYaml({ version: 2, models }, `${m.title}${tabSuffix(m)} \u2014 dbt models
-${MADE_WITH}`);
+${MADE_WITH}${needsUtils}`);
 }
 var JSON_TYPE = {
   STRING: { type: "string" },
@@ -16839,6 +16842,11 @@ function syncPlan(doc, sourceTab, targetTab) {
           diffs.push(da.is_primary_key ? "now a primary key" : "no longer a primary key");
           set.is_primary_key = !!da.is_primary_key || void 0;
         }
+        const mustHave = (a) => !!a.required || !!a.is_primary_key;
+        if (mustHave(da) !== mustHave(ta)) {
+          diffs.push(mustHave(da) ? "now required" : "no longer required");
+          set.required = !!da.required;
+        }
         if (diffs.length)
           changes.push({ id: `a~${tn}.${ta.name}`, kind: "attribute_changed", entity: tn, label: `${tn}.${ta.name}: ${diffs.join(", ")}`, ops: [{ op: "update_attribute", entity: tn, attribute: ta.name, set }], suggested: true });
         prev = ta.name;
@@ -16852,7 +16860,14 @@ function syncPlan(doc, sourceTab, targetTab) {
   for (const r of D.relationships) {
     const s2 = nameInT(r.source);
     const t = nameInT(r.target);
-    if (!s2 || !t || hasRel(s2, t, r.cardinality)) continue;
+    if (!s2 || !t) continue;
+    if (hasRel(s2, t, r.cardinality)) {
+      const same2 = T2.relationships.filter((x) => x.source === s2 && x.target === t || x.source === t && x.target === s2);
+      const tr = same2.find((x) => x.name === r.name) || (same2.length === 1 ? same2[0] : void 0);
+      if (tr && !!r.required !== !!tr.required)
+        changes.push({ id: `r~${tr.name}`, kind: "relationship_changed", entity: s2, label: `${tr.name}: ${r.required ? "now required" : "no longer required"}`, ops: [{ op: "update_relationship", relationship: tr.name, set: { required: !!r.required } }], suggested: true });
+      continue;
+    }
     const viaNew = added.has(r.source) ? r.source : added.has(r.target) ? r.target : void 0;
     changes.push({
       id: `r+${s2}>${t}:${r.name}`,
@@ -16870,7 +16885,7 @@ function syncPlan(doc, sourceTab, targetTab) {
   return changes;
 }
 function applySync(doc, changes, targetTab) {
-  const order = ["entity_added", "attribute_added", "attribute_changed", "relationship_added", "attribute_removed", "entity_removed"];
+  const order = ["entity_added", "attribute_added", "attribute_changed", "relationship_added", "relationship_changed", "attribute_removed", "entity_removed"];
   const sorted = [...changes].sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
   return applyBatches(doc, sorted.map((c) => c.ops), targetTab);
 }

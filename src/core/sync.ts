@@ -7,7 +7,7 @@ import { applyBatches, type Op } from './operations';
 import { structuredCopy, tabView } from './tabs';
 import type { Attribute, DataModel, Entity, Relationship } from './types';
 
-export type SyncKind = 'entity_added' | 'attribute_added' | 'attribute_changed' | 'relationship_added' | 'attribute_removed' | 'entity_removed';
+export type SyncKind = 'entity_added' | 'attribute_added' | 'attribute_changed' | 'relationship_added' | 'relationship_changed' | 'attribute_removed' | 'entity_removed';
 
 export interface SyncChange {
   id: string;
@@ -107,6 +107,12 @@ export function syncPlan(doc: DataModel, sourceTab: string, targetTab: string): 
           diffs.push(da.is_primary_key ? 'now a primary key' : 'no longer a primary key');
           set.is_primary_key = !!da.is_primary_key || undefined;
         }
+        // A key is required anyway, whether or not it says so.
+        const mustHave = (a: Attribute) => !!a.required || !!a.is_primary_key;
+        if (mustHave(da) !== mustHave(ta)) {
+          diffs.push(mustHave(da) ? 'now required' : 'no longer required');
+          set.required = !!da.required;
+        }
         if (diffs.length)
           changes.push({ id: `a~${tn}.${ta.name}`, kind: 'attribute_changed', entity: tn, label: `${tn}.${ta.name}: ${diffs.join(', ')}`, ops: [{ op: 'update_attribute', entity: tn, attribute: ta.name, set }], suggested: true });
         prev = ta.name;
@@ -122,7 +128,15 @@ export function syncPlan(doc: DataModel, sourceTab: string, targetTab: string): 
   for (const r of D.relationships) {
     const s = nameInT(r.source);
     const t = nameInT(r.target);
-    if (!s || !t || hasRel(s, t, r.cardinality)) continue;
+    if (!s || !t) continue;
+    if (hasRel(s, t, r.cardinality)) {
+      // With several links between the same two entities, only the name can say which one this is.
+      const same = T.relationships.filter((x) => (x.source === s && x.target === t) || (x.source === t && x.target === s));
+      const tr = same.find((x) => x.name === r.name) || (same.length === 1 ? same[0] : undefined);
+      if (tr && !!r.required !== !!tr.required)
+        changes.push({ id: `r~${tr.name}`, kind: 'relationship_changed', entity: s, label: `${tr.name}: ${r.required ? 'now required' : 'no longer required'}`, ops: [{ op: 'update_relationship', relationship: tr.name, set: { required: !!r.required } }], suggested: true });
+      continue;
+    }
     const viaNew = added.has(r.source) ? r.source : added.has(r.target) ? r.target : undefined;
     changes.push({
       id: `r+${s}>${t}:${r.name}`,
@@ -145,7 +159,7 @@ export function syncPlan(doc: DataModel, sourceTab: string, targetTab: string): 
 
 /** Apply chosen sync changes to the target tab (in place; immer drafts fine). New entities go first so their relationships resolve. */
 export function applySync(doc: DataModel, changes: SyncChange[], targetTab: string) {
-  const order: SyncKind[] = ['entity_added', 'attribute_added', 'attribute_changed', 'relationship_added', 'attribute_removed', 'entity_removed'];
+  const order: SyncKind[] = ['entity_added', 'attribute_added', 'attribute_changed', 'relationship_added', 'relationship_changed', 'attribute_removed', 'entity_removed'];
   const sorted = [...changes].sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
   return applyBatches(doc, sorted.map((c) => c.ops), targetTab);
 }

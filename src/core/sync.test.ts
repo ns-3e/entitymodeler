@@ -26,6 +26,41 @@ describe('sync from source', () => {
     expect(syncPlan(doc, MAIN_TAB, logical)).toEqual([]);
   });
 
+  it('brings over a column that became required or optional', () => {
+    const { doc, logical } = setup();
+    const r = applyOps(doc, [
+      { op: 'update_attribute', entity: 'tbl_customers', attribute: 'credit_lmt', set: { required: true } },
+      { op: 'update_attribute', entity: 'tbl_customers', attribute: 'cust_nm', set: { required: false } },
+    ]);
+    const src = (r as { doc: DataModel }).doc;
+    const plan = syncPlan(src, MAIN_TAB, logical);
+    expect(plan.map((c) => c.label)).toEqual(expect.arrayContaining(['customer.credit_lmt: now required', 'customer.full_name: no longer required']));
+    applySync(src, plan, logical);
+    const c = tabView(src, logical).entities.find((e) => e.name === 'customer')!;
+    expect(c.attributes.find((a) => a.name === 'credit_lmt')?.required).toBe(true);
+    expect(c.attributes.find((a) => a.name === 'full_name')?.required).toBeFalsy();
+    expect(syncPlan(src, MAIN_TAB, logical)).toEqual([]);
+  });
+
+  it('brings over a foreign key that became required, to a logical and to a physical tab', () => {
+    const { doc, logical } = setup();
+    const physical = addTab(doc, { name: 'Physical', kind: 'physical', derived_from: MAIN_TAB }, deriveTab(tabView(doc), 'physical').content);
+    expect(tabView(doc, logical).relationships.find((x) => x.target === 'customer')?.required).toBe(true);
+    const r = applyOps(doc, [{ op: 'update_attribute', entity: 'orders', attribute: 'cust_id', set: { required: false } }]);
+    const src = (r as { doc: DataModel }).doc;
+
+    const toLogical = syncPlan(src, MAIN_TAB, logical);
+    expect(toLogical.map((c) => c.kind)).toEqual(['relationship_changed']);
+    applySync(src, toLogical, logical);
+    expect(tabView(src, logical).relationships.find((x) => x.target === 'customer')?.required).toBeFalsy();
+    expect(syncPlan(src, MAIN_TAB, logical)).toEqual([]);
+
+    const toPhysical = syncPlan(src, MAIN_TAB, physical);
+    expect(toPhysical.map((c) => c.kind)).toEqual(['attribute_changed']);
+    applySync(src, toPhysical, physical);
+    expect(syncPlan(src, MAIN_TAB, physical)).toEqual([]);
+  });
+
   it('finds what changed in the source and brings it over the way the tab was made', () => {
     const { doc, logical } = setup();
     const r = applyOps(doc, [

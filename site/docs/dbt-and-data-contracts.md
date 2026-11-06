@@ -15,13 +15,14 @@ One dbt model per entity, with descriptions, data types and data tests:
 | In the model | dbt test |
 | --- | --- |
 | Primary key | `not_null` and `unique` |
+| Composite primary key | `not_null` on each column, and `dbt_utils.unique_combination_of_columns` on the model |
 | Required attribute | `not_null` |
 | Unique attribute | `unique` |
 | Foreign key (relationship or reference) | `relationships` to the parent model |
 | Reference list with values (up to 200) | `accepted_values` |
 | PII flag | `meta.pii` |
 
-Drop it into your dbt project's `models/` folder next to the SQL models and run `dbt test`.
+Drop it into your dbt project's `models/` folder next to the SQL models and run `dbt test`. If the model has composite keys, or N:N relationships, which become junction tables with one, add [`dbt-labs/dbt_utils`](https://hub.getdbt.com/dbt-labs/dbt_utils/latest/) to `packages.yml` and run `dbt deps` first. The file's header says when it's needed.
 
 **Source-to-target mappings** also generate the dbt model SQL itself, from each target attribute's source columns and transform. See [Mappings, glossary and comments](/docs/mappings-glossary-comments/).
 

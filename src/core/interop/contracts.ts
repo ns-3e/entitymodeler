@@ -29,6 +29,8 @@ export function toDbt(m: DataModel, opts: { dialect?: SqlDialect } = {}): string
       name: t.name,
       description: t.description || undefined,
       config: t.pk.length > 1 ? { meta: { primary_key: t.pk } } : undefined,
+      // dbt's own unique test only looks at one column. Without this, a composite key allows duplicate rows.
+      data_tests: t.pk.length > 1 ? [{ 'dbt_utils.unique_combination_of_columns': { combination_of_columns: t.pk } }] : undefined,
       columns: t.columns.map((c) => {
         const tests: unknown[] = [];
         if (c.notNull) tests.push('not_null');
@@ -46,7 +48,8 @@ export function toDbt(m: DataModel, opts: { dialect?: SqlDialect } = {}): string
       }),
     };
   });
-  return toYaml({ version: 2, models } as any, `${m.title}${tabSuffix(m)} — dbt models\n${MADE_WITH}`);
+  const needsUtils = plan.tables.some((t) => t.pk.length > 1) ? '\nComposite keys use the dbt_utils package: add dbt-labs/dbt_utils to packages.yml.' : '';
+  return toYaml({ version: 2, models } as any, `${m.title}${tabSuffix(m)} — dbt models\n${MADE_WITH}${needsUtils}`);
 }
 
 // ---------------------------------------------------------------- JSON Schema

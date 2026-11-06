@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { normalizeModel, toAvro, toDbt, toJsonSchema, toOdcs, toSql, toYaml, type DataModel } from '..';
+import { fromSql, normalizeModel, toAvro, toDbt, toJsonSchema, toOdcs, toSql, toYaml, type DataModel } from '..';
 
 const demo = (): DataModel => {
   const m = normalizeModel(JSON.parse(readFileSync(new URL('../fixtures/supplier.model.json', import.meta.url), 'utf8')));
@@ -27,6 +27,19 @@ describe('contract exports', () => {
     expect(y.models.some((x: any) => x.columns.some((c: any) => c.data_tests?.some((t: any) => t.relationships)))).toBe(true);
     expect(y.models.some((x: any) => x.columns.some((c: any) => c.data_tests?.some((t: any) => t.accepted_values?.values.length)))).toBe(true);
     expect(sup.columns[1].meta).toEqual({ pii: true });
+  });
+
+  it('dbt tests that a composite key is unique, and says what that needs', () => {
+    const composite = fromSql('CREATE TABLE a (a_id BIGINT PRIMARY KEY, x TEXT); CREATE TABLE line (a_id BIGINT NOT NULL, line_no INT NOT NULL, qty INT, PRIMARY KEY (a_id, line_no));').model;
+    const text = toDbt(composite);
+    const y = parse(text);
+    const line = y.models.find((x: any) => x.name === 'line');
+    expect(line.data_tests).toEqual([{ 'dbt_utils.unique_combination_of_columns': { combination_of_columns: ['a_id', 'line_no'] } }]);
+    expect(line.columns.find((c: any) => c.name === 'a_id').data_tests).not.toContain('unique');
+    expect(y.models.find((x: any) => x.name === 'a').data_tests).toBeUndefined();
+    expect(text).toContain('dbt_utils');
+    // A model with only single-column keys doesn't ask for the package.
+    expect(toDbt(fromSql('CREATE TABLE a (a_id BIGINT PRIMARY KEY, x TEXT);').model)).not.toContain('dbt_utils');
   });
 
   it('JSON Schema has a definition per table, required keys and enums', () => {
