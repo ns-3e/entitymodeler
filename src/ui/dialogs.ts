@@ -10,8 +10,10 @@ interface Dialogs {
   writeback: boolean;
   /** Earlier saved versions of a workspace model. */
   history: boolean;
-  open(p: Partial<Pick<Dialogs, 'newTab' | 'compare' | 'palette' | 'writeback' | 'history'>>): void;
-  close(which: 'newTab' | 'compare' | 'palette' | 'writeback' | 'history'): void;
+  /** How to connect an AI agent to this model. */
+  agents: boolean;
+  open(p: Partial<Pick<Dialogs, 'newTab' | 'compare' | 'palette' | 'writeback' | 'history' | 'agents'>>): void;
+  close(which: 'newTab' | 'compare' | 'palette' | 'writeback' | 'history' | 'agents'): void;
 }
 
 export const useDialogs = create<Dialogs>((set) => ({
@@ -20,6 +22,7 @@ export const useDialogs = create<Dialogs>((set) => ({
   palette: false,
   writeback: false,
   history: false,
+  agents: false,
   open: (p) => set(p),
-  close: (which) => set({ [which]: which === 'palette' || which === 'writeback' || which === 'history' ? false : null } as Partial<Dialogs>),
+  close: (which) => set({ [which]: which === 'palette' || which === 'writeback' || which === 'history' || which === 'agents' ? false : null } as Partial<Dialogs>),
 }));

@@ -20,6 +20,7 @@ import { useDialogs } from './dialogs';
 import { useAgent } from './agent';
 import { ProposalBanner, ProposalDialog } from './components/ProposalDialog';
 import { WritebackDialog } from './components/WritebackDialog';
+import { ConnectAgentDialog } from './components/ConnectAgentDialog';
 import { VersionHistoryDialog } from './components/VersionHistoryDialog';
 import { usePresenceSync } from './presence';
 import { isCloudId } from './storage/cloud';
@@ -173,6 +174,7 @@ export function Editor() {
       <ProposalDialog />
       <WritebackDialog />
       <VersionHistoryDialog />
+      <ConnectAgentDialog />
       <AgentPanel />
       <CommandPalette />
     </ReactFlowProvider>

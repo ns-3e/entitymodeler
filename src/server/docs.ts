@@ -453,6 +453,8 @@ export function docsSite(root: string): Plugin {
     configureServer(server) {
       server.watcher.add(join(root, 'site'));
       server.middlewares.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
+        // A source import of a file in docs/ (the model format, for the Claude prompt) is Vite's, not a page of this site.
+        if (/[?&]raw\b/.test(req.url ?? '')) return next();
         const path = decodeURIComponent((req.url ?? '').split(/[?#]/)[0]);
         if (path.startsWith('/docs-og/')) {
           const pages = loadPages(root);

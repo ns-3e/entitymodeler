@@ -103,6 +103,15 @@ export function Topbar() {
           <Sparkles size={16} /> <span className="tb-label tb-act-label">Ask Claude</span>
         </button>
       )}
+      {/* The label goes where there's no Ask Claude beside it: on the hosted site this is the way in to agents. */}
+      <button
+        className={`tb-agent ${storage.agentTools?.canRun ? 'icon-btn' : 'btn'}`}
+        title="Connect an AI agent, such as Claude, to work on this model"
+        onClick={() => useDialogs.getState().open({ agents: true })}
+      >
+        <Sparkles size={16} />
+        {!storage.agentTools?.canRun && <span className="tb-label tb-agent-label">Connect agent</span>}
+      </button>
       <PresenceBar />
       {isCloudId(useStore.getState().modelId) && (
         <button className="icon-btn tb-wide" title="Version history: earlier saves of this model" onClick={() => useDialogs.getState().open({ history: true })}>

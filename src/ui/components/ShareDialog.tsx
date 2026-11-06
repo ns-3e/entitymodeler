@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Check, ClipboardCopy, Link2, Loader2 } from '../icons';
 import { SOURCE_URL, encodeShareFragment, listTabs, tabView, type DataModel } from '../../core';
+import { cloud } from '../storage';
+import { isCloudId } from '../storage/cloud';
 import { useStore } from '../store';
 import { Modal } from './forms';
 
@@ -71,6 +73,20 @@ export function ShareDialog({ model, onClose }: { model: DataModel; onClose: () 
           Nothing is uploaded: the model travels inside the part of the link after <span className="mono">#</span>, which browsers never send to a server. Later edits are not included — share again to send a newer version.
           {link.length > LONG_LINK && ' This link is long; some chat apps cut long links off. If it fails to open, send the model file instead (Export → Model file).'}
         </p>
+        {cloud && (
+          <p className="muted small">
+            {isCloudId(useStore.getState().modelId) ? 'To add teammates to this model, open Members on its workspace, under Shared workspaces on the home page.' : 'Working with a team? A shared workspace keeps one live model that everyone edits together.'}{' '}
+            <button
+              className="link"
+              onClick={() => {
+                onClose();
+                useStore.getState().closeModel();
+              }}
+            >
+              Go to Shared workspaces
+            </button>
+          </p>
+        )}
       </div>
     </Modal>
   );

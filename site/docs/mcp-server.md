@@ -18,7 +18,7 @@ Agents can't reach models that are only in your browser, because those never lea
 
 ## Connect to the hosted server
 
-The hosted server needs no install. It uses the account you already have, through OAuth.
+The hosted server needs no install. It uses the account you already have, through OAuth. In the app, **Connect agent** in a model's top bar shows these steps for that model.
 
 **Claude Code:**
 
@@ -28,9 +28,17 @@ claude mcp add --transport http entitymodel https://entitymodel.com/mcp
 
 Then run `/mcp` in Claude Code and choose **Authenticate**.
 
+**Codex:**
+
+```bash
+codex mcp add entitymodel --url https://entitymodel.com/mcp
+```
+
+If your browser doesn't open to sign in, run `codex mcp login entitymodel`. This needs a recent Codex: sign-in fails on 0.146 with "missing required issuer", and works on 0.167.
+
 **Claude on the web and on desktop:** add a custom connector in your connector settings, with the address `https://entitymodel.com/mcp`.
 
-**Other clients** that support remote servers usually take a configuration like this:
+**Cursor** takes this in `mcp.json`, and other clients that support remote servers usually take the same thing:
 
 ```json
 {
@@ -80,6 +88,12 @@ The local server works on model files in a `models/` folder, with no account, an
 
 ```bash
 claude mcp add entity-modeler -- npx -y entitymodeler mcp
+```
+
+**Codex:**
+
+```bash
+codex mcp add entity-modeler -- npx -y entitymodeler mcp
 ```
 
 **Other clients:**

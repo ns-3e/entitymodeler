@@ -56,6 +56,7 @@ function Palette() {
     const hidden = model.entities.filter((e) => e.ui?.hidden).length;
     const act = (id: string, label: string, icon: ReactNode, run: () => void, hint?: string) => out.push({ id: `a:${id}`, label, icon, run, hint, group: 'Actions' });
     if (storage.agentTools?.canRun) act('ask', 'Ask Claude…', <Sparkles size={14} />, () => useAgent.getState().togglePanel(true), '⌘J');
+    act('connect-agent', 'Connect an agent…', <Sparkles size={14} />, () => useDialogs.getState().open({ agents: true }), 'Claude, Cursor or any MCP client');
     const pending = useAgent.getState().proposals;
     if (pending.length) act('review', `Review proposal: ${pending[0].title}`, <Sparkles size={14} />, () => useAgent.getState().review(pending[0].id));
     act('new-tab', 'New tab…', <Plus size={14} />, () => useDialogs.getState().open({ newTab: { source: activeTab } }), 'blank, copy, or derive logical/physical');

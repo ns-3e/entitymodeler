@@ -1,3 +1,4 @@
+import { useDialogs } from '../dialogs';
 import { useEffect, useState } from 'react';
 import { Cloud, Plus, Trash2, Users } from '../icons';
 import type { ModelSummary } from '../../core';
@@ -82,9 +83,16 @@ export function WorkspacesSection({ localModels }: { localModels: ModelSummary[]
         )}
       </h2>
 
+      <p className="muted small home-note">
+        Connect Claude, Codex or another AI agent to your workspace models.{' '}
+        <button className="link" onClick={() => useDialogs.getState().open({ agents: true })}>
+          Show me how
+        </button>
+      </p>
+
       {me === null && (
         <div className="ws-signin">
-          <p className="muted small home-note">Work on models together: members see each other's changes within a second. Workspace models are stored on the server; the models above stay where they are.</p>
+          <p className="muted small home-note">Work on models with your team: members see each other's changes within a second. Workspace models are stored on the server; the models above stay where they are.</p>
           <div className="ws-actions">
             {c.providers.filter((p) => p !== 'email').map((p) => (
               <a key={p} className="btn" href={c.signInUrl(p, '/')}>

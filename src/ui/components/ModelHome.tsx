@@ -1,4 +1,5 @@
 import { WorkspacesSection } from './Workspaces';
+import { ConnectAgentDialog } from './ConnectAgentDialog';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Download, FileInput, FileJson, FolderOpen, HardDrive, Plus, Sparkles, Trash2, Workflow } from '../icons';
 import { createModel, decodeShareFragment, isShareFragment, normalizeModel, toInternalName, type DataModel, type ModelSummary } from '../../core';
@@ -269,6 +270,7 @@ export function ModelHome() {
       </div>
 
       <WorkspacesSection localModels={models || []} />
+      <ConnectAgentDialog />
 
       <footer className="home-foot">
         © {new Date().getFullYear()}{' '}

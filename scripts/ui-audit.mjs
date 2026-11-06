@@ -112,6 +112,7 @@ const STATES = [
   ['export: model file', M, exportKind('Model file')],
   ['import: SQL', M, `__click(document.querySelector('.topbar [title="Import SQL or DBML into this model"]')); await __wait(500);`],
   ...['databricks', 'snowflake', 'postgres', 'mysql'].map((p) => [`import: database (${p})`, M, importDb(p)]),
+  ['connect agent', M, `(await import('/src/ui/dialogs.ts')).useDialogs.getState().open({ agents: true }); await __wait(500);`],
   ['share', M, `__click(__btn('Share', document.querySelector('.topbar'))); await __wait(500);`],
   ['ask Claude', M, `__click(__btn('Ask Claude', document.querySelector('.topbar'))); await __wait(600);`],
   ['command palette', M, `__click(document.querySelector('.topbar [title^="Command palette"]')); await __wait(500);`],
