@@ -17028,6 +17028,9 @@ function reviewToMarkdown(reviews, opts = {}) {
   return out.join("\n");
 }
 
+// package.json
+var version = "0.1.3";
+
 // src/mcp/rpc.ts
 var MODERN_VERSION = "2026-07-28";
 var LEGACY_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
@@ -17980,7 +17983,7 @@ ${s2.sql}`), "```"].join("\n");
       }
     }
   ]);
-  const server = { name: "entity-modeler", version: "0.3.0", instructions: INSTRUCTIONS, tools, allowApply: opts.allowApply };
+  const server = { name: "entity-modeler", version, instructions: INSTRUCTIONS, tools, allowApply: opts.allowApply };
   const send = (msg) => process.stdout.write(JSON.stringify(msg) + "\n");
   const rl = createInterface({ input: process.stdin });
   for await (const line of rl) {

@@ -3,7 +3,7 @@
 // everything else is checked on each call: scopes as granted, and role and suspension as they are right now, so removing
 // someone from a workspace takes effect at once, not when their token expires.
 import type { Op } from '../../src/core/operations';
-import { SUPPORTED_VERSIONS, handleHttp, type RpcServer } from '../../src/mcp/rpc';
+import { SERVER_VERSION, SUPPORTED_VERSIONS, handleHttp, type RpcServer } from '../../src/mcp/rpc';
 import type { ModelStore } from '../../src/mcp/store';
 import { createCatalog, type Need, type Tool } from '../../src/mcp/tools';
 import { HttpError, addModel, commit, json, modelAccess, need, newId, now, room, type Role, type User } from './common';
@@ -116,7 +116,7 @@ function serverFor(env: Env, user: User, scopes: string[], props: GrantProps): R
   ]);
   return {
     name: 'entitymodel.com',
-    version: '0.3.0',
+    version: SERVER_VERSION,
     instructions: INSTRUCTIONS,
     tools,
     allowApply: true,

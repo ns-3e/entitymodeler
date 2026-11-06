@@ -95,6 +95,23 @@ describe('presence', () => {
     b.ws.close(1000);
   });
 
+  it('tells someone their role changed, and nobody else', async () => {
+    const { ada, bob, ws, model } = await team('role');
+    const a = await connect(ada, model);
+    const b = await connect(bob, model);
+    await b.nextPresence((p) => names(p).includes('Ada'));
+    await ada.req(`workspaces/${ws}/members`, { method: 'POST', body: JSON.stringify({ email: bob.email, role: 'editor' }) });
+    expect(await b.until((m) => m.type === 'role')).toMatchObject({ role: 'editor' });
+    // Saving the same role again says nothing new.
+    await ada.req(`workspaces/${ws}/members`, { method: 'POST', body: JSON.stringify({ email: bob.email, role: 'editor' }) });
+    await ada.req(`workspaces/${ws}/members`, { method: 'POST', body: JSON.stringify({ email: bob.email, role: 'viewer' }) });
+    await b.until((m) => m.type === 'role' && m.role === 'viewer');
+    expect(b.seen.filter((m) => m.type === 'role').map((m) => m.role)).toEqual(['editor', 'viewer']);
+    expect(a.seen.some((m) => m.type === 'role')).toBe(false);
+    a.ws.close(1000);
+    b.ws.close(1000);
+  });
+
   it('stops listing a connection that went silent', async () => {
     const { ada, bob, model } = await team('p5');
     const a = await connect(ada, model);

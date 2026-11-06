@@ -1,6 +1,7 @@
 // The hosted MCP server end to end: an app registers, a person signs in and consents, and the token drives the tools.
 import { env, exports } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
+import { version } from '../../package.json';
 
 const site = 'https://entitymodel.com';
 const base = `${site}/api/cloud`;
@@ -369,7 +370,7 @@ describe('transport', () => {
     const p = await as('legacy@example.com');
     const token = await connect(p, {});
     const init = await post(token, { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'c', version: '1' } } });
-    expect(((await init.json()) as any).result).toMatchObject({ protocolVersion: '2025-06-18', serverInfo: { name: 'entitymodel.com' } });
+    expect(((await init.json()) as any).result).toMatchObject({ protocolVersion: '2025-06-18', serverInfo: { name: 'entitymodel.com', version } });
     expect(init.headers.get('Mcp-Session-Id')).toBeNull();
     const list = await post(token, { jsonrpc: '2.0', id: 2, method: 'tools/list' }, { 'MCP-Protocol-Version': '2025-06-18' });
     expect(((await list.json()) as any).result.tools.length).toBeGreaterThan(10);

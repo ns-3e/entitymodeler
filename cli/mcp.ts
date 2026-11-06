@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { dirname, join, relative, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { applyOps, listTabs, normalizeModel, planPull, profileIssues, tabView } from '../src/core/index';
-import { handleRpc } from '../src/mcp/rpc';
+import { SERVER_VERSION, handleRpc } from '../src/mcp/rpc';
 import type { ModelStore } from '../src/mcp/store';
 import { createCatalog, str, type Tool } from '../src/mcp/tools';
 import { MODEL_FILE, deleteProposal, findRoot, listProposals, readGlossary, sha1, writeProposal } from '../src/server/workbench';
@@ -181,7 +181,7 @@ export async function runMcp(opts: { allowApply: boolean; author: string; models
       },
     },
   ]);
-  const server = { name: 'entity-modeler', version: '0.3.0', instructions: INSTRUCTIONS, tools, allowApply: opts.allowApply };
+  const server = { name: 'entity-modeler', version: SERVER_VERSION, instructions: INSTRUCTIONS, tools, allowApply: opts.allowApply };
 
   const send = (msg: object) => process.stdout.write(JSON.stringify(msg) + '\n');
   const rl = createInterface({ input: process.stdin });

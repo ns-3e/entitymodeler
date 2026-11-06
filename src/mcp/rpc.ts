@@ -5,6 +5,9 @@
 // A request's era comes from its own _meta, so nothing is remembered between requests.
 import type { Need, Tool } from './tools';
 
+/** What both servers report as their version: the npm package's. */
+export { version as SERVER_VERSION } from '../../package.json';
+
 export const MODERN_VERSION = '2026-07-28';
 export const LEGACY_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 export const SUPPORTED_VERSIONS = [MODERN_VERSION, ...LEGACY_VERSIONS];

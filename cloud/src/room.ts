@@ -180,6 +180,11 @@ export class ModelRoom extends DurableObject<Env> {
     this.sharePresence((a) => a.user !== user);
   }
 
+  /** Tell one person's connections their role changed, so the app can show or hide what it allows. */
+  async roleChanged(user: string, role: string): Promise<void> {
+    for (const ws of this.ctx.getWebSockets(user)) ws.send(JSON.stringify({ type: 'role', role }));
+  }
+
   /** WebSocket upgrade, forwarded by the Worker with the checked user in headers. */
   async fetch(request: Request): Promise<Response> {
     if (request.headers.get('Upgrade') !== 'websocket') return new Response('Expected a WebSocket', { status: 426 });

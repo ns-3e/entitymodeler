@@ -166,9 +166,11 @@ export function withCloud(base: ModelStorage): ModelStorage {
       };
       ws.onmessage = (e) => {
         try {
-          const m = JSON.parse(String(e.data)) as { type: string; version?: number; you?: string; people?: Peer[] };
+          const m = JSON.parse(String(e.data)) as { type: string; version?: number; you?: string; people?: Peer[]; role?: Role };
           if (m.type === 'hello') state.you = m.you;
-          if (m.type === 'proposals') proposalListeners.forEach((cb) => cb(id));
+          if (m.type === 'role' && m.role) roles.set(id, m.role);
+          // A new role changes which review buttons show, and reloading proposals redraws them.
+          if (m.type === 'proposals' || m.type === 'role') proposalListeners.forEach((cb) => cb(id));
           else if (m.type === 'presence') showPeers(others(m.people || [], state.you));
           // "hello" after a reconnect, and "pong", may carry a version saved while we were away.
           else if ((m.type === 'version' || m.type === 'hello' || m.type === 'pong') && m.version) void changed(id, m.version);

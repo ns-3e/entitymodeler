@@ -336,6 +336,11 @@ async function route(req: Request, env: Env, path: string[]): Promise<Response> 
       const existing = await roleIn(env, ws, target.id);
       if (!existing && (count?.n ?? 0) >= quotaFor(plan).membersPerWorkspace) throw new HttpError(403, `Workspaces are limited to ${quotaFor(plan).membersPerWorkspace} members.`);
       await env.DB.prepare('INSERT INTO members (workspace_id, user_id, role, added_at) VALUES (?, ?, ?, ?) ON CONFLICT (workspace_id, user_id) DO UPDATE SET role = excluded.role').bind(ws, target.id, role, now()).run();
+      if (existing && existing.role !== role) {
+        const { results } = await env.DB.prepare('SELECT id FROM models WHERE workspace_id = ?').bind(ws).all<{ id: string }>();
+        // Only a courtesy to open tabs: the server checks the role on every request, so a failed notice can't fail the change.
+        await Promise.allSettled(results.map((m) => room(env, m.id).roleChanged(target.id, role)));
+      }
       return json({ ok: true, role });
     }
 

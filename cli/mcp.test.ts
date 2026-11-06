@@ -4,6 +4,7 @@ import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import pkg from '../package.json';
 
 const repo = new URL('..', import.meta.url).pathname;
 const bin = join(repo, 'bin/em.mjs');
@@ -43,7 +44,7 @@ describe('em mcp', () => {
       call(6, 'apply_changes', { model: 'demo', ops: [] }),
     ]);
     const byId = new Map(res.map((r) => [r.id, r]));
-    expect(byId.get(1).result.serverInfo.name).toBe('entity-modeler');
+    expect(byId.get(1).result.serverInfo).toEqual({ name: 'entity-modeler', version: pkg.version });
     const names = byId.get(2).result.tools.map((t: any) => t.name);
     expect(names).toContain('propose_changes');
     expect(names).not.toContain('apply_changes');
