@@ -1,0 +1,45 @@
+# Publishes the CLI and local MCP server to npm when package.json has a version npm doesn't have yet. It signs in with
+# npm trusted publishing (OIDC): there is no token to store and no security key to touch. The trusted publisher on
+# npmjs.com names this repository and this filename, so renaming the file means updating it there.
+name: Publish to npm
+
+on:
+  push:
+    branches: [main]
+    paths: [package.json]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish:
+    # Snapshots copy this file to the public repo, which isn't the trusted publisher.
+    if: github.repository == 'ns-3e/entitymodeler-private'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Is this version new?
+        id: version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if npm view "entitymodeler@$version" version 2>/dev/null | grep -q .; then
+            echo "entitymodeler@$version is already on npm."
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.version.outputs.new == 'true'
+        run: npm ci
+      - if: steps.version.outputs.new == 'true'
+        run: npm test
+      - if: steps.version.outputs.new == 'true'
+        # Trusted publishing needs npm 11.5.1 or later.
+        run: npm install -g npm@11
+      - if: steps.version.outputs.new == 'true'
+        run: npm run publish-npm -- --publish

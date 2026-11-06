@@ -1,6 +1,8 @@
 // Publish the CLI and local MCP server to npm, so `npx entitymodeler mcp` works from any folder.
 //   npm run publish-npm                builds and tests the package, and publishes nothing
 //   npm run publish-npm -- --publish   the same, then publishes it
+// Releases normally publish from .github/workflows/publish-npm.yml when package.json gets a new version, using npm
+// trusted publishing. Run it by hand only if that's unavailable: it needs an npm login and a security key.
 // The package is generated rather than this repo's package.json: bin/em.mjs is one bundled file with no dependencies,
 // and publishing the root manifest would make every `npx` install React and the rest of the app.
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -97,12 +99,14 @@ For models in shared workspaces, connect your agent to \`https://entitymodel.com
   if (!publish) {
     console.log('Nothing published. Run `npm run publish-npm -- --publish` to publish.');
   } else {
-    const who = spawnSync('npm', ['whoami'], { encoding: 'utf8' });
-    if (who.status !== 0) die('not logged in to npm. Run `npm login`, then try again.');
+    // In GitHub Actions, npm signs in by itself with the workflow's identity (trusted publishing).
+    const ci = !!process.env.GITHUB_ACTIONS;
+    const who = ci ? null : spawnSync('npm', ['whoami'], { encoding: 'utf8' });
+    if (who && who.status !== 0) die('not logged in to npm. Run `npm login`, then try again.');
     // --auth-type=web: an account with a security key approves in the browser, since it has no one-time code to type.
-    const out = spawnSync('npm', ['publish', tarball, '--access', 'public', '--auth-type=web'], { encoding: 'utf8', stdio: 'inherit' });
+    const out = spawnSync('npm', ['publish', tarball, '--access', 'public', ...(ci ? [] : ['--auth-type=web'])], { encoding: 'utf8', stdio: 'inherit' });
     if (out.status !== 0) die('npm publish failed.');
-    console.log(`Published ${manifest.name}@${manifest.version} as ${who.stdout.trim()}.`);
+    console.log(`Published ${manifest.name}@${manifest.version}${who ? ` as ${who.stdout.trim()}` : ''}.`);
   }
 } finally {
   rmSync(work, { recursive: true, force: true });

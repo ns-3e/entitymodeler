@@ -64,7 +64,7 @@ If `bin/em.mjs` is missing, or stale after changes to `src/core` or `cli/`, run 
 - Review comments: `list_comments`, then propose fixes and `reply_comment` (replies are written directly). The business glossary is shared (`models/_glossary.json`): use `search_glossary` and `propose_terms`, and don't invent definitions the inputs don't support.
 
 - `npm run publish-snapshot` previews releasing private `main` to the public repo (github.com/ns-3e/entitymodeler) as one new commit, after a secrets scan; `-- --push [--message "…"]` publishes. The public repo never gets private history; don't push there any other way. Publish only when the person asks.
-- `npm run publish-npm` builds and tests the `entitymodeler` npm package (`npx entitymodeler mcp`) from a generated manifest; `-- --publish` publishes it. Publish only when the person asks.
+- The `entitymodeler` npm package (`npx entitymodeler mcp`) publishes from `.github/workflows/publish-npm.yml` when `package.json` on `main` gets a new version, with npm trusted publishing. To release, bump the version in a PR. `npm run publish-npm` builds and tests the package locally from a generated manifest.
 - `npm run agent-eval [-- <name>]` runs Claude headless on a brief in `evals/<name>/` with these tools and reports turns, cost, tool errors and validation. Run it after changing agent-facing tools; it costs a real run.
 
 ## Skills
